@@ -1,6 +1,3 @@
-# Injector
-
-```go
 package main
 
 import (
@@ -58,10 +55,3 @@ func main() {
 		panic(err)
 	}
 }
-```
-
-TODO:
-- Bundles
-- Bind type to interfaces
-- Replace dependency
-- Verify cycles

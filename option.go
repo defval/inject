@@ -1,22 +1,24 @@
-package ding
+package injector
 
 // Provide ...
-func Provide(constructors ...interface{}) Option {
-	return option(func(c *Container) {
-
+func Provide(providers ...interface{}) Option {
+	return option(func(c *Injector) {
+		c.providers = append(c.providers, providers...)
 	})
 }
 
 // Populate ...
 func Populate(targets ...interface{}) Option {
-	return option(func(c *Container) {
+	return option(func(c *Injector) {
 
 	})
 }
 
 // Bind ...
-func Bind(pseudonims ...interface{}) Option {
-	return option(func(c *Container) {})
+func Bind(bindings ...interface{}) Option {
+	return option(func(c *Injector) {
+		c.binders = append(c.binders, bindings)
+	})
 }
 
 // Bundle ...
@@ -26,20 +28,20 @@ func Bundle(options ...Option) Option {
 
 // Option ...
 type Option interface {
-	apply(c *Container)
+	apply(c *Injector)
 }
 
 // option
-type option func(c *Container)
+type option func(c *Injector)
 
-func (o option) apply(c *Container) {
+func (o option) apply(c *Injector) {
 	o(c)
 }
 
 // bundle options
 type bundleOptions []Option
 
-func (o bundleOptions) apply(c *Container) {
+func (o bundleOptions) apply(c *Injector) {
 	for _, opt := range o {
 		opt.apply(c)
 	}
