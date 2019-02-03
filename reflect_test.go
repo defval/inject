@@ -13,13 +13,13 @@ func TestSlices(t *testing.T) {
 	type iface interface{}
 
 	var ifacetype = reflect.TypeOf(new(iface)).Elem()
-	assert.Equal(t, "ding.iface", fmt.Sprintf("%s", ifacetype))
+	assert.Equal(t, "injector.iface", fmt.Sprintf("%s", ifacetype))
 	// reflect.SliceOf(reflect.TypeOf(i)) // not work
 
 	var fn = func(is []iface) {}
 
 	var arg = reflect.TypeOf(fn).In(0).Elem()
-	assert.Equal(t, "ding.iface", fmt.Sprintf("%s", arg))
+	assert.Equal(t, "injector.iface", fmt.Sprintf("%s", arg))
 
 	assert.Equal(t, ifacetype, arg)
 }

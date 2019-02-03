@@ -1,4 +1,6 @@
 # Injector
+[![Build Status](https://img.shields.io/travis/defval/injector.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/injector)
+[![Code Coverage](https://img.shields.io/codecov/c/github/defval/injector.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/injector)
 
 ```go
 package main
