@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	var container, err = injector.New(
+    var container, err = injector.New(
         // HTTP
         injector.Provide(
             mux.NewHandler,
@@ -45,14 +45,14 @@ func main() {
         injector.Bind(new(http.Handler), new(mux.Handler)),
     )
 
-	var server *http.Server
-	if err = container.Populate(&server); err != nil {
-		panic(err)
-	}
+    var server *http.Server
+    if err = container.Populate(&server); err != nil {
+        panic(err)
+    }
 
-	if err = server.ListenAndServe(); err != nil {
-		panic(err)
-	}
+    if err = server.ListenAndServe(); err != nil {
+        panic(err)
+    }
 }
 
 ```
