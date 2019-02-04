@@ -6,7 +6,8 @@
 package main
 
 import (
-	"net/http"
+	"log"
+"net/http"
 
 	"github.com/defval/injector"
 	"github.com/defval/injector/testdata/controllers"
@@ -44,14 +45,18 @@ func main() {
         ),
         injector.Bind(new(http.Handler), new(mux.Handler)),
     )
+    
+    if err != nil {
+    	log.Fatal(err.Error())
+    }
 
     var server *http.Server
     if err = container.Populate(&server); err != nil {
-        panic(err)
+        log.Fatal(err.Error())
     }
 
     if err = server.ListenAndServe(); err != nil {
-        panic(err)
+        log.Fatal(err.Error())
     }
 }
 
