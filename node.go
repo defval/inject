@@ -4,11 +4,12 @@ import (
 	"log"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 // node
 type node interface {
-	Instance() reflect.Value
+	Instance(level int) reflect.Value
 	Type() reflect.Type
 	Args() []reflect.Type
 	AddIn(node node)
@@ -96,17 +97,31 @@ type provideNode struct {
 }
 
 // Instance
-func (n *provideNode) Instance() reflect.Value {
+func (n *provideNode) Instance(level int) reflect.Value {
 	if n.instance != nil {
 		return *n.instance
 	}
 
-	log.Printf("Build: %s", n.resultType)
+	// var builder = strings.Builder{}
+	//
+	// builder.WriteString(n.resultType.String())
+	//
+	// for i, in := range n.in {
+	// 	builder.WriteString("(")
+	// 	builder.WriteString(in.Type().String())
+	// 	if i != len(n.in)-1 {
+	// 		builder.WriteString(", ")
+	// 	}
+	// 	builder.WriteString(")")
+	// }
+	//
+	// log.Println(builder.String())
+
+	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
 
 	var values []reflect.Value
 	for _, in := range n.in {
-		log.Printf("-- inject: %s", in.Type())
-		values = append(values, in.Instance())
+		values = append(values, in.Instance(level+1))
 	}
 
 	var result = n.cvalue.Call(values)
@@ -154,18 +169,31 @@ type groupNode struct {
 }
 
 // Instance
-func (n *groupNode) Instance() reflect.Value {
+func (n *groupNode) Instance(level int) reflect.Value {
 	if n.instance != nil {
 		return *n.instance
 	}
 
-	log.Printf("Group: %s", n.resultType)
+	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
 
 	var values []reflect.Value
 	for _, in := range n.in {
-		log.Printf("-- inject: %s", in.Type())
-		values = append(values, in.Instance())
+		values = append(values, in.Instance(level+1))
 	}
+
+	// var builder = strings.Builder{}
+	// builder.WriteString(n.resultType.String())
+	//
+	// for i, in := range n.in {
+	// 	builder.WriteString("(")
+	// 	builder.WriteString(in.Type().String())
+	// 	if i != len(n.in)-1 {
+	// 		builder.WriteString(", ")
+	// 	}
+	// 	builder.WriteString(")")
+	// }
+	//
+	// log.Println(builder.String())
 
 	elemSlice := reflect.MakeSlice(n.resultType, 0, 10)
 	elemSlice = reflect.Append(elemSlice, values...)
@@ -192,17 +220,19 @@ type bindNode struct {
 	*baseNode
 }
 
-func (n *bindNode) Instance() reflect.Value {
+func (n *bindNode) Instance(level int) reflect.Value {
 	if n.instance != nil {
 		return *n.instance
 	}
 
-	log.Printf("Bind: %s", n.resultType)
-	log.Printf("-- inject: %s", n.in[0].Type())
+	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
 
-	var instance = n.in[0].Instance()
+	var instance = n.in[0].Instance(level + 1)
 
 	n.instance = &instance
 
 	return *n.instance
 }
+
+const Pad = " "
+const LevelSymbol = "|  "

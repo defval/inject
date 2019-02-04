@@ -1,10 +1,10 @@
 package injector
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/defval/injector/testdata/controllers"
 	"github.com/defval/injector/testdata/mux"
 	"github.com/defval/injector/testdata/order"
@@ -13,11 +13,120 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew(t *testing.T) {
-	t.Run("Injection", func(t *testing.T) {
-		var err error
+// InjectionTestCase
+type InjectionTestCase struct {
+	Name       string
+	Injections []interface{}
+	Bindings   [][]interface{}
+	Error      string
+}
 
-		var container = New(
+// injectionTable
+var injectionTable = []InjectionTestCase{
+	{
+		Name: "DudeTest",
+		Injections: []interface{}{
+			func(s string) bool {
+				return s == "dude"
+			},
+			func() string {
+				return "dude"
+			},
+		},
+	},
+	{
+		Name: "StringInt64",
+		Injections: []interface{}{
+			func(s string) bool {
+				return s == "value:28071990"
+			},
+			func(value int64) string {
+				return fmt.Sprintf("%s:%d", "value", value)
+			},
+			func() int64 {
+				return 28071990
+			},
+		},
+	},
+	{
+		Name: "DuplicateType",
+		Injections: []interface{}{
+			func() string {
+				return "string"
+			},
+			func() string {
+				return "string"
+			},
+		},
+		Error: "string already injected",
+	},
+	{
+		Name: "InjectStructPointer",
+		Injections: []interface{}{
+			func(server *http.Server, handler http.Handler) bool {
+				return server.Handler == handler
+			},
+			func(handler http.Handler) *http.Server {
+				return &http.Server{
+					Handler: handler,
+				}
+			},
+			func() http.Handler {
+				return http.NewServeMux()
+			},
+		},
+	},
+	{
+		Name: "PopulateNotExistingType",
+		Injections: []interface{}{
+			func(v bool) string {
+				return ""
+			},
+		},
+		Error: "bool not found",
+	},
+	// {
+	// 	Name: "InjectError",
+	// 	Injections: []interface{}{
+	// 		func(s string) bool {
+	// 			return true
+	// 		},
+	// 		func() (string, error) {
+	// 			return "", errors.New("dude was gone")
+	// 		},
+	// 	},
+	// 	Error: "string: dude was gone",
+	// },
+}
+
+// TestNew
+func TestNew(t *testing.T) {
+
+	// Injection
+	t.Run("Injection", func(t *testing.T) {
+		for _, row := range injectionTable {
+			t.Run(row.Name, func(t *testing.T) {
+				var injector, err = New(
+					Provide(row.Injections...),
+				)
+
+				var result bool
+				if row.Error == "" {
+					if err = injector.Populate(&result); err != nil {
+						assert.FailNow(t, err.Error())
+					}
+
+					assert.EqualValues(t, true, result)
+				} else {
+					assert.EqualError(t, err, row.Error)
+				}
+
+			})
+		}
+	})
+
+	t.Run("Injection", func(t *testing.T) {
+		var container, err = New(
 			// HTTP
 			Provide(
 				mux.NewHandler,
@@ -45,8 +154,8 @@ func TestNew(t *testing.T) {
 			Bind(new(http.Handler), new(mux.Handler)),
 		)
 
-		if err := container.Error(); err != nil {
-			assert.FailNow(t, "container build error")
+		if err != nil {
+			assert.FailNow(t, err.Error())
 		}
 
 		var server *http.Server
@@ -54,10 +163,9 @@ func TestNew(t *testing.T) {
 			assert.Fail(t, err.Error())
 		}
 
-		spew.Dump(server)
-
 		assert.NotNil(t, server)
 	})
+
 	//
 	// t.Run("PopulateMultipleInterfaceImplementation", func(t *testing.T) {
 	// 	type stringer interface {

@@ -4,10 +4,11 @@ import (
 	"net/http"
 
 	"github.com/defval/injector/testdata/mux"
+	"github.com/defval/injector/testdata/storage/memory"
 )
 
 // NewProductController ...
-func NewProductController() *ProductController {
+func NewProductController(orders *memory.OrderRepository) *ProductController {
 	return &ProductController{}
 }
 

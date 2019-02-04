@@ -17,39 +17,33 @@ import (
 )
 
 func main() {
-	var err error
-
-	var container = injector.New(
-		// HTTP
-		injector.Provide(
-			mux.NewHandler,
-			mux.NewServer,
-		),
-		// Product
-		injector.Provide(
-			controllers.NewProductController,
-			memory.NewProductRepository,
-		),
-		// Order
-		injector.Provide(
-			memory.NewOrderRepository,
-			order.NewInteractor,
-			controllers.NewOrderController,
-		),
-		// Controllers
-		injector.Bind(new(order.Repository), &memory.OrderRepository{}),
-		injector.Bind(new(product.Repository), &memory.ProductRepository{}),
-
-		injector.Bind(new(mux.Controller),
-			&controllers.ProductController{},
-			&controllers.OrderController{},
-		),
-		injector.Bind(new(http.Handler), &mux.Handler{}),
-	)
-
-	if err := container.Error(); err != nil {
-		panic(err)
-	}
+	var container, err = injector.New(
+        // HTTP
+        injector.Provide(
+            mux.NewHandler,
+            mux.NewServer,
+        ),
+        // Product
+        injector.Provide(
+            controllers.NewProductController,
+            memory.NewProductRepository,
+        ),
+        // Order
+        injector.Provide(
+            memory.NewOrderRepository,
+            order.NewInteractor,
+            controllers.NewOrderController,
+        ),
+        // Controllers
+        injector.Bind(new(order.Repository), new(memory.OrderRepository)),
+        injector.Bind(new(product.Repository), new(memory.ProductRepository)),
+    
+        injector.Bind(new(mux.Controller),
+            new(controllers.ProductController),
+            new(controllers.OrderController),
+        ),
+        injector.Bind(new(http.Handler), new(mux.Handler)),
+    )
 
 	var server *http.Server
 	if err = container.Populate(&server); err != nil {
@@ -60,10 +54,12 @@ func main() {
 		panic(err)
 	}
 }
+
 ```
 
 TODO:
+- Test coverage
+- Verify cycles
 - Bundles
 - Bind type to interfaces
 - Replace dependency
-- Verify cycles

@@ -8,7 +8,7 @@ import (
 )
 
 // New creates new container
-func New(options ...Option) *Injector {
+func New(options ...Option) (_ *Injector, err error) {
 	var c = &Injector{
 		nodes: make(map[reflect.Type]node),
 	}
@@ -18,14 +18,20 @@ func New(options ...Option) *Injector {
 	}
 
 	for _, provider := range c.providers {
-		c.add(newProvide(provider))
+		if err = c.add(newProvide(provider)); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, binding := range c.binders {
 		if len(binding) == 2 {
-			c.add(newBind(binding[0], binding[1]))
+			if err = c.add(newBind(binding[0], binding[1])); err != nil {
+				return nil, err
+			}
 		} else {
-			c.add(newGroup(binding...))
+			if err = c.add(newGroup(binding...)); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -34,18 +40,19 @@ func New(options ...Option) *Injector {
 			tail, err := c.getNode(arg)
 
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 
 			if err = c.connect(tail, n); err != nil {
-				panic(err)
+				return nil, err
 			}
 		}
 	}
 
-	log.Printf("Injector builded")
+	log.Printf("BUILDED")
+	log.Println()
 
-	return c
+	return c, nil
 }
 
 // Injector ...
@@ -55,11 +62,6 @@ type Injector struct {
 	binders   [][]interface{}
 
 	nodes map[reflect.Type]node
-}
-
-// Injector
-func (i *Injector) Error() error {
-	return nil
 }
 
 // Populate
@@ -72,7 +74,7 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 			return fmt.Errorf("could not populate `%s`", v.Type())
 		}
 
-		var instance = node.Instance()
+		var instance = node.Instance(0)
 
 		v.Set(instance)
 	}
@@ -80,13 +82,19 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 	return nil
 }
 
-func (i *Injector) add(node node) {
+func (i *Injector) add(node node) (err error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	log.Printf("Add node: %s", node.Type())
+	log.Printf("INJECT: %s", node.Type())
+
+	if _, ok := i.nodes[node.Type()]; ok {
+		return fmt.Errorf("%s already injected", node.Type())
+	}
 
 	i.nodes[node.Type()] = node
+
+	return nil
 }
 
 func (i *Injector) connect(n1, n2 node) error {
@@ -106,15 +114,15 @@ func (i *Injector) connect(n1, n2 node) error {
 	}
 
 	if !dependencyExist {
-		return fmt.Errorf("node %s not found", n1.Type())
+		return fmt.Errorf("%s not found", n1.Type())
 	}
 	if !nodeExists {
-		return fmt.Errorf("node %s not found", n2.Type())
+		return fmt.Errorf("%s not found", n2.Type())
 	}
 
 	for _, n := range n1.Out() {
 		if n == n2 {
-			return fmt.Errorf("relation %v -> %v already exists", n1.Type(), n2.Type())
+			return fmt.Errorf("%v already injected in to %v", n1.Type(), n2.Type())
 		}
 	}
 
@@ -127,7 +135,7 @@ func (i *Injector) connect(n1, n2 node) error {
 func (i *Injector) getNode(typ reflect.Type) (node node, _ error) {
 	var found bool
 	if node, found = i.nodes[typ]; !found {
-		return nil, fmt.Errorf("node %s not found", typ)
+		return nil, fmt.Errorf("%s not found", typ)
 	}
 
 	return node, nil
@@ -138,7 +146,7 @@ func (i *Injector) out(n *provideNode) ([]node, error) {
 
 	_, found := i.getNode(n.resultType)
 	if found != nil {
-		return successors, fmt.Errorf("node %s not found", n.resultType)
+		return successors, fmt.Errorf("%s not found", n.resultType)
 	}
 
 	for _, v := range n.out {
@@ -154,7 +162,7 @@ func (i *Injector) in(n *provideNode) ([]node, error) {
 
 	_, found := i.getNode(n.resultType)
 	if found != nil {
-		return predecessors, fmt.Errorf("provideNode %s not found", n.resultType)
+		return predecessors, fmt.Errorf("%s not found", n.resultType)
 	}
 
 	for _, v := range n.in {

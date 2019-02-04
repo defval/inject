@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/defval/injector"
@@ -12,9 +13,7 @@ import (
 )
 
 func main() {
-	var err error
-
-	var container = injector.New(
+	var container, err = injector.New(
 		// HTTP
 		injector.Provide(
 			mux.NewHandler,
@@ -31,27 +30,29 @@ func main() {
 			order.NewInteractor,
 			controllers.NewOrderController,
 		),
-		// Controllers
+
+		// Binds
 		injector.Bind(new(order.Repository), &memory.OrderRepository{}),
 		injector.Bind(new(product.Repository), &memory.ProductRepository{}),
+		injector.Bind(new(http.Handler), &mux.Handler{}),
 
+		// Controllers
 		injector.Bind(new(mux.Controller),
 			&controllers.ProductController{},
 			&controllers.OrderController{},
 		),
-		injector.Bind(new(http.Handler), &mux.Handler{}),
 	)
 
-	if err := container.Error(); err != nil {
-		panic(err)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	var server *http.Server
 	if err = container.Populate(&server); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	if err = server.ListenAndServe(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
