@@ -7,7 +7,7 @@ package main
 
 import (
 	"log"
-"net/http"
+	"net/http"
 
 	"github.com/defval/injector"
 	"github.com/defval/injector/testdata/controllers"
