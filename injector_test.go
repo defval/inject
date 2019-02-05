@@ -85,6 +85,34 @@ var injectionTable = []InjectionTestCase{
 		},
 		Error: "bool not found",
 	},
+	{
+		Name: "NotResolvedInjection",
+		Injections: []interface{}{
+			func(handler http.Handler) bool {
+				_, ok := handler.(*http.ServeMux)
+				return ok
+			},
+			func() *http.ServeMux {
+				return http.NewServeMux()
+			},
+		},
+		Error: "http.Handler not found",
+	},
+	{
+		Name: "BindInterface",
+		Injections: []interface{}{
+			func(handler http.Handler) bool {
+				_, ok := handler.(*http.ServeMux)
+				return ok
+			},
+			func() *http.ServeMux {
+				return http.NewServeMux()
+			},
+		},
+		Bindings: [][]interface{}{
+			{new(http.Handler), &http.ServeMux{}},
+		},
+	},
 	// {
 	// 	Name: "InjectError",
 	// 	Injections: []interface{}{
@@ -106,9 +134,21 @@ func TestNew(t *testing.T) {
 	t.Run("Injection", func(t *testing.T) {
 		for _, row := range injectionTable {
 			t.Run(row.Name, func(t *testing.T) {
+				var options []Option
+
+				options = append(options, Provide(row.Injections...))
+
+				for _, bindingSet := range row.Bindings {
+					options = append(options, Bind(bindingSet...))
+				}
+
 				var injector, err = New(
-					Provide(row.Injections...),
+					options...,
 				)
+
+				if err != nil && row.Error == "" {
+					assert.FailNow(t, err.Error())
+				}
 
 				var result bool
 				if row.Error == "" {
@@ -125,7 +165,7 @@ func TestNew(t *testing.T) {
 		}
 	})
 
-	t.Run("Injection", func(t *testing.T) {
+	t.Run("TestApp", func(t *testing.T) {
 		var container, err = New(
 			// HTTP
 			Provide(

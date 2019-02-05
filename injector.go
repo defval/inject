@@ -9,41 +9,41 @@ import (
 
 // New creates new container
 func New(options ...Option) (_ *Injector, err error) {
-	var c = &Injector{
+	var injector = &Injector{
 		nodes: make(map[reflect.Type]node),
 	}
 
 	for _, opt := range options {
-		opt.apply(c)
+		opt.apply(injector)
 	}
 
-	for _, provider := range c.providers {
-		if err = c.add(newProvide(provider)); err != nil {
+	for _, provider := range injector.providers {
+		if err = injector.add(newProvide(provider)); err != nil {
 			return nil, err
 		}
 	}
 
-	for _, binding := range c.binders {
+	for _, binding := range injector.binders {
 		if len(binding) == 2 {
-			if err = c.add(newBind(binding[0], binding[1])); err != nil {
+			if err = injector.add(newBind(binding[0], binding[1])); err != nil {
 				return nil, err
 			}
 		} else {
-			if err = c.add(newGroup(binding...)); err != nil {
+			if err = injector.add(newGroup(binding...)); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	for _, n := range c.nodes {
+	for _, n := range injector.nodes {
 		for _, arg := range n.Args() {
-			tail, err := c.getNode(arg)
+			tail, err := injector.getNode(arg)
 
 			if err != nil {
 				return nil, err
 			}
 
-			if err = c.connect(tail, n); err != nil {
+			if err = injector.connect(tail, n); err != nil {
 				return nil, err
 			}
 		}
@@ -52,7 +52,7 @@ func New(options ...Option) (_ *Injector, err error) {
 	log.Printf("BUILDED")
 	log.Println()
 
-	return c, nil
+	return injector, nil
 }
 
 // Injector ...
