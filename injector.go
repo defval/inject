@@ -18,32 +18,38 @@ func New(options ...Option) (_ *Injector, err error) {
 	}
 
 	for _, provider := range injector.providers {
-		if err = injector.add(newProvide(provider)); err != nil {
+		var provide = newProvide(provider)
+
+		if err = injector.add(provide); err != nil {
 			return nil, err
 		}
 	}
 
 	for _, binding := range injector.binders {
 		if len(binding) == 2 {
-			if err = injector.add(newBind(binding[0], binding[1])); err != nil {
+			var bind = newBind(binding[0], binding[1])
+
+			if err = injector.add(bind); err != nil {
 				return nil, err
 			}
 		} else {
-			if err = injector.add(newGroup(binding...)); err != nil {
+			var group = newGroup(binding...)
+
+			if err = injector.add(group); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	for _, n := range injector.nodes {
-		for _, arg := range n.Args() {
-			tail, err := injector.getNode(arg)
+	for _, node := range injector.nodes {
+		for _, arg := range node.Args() {
+			arg, err := injector.get(arg)
 
 			if err != nil {
 				return nil, err
 			}
 
-			if err = injector.connect(tail, n); err != nil {
+			if err = injector.connect(arg, node); err != nil {
 				return nil, err
 			}
 		}
@@ -70,11 +76,14 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 		var v = reflect.ValueOf(target).Elem()
 
 		var node node
-		if node, err = i.getNode(v.Type()); err != nil {
+		if node, err = i.get(v.Type()); err != nil {
 			return fmt.Errorf("could not populate `%s`", v.Type())
 		}
 
-		var instance = node.Instance(0)
+		var instance reflect.Value
+		if instance, err = node.Instance(0); err != nil {
+			return fmt.Errorf("%s", err)
+		}
 
 		v.Set(instance)
 	}
@@ -132,7 +141,7 @@ func (i *Injector) connect(n1, n2 node) error {
 	return nil
 }
 
-func (i *Injector) getNode(typ reflect.Type) (node node, _ error) {
+func (i *Injector) get(typ reflect.Type) (node node, _ error) {
 	var found bool
 	if node, found = i.nodes[typ]; !found {
 		return nil, fmt.Errorf("%s not found", typ)
@@ -141,36 +150,35 @@ func (i *Injector) getNode(typ reflect.Type) (node node, _ error) {
 	return node, nil
 }
 
-func (i *Injector) out(n *provideNode) ([]node, error) {
-	var successors []node
-
-	_, found := i.getNode(n.resultType)
-	if found != nil {
-		return successors, fmt.Errorf("%s not found", n.resultType)
-	}
-
-	for _, v := range n.out {
-		successors = append(successors, v)
-	}
-
-	return successors, nil
-}
-
-// predecessors return vertices that are in of a given vertex.
-func (i *Injector) in(n *provideNode) ([]node, error) {
-	var predecessors []node
-
-	_, found := i.getNode(n.resultType)
-	if found != nil {
-		return predecessors, fmt.Errorf("%s not found", n.resultType)
-	}
-
-	for _, v := range n.in {
-		predecessors = append(predecessors, v)
-	}
-
-	return predecessors, nil
-}
+// func (i *Injector) out(n *provideNode) ([]node, error) {
+// 	var successors []node
+//
+// 	_, found := i.get(n.resultType)
+// 	if found != nil {
+// 		return successors, fmt.Errorf("%s not found", n.resultType)
+// 	}
+//
+// 	for _, v := range n.out {
+// 		successors = append(successors, v)
+// 	}
+//
+// 	return successors, nil
+// }
+//
+// func (i *Injector) in(n *provideNode) ([]node, error) {
+// 	var predecessors []node
+//
+// 	_, found := i.get(n.resultType)
+// 	if found != nil {
+// 		return predecessors, fmt.Errorf("%s not found", n.resultType)
+// 	}
+//
+// 	for _, v := range n.in {
+// 		predecessors = append(predecessors, v)
+// 	}
+//
+// 	return predecessors, nil
+// }
 
 //
 // // String implements stringer interface.

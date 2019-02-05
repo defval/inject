@@ -7,13 +7,6 @@ func Provide(providers ...interface{}) Option {
 	})
 }
 
-// Populate ...
-func Populate(targets ...interface{}) Option {
-	return option(func(c *Injector) {
-
-	})
-}
-
 // Bind ...
 func Bind(bindings ...interface{}) Option {
 	return option(func(c *Injector) {

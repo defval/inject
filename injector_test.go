@@ -2,7 +2,9 @@ package injector
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"net/rpc"
 	"testing"
 
 	"github.com/defval/injector/testdata/controllers"
@@ -61,7 +63,7 @@ var injectionTable = []InjectionTestCase{
 		Error: "string already injected",
 	},
 	{
-		Name: "InjectStructPointer",
+		Name: "InjectPointer",
 		Injections: []interface{}{
 			func(server *http.Server, handler http.Handler) bool {
 				return server.Handler == handler
@@ -86,7 +88,7 @@ var injectionTable = []InjectionTestCase{
 		Error: "bool not found",
 	},
 	{
-		Name: "NotResolvedInjection",
+		Name: "InjectNotExistingType",
 		Injections: []interface{}{
 			func(handler http.Handler) bool {
 				_, ok := handler.(*http.ServeMux)
@@ -99,7 +101,7 @@ var injectionTable = []InjectionTestCase{
 		Error: "http.Handler not found",
 	},
 	{
-		Name: "BindInterface",
+		Name: "Bind",
 		Injections: []interface{}{
 			func(handler http.Handler) bool {
 				_, ok := handler.(*http.ServeMux)
@@ -112,6 +114,54 @@ var injectionTable = []InjectionTestCase{
 		Bindings: [][]interface{}{
 			{new(http.Handler), &http.ServeMux{}},
 		},
+	},
+	{
+		Name: "BindDuplicate",
+		Injections: []interface{}{
+			func() bool {
+				return true
+			},
+			func() *http.ServeMux {
+				return http.NewServeMux()
+			},
+			func() *rpc.Server {
+				return rpc.NewServer()
+			},
+		},
+		Bindings: [][]interface{}{
+			{new(http.Handler), &http.ServeMux{}},
+			{new(http.Handler), &rpc.Server{}},
+		},
+		Error: "http.Handler already injected",
+	},
+	{
+		Name: "BindGroup",
+		Injections: []interface{}{
+			func(addrs []net.Addr) bool {
+				return len(addrs) == 2
+			},
+			func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			},
+			func() *net.UDPAddr {
+				return &net.UDPAddr{}
+			},
+		},
+		Bindings: [][]interface{}{
+			{new(net.Addr), &net.TCPAddr{}, &net.UDPAddr{}},
+		},
+	},
+	{
+		Name: "BuildError",
+		Injections: []interface{}{
+			func(server *http.Server) bool {
+				return true
+			},
+			func() (*http.Server, error) {
+				return nil, fmt.Errorf("build error")
+			},
+		},
+		Error: "*http.Server build error: build error",
 	},
 	// {
 	// 	Name: "InjectError",
@@ -128,70 +178,82 @@ var injectionTable = []InjectionTestCase{
 }
 
 // TestNew
-func TestNew(t *testing.T) {
+func TestInjector(t *testing.T) {
 
 	// Injection
-	t.Run("Injection", func(t *testing.T) {
-		for _, row := range injectionTable {
-			t.Run(row.Name, func(t *testing.T) {
-				var options []Option
+	for _, row := range injectionTable {
+		t.Run(row.Name, func(t *testing.T) {
+			var options []Option
 
-				options = append(options, Provide(row.Injections...))
+			options = append(options, Provide(row.Injections...))
 
-				for _, bindingSet := range row.Bindings {
-					options = append(options, Bind(bindingSet...))
-				}
+			for _, bindingSet := range row.Bindings {
+				options = append(options, Bind(bindingSet...))
+			}
 
-				var injector, err = New(
-					options...,
-				)
+			var injector, err = New(
+				options...,
+			)
 
-				if err != nil && row.Error == "" {
+			if err != nil && row.Error == "" {
+				assert.FailNow(t, err.Error())
+			}
+
+			var result bool
+			if row.Error == "" {
+				if err = injector.Populate(&result); err != nil {
 					assert.FailNow(t, err.Error())
 				}
 
-				var result bool
-				if row.Error == "" {
-					if err = injector.Populate(&result); err != nil {
-						assert.FailNow(t, err.Error())
-					}
-
-					assert.EqualValues(t, true, result)
-				} else {
+				assert.EqualValues(t, true, result)
+			} else {
+				if err != nil {
 					assert.EqualError(t, err, row.Error)
+				} else {
+					assert.EqualError(t, injector.Populate(&result), row.Error)
 				}
+			}
 
-			})
-		}
-	})
+		})
+	}
+}
 
-	t.Run("TestApp", func(t *testing.T) {
+func TestApp(t *testing.T) {
+	t.Run("DummyApplication", func(t *testing.T) {
 		var container, err = New(
 			// HTTP
-			Provide(
-				mux.NewHandler,
-				mux.NewServer,
-			),
-			// Product
-			Provide(
-				controllers.NewProductController,
-				memory.NewProductRepository,
-			),
-			// Order
-			Provide(
-				memory.NewOrderRepository,
-				order.NewInteractor,
-				controllers.NewOrderController,
-			),
-			// Controllers
-			Bind(new(order.Repository), new(memory.OrderRepository)),
-			Bind(new(product.Repository), new(memory.ProductRepository)),
+			Bundle(
+				Provide(
+					mux.NewHandler,
+					mux.NewServer,
+				),
+				Bind(new(http.Handler), new(mux.Handler)),
 
-			Bind(new(mux.Controller),
-				new(controllers.ProductController),
-				new(controllers.OrderController),
+				// Controllers
+				Bind(new(mux.Controller),
+					new(controllers.ProductController),
+					new(controllers.OrderController),
+				),
 			),
-			Bind(new(http.Handler), new(mux.Handler)),
+
+			// Product
+			Bundle(
+				Provide(
+					controllers.NewProductController,
+					memory.NewProductRepository,
+				),
+				Bind(new(product.Repository), new(memory.ProductRepository)),
+			),
+
+			// Order
+			Bundle(
+				Provide(
+					memory.NewOrderRepository,
+					order.NewInteractor,
+					controllers.NewOrderController,
+				),
+				Bind(new(order.Repository), new(memory.OrderRepository)),
+			),
 		)
 
 		if err != nil {
@@ -200,42 +262,23 @@ func TestNew(t *testing.T) {
 
 		var server *http.Server
 		if err = container.Populate(&server); err != nil {
-			assert.Fail(t, err.Error())
+			assert.FailNow(t, err.Error())
 		}
 
 		assert.NotNil(t, server)
-	})
 
-	//
-	// t.Run("PopulateMultipleInterfaceImplementation", func(t *testing.T) {
-	// 	type stringer interface {
-	// 		s() string
-	// 	}
-	//
-	// 	var stringers []stringer
-	//
-	// 	var container = New(
-	// 		Provide(
-	// 			func() FirstStringer {
-	// 				return FirstStringer("first")
-	// 			},
-	// 			func() SecondStringer {
-	// 				return SecondStringer("first")
-	// 			},
-	// 		),
-	// 		Bind(new(stringer), new(FirstStringer), new(SecondStringer)),
-	// 		Populate(&stringers),
-	// 	)
-	//
-	// 	// Err
-	// 	if err := container.Error(); err != nil {
-	// 		assert.FailNow(t, "%s", err)
-	// 	}
-	//
-	// 	assert.Len(t, stringers, 2)
-	//
-	// 	for _, s := range stringers {
-	// 		assert.Implements(t, new(stringer), s)
-	// 	}
-	// })
+		var cs []mux.Controller
+		if err = container.Populate(&cs); err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		assert.Len(t, cs, 2)
+
+		var products order.Repository
+		if err = container.Populate(&products); err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		assert.NotNil(t, products)
+	})
 }
