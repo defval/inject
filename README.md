@@ -18,46 +18,50 @@ import (
 )
 
 func main() {
-    var container, err = injector.New(
-        // HTTP
-        injector.Provide(
-            mux.NewHandler,
-            mux.NewServer,
-        ),
-        // Product
-        injector.Provide(
-            controllers.NewProductController,
-            memory.NewProductRepository,
-        ),
-        // Order
-        injector.Provide(
-            memory.NewOrderRepository,
-            order.NewInteractor,
-            controllers.NewOrderController,
-        ),
-        // Controllers
-        injector.Bind(new(order.Repository), new(memory.OrderRepository)),
-        injector.Bind(new(product.Repository), new(memory.ProductRepository)),
-    
-        injector.Bind(new(mux.Controller),
-            new(controllers.ProductController),
-            new(controllers.OrderController),
-        ),
-        injector.Bind(new(http.Handler), new(mux.Handler)),
-    )
-    
-    if err != nil {
-    	log.Fatal(err.Error())
-    }
+	var container, err = injector.New(
+		// HTTP
+		injector.Provide(
+			mux.NewHandler,
+			mux.NewServer,
+		),
+		// Product
+		injector.Provide(
+			controllers.NewProductController,
+			memory.NewProductRepository,
+		),
+		// Order
+		injector.Provide(
+			memory.NewOrderRepository,
+			order.NewInteractor,
+			controllers.NewOrderController,
+		),
 
-    var server *http.Server
-    if err = container.Populate(&server); err != nil {
-        log.Fatal(err.Error())
-    }
+		// Binds
+		injector.Bind(new(order.Repository), &memory.OrderRepository{}),
+		injector.Bind(new(product.Repository), &memory.ProductRepository{}),
+		injector.Bind(new(http.Handler), &mux.Handler{}),
 
-    if err = server.ListenAndServe(); err != nil {
-        log.Fatal(err.Error())
-    }
+		// Controllers
+		injector.Group(new(mux.Controller),
+			&controllers.ProductController{},
+			&controllers.OrderController{},
+		),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var server *http.Server
+	if err = container.Populate(&server); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Successful run")
+
+	if err = server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 ```
