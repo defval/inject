@@ -37,7 +37,7 @@ func main() {
 		injector.Bind(new(http.Handler), &mux.Handler{}),
 
 		// Controllers
-		injector.Bind(new(mux.Controller),
+		injector.Group(new(mux.Controller),
 			&controllers.ProductController{},
 			&controllers.OrderController{},
 		),
@@ -51,6 +51,8 @@ func main() {
 	if err = container.Populate(&server); err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("Successful run")
 
 	if err = server.ListenAndServe(); err != nil {
 		log.Fatal(err)

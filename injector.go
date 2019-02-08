@@ -5,6 +5,8 @@ import (
 	"log"
 	"reflect"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // New creates new container
@@ -17,42 +19,20 @@ func New(options ...Option) (_ *Injector, err error) {
 		opt.apply(injector)
 	}
 
-	for _, provider := range injector.providers {
-		var provide = newProvide(provider)
-
-		if err = injector.add(provide); err != nil {
-			return nil, err
-		}
+	if err = injector.processProviders(); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
-	for _, binding := range injector.binders {
-		if len(binding) == 2 {
-			var bind = newBind(binding[0], binding[1])
-
-			if err = injector.add(bind); err != nil {
-				return nil, err
-			}
-		} else {
-			var group = newGroup(binding...)
-
-			if err = injector.add(group); err != nil {
-				return nil, err
-			}
-		}
+	if err = injector.processBindings(); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
-	for _, node := range injector.nodes {
-		for _, arg := range node.Args() {
-			arg, err := injector.get(arg)
+	if err = injector.processGroups(); err != nil {
+		return nil, errors.WithStack(err)
+	}
 
-			if err != nil {
-				return nil, err
-			}
-
-			if err = injector.connect(arg, node); err != nil {
-				return nil, err
-			}
-		}
+	if err = injector.connectNodes(); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	log.Printf("BUILDED")
@@ -63,9 +43,11 @@ func New(options ...Option) (_ *Injector, err error) {
 
 // Injector ...
 type Injector struct {
-	lock      sync.Mutex
+	lock sync.Mutex
+
 	providers []interface{}
-	binders   [][]interface{}
+	bindings  [][]interface{}
+	groups    []*group
 
 	nodes map[reflect.Type]node
 }
@@ -73,19 +55,83 @@ type Injector struct {
 // Populate
 func (i *Injector) Populate(targets ...interface{}) (err error) {
 	for _, target := range targets {
-		var v = reflect.ValueOf(target).Elem()
+		var targetValue = reflect.ValueOf(target).Elem()
 
 		var node node
-		if node, err = i.get(v.Type()); err != nil {
-			return fmt.Errorf("could not populate `%s`", v.Type())
+		if node, err = i.get(targetValue.Type()); err != nil {
+			return errors.WithStack(err)
 		}
 
 		var instance reflect.Value
 		if instance, err = node.Instance(0); err != nil {
-			return fmt.Errorf("%s", err)
+			return errors.Wrapf(err, "%s", targetValue.Type())
 		}
 
-		v.Set(instance)
+		targetValue.Set(instance)
+
+		log.Println()
+	}
+
+	return nil
+}
+
+func (i *Injector) processProviders() (err error) {
+	for _, provider := range i.providers {
+		var provide *provideNode
+		if provide, err = newProvide(provider); err != nil {
+			return errors.WithStack(err)
+		}
+
+		if err = i.add(provide); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
+}
+
+func (i *Injector) processBindings() (err error) {
+	for _, binding := range i.bindings {
+		if len(binding) == 2 {
+			var bind = newBind(binding[0], binding[1])
+
+			if err = i.add(bind); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (i *Injector) processGroups() (err error) {
+	for _, group := range i.groups {
+		var node *groupNode
+		if node, err = newGroup(group.of, group.members...); err != nil {
+			return errors.WithStack(err)
+		}
+
+		if err = i.add(node); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
+}
+
+func (i *Injector) connectNodes() (err error) {
+	for _, node := range i.nodes {
+		for _, arg := range node.Args() {
+			arg, err := i.get(arg)
+
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			if err = i.connect(arg, node); err != nil {
+				return errors.WithStack(err)
+			}
+		}
 	}
 
 	return nil

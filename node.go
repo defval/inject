@@ -1,11 +1,12 @@
 package injector
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // node
@@ -61,8 +62,25 @@ func (n *baseNode) Out() []node {
 }
 
 // newProvide
-func newProvide(ctor interface{}) *provideNode {
+func newProvide(ctor interface{}) (_ *provideNode, err error) {
+	if ctor == nil {
+		return nil, errors.New("nil could not be injected")
+	}
+
 	var ctype = reflect.TypeOf(ctor)
+
+	if ctype.Kind() != reflect.Func {
+		return nil, errors.Errorf("inject argument must be a function, got %s", ctype.String())
+	}
+
+	if ctype.NumOut() <= 0 || ctype.NumOut() > 2 {
+		return nil, errors.Errorf("injection argument must be a function with returned value and optional error")
+	}
+
+	if ctype.NumOut() == 2 && ctype.Out(1).String() != "error" {
+		return nil, errors.Errorf("injection argument must be a function with returned value and optional error")
+	}
+
 	var cvalue = reflect.ValueOf(ctor)
 	var cptr = cvalue.Pointer()
 	var cfunc = runtime.FuncForPC(cvalue.Pointer())
@@ -83,7 +101,7 @@ func newProvide(ctor interface{}) *provideNode {
 			resultType: ctype.Out(0),
 			args:       arguments,
 		},
-	}
+	}, nil
 }
 
 // provideNode
@@ -100,23 +118,8 @@ type provideNode struct {
 // Instance
 func (n *provideNode) Instance(level int) (_ reflect.Value, err error) {
 	if n.instance != nil {
-		return *n.instance, err
+		return *n.instance, nil
 	}
-
-	// var builder = strings.Builder{}
-	//
-	// builder.WriteString(n.resultType.String())
-	//
-	// for i, in := range n.in {
-	// 	builder.WriteString("(")
-	// 	builder.WriteString(in.Type().String())
-	// 	if i != len(n.in)-1 {
-	// 		builder.WriteString(", ")
-	// 	}
-	// 	builder.WriteString(")")
-	// }
-	//
-	// log.Println(builder.String())
 
 	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
 
@@ -124,7 +127,7 @@ func (n *provideNode) Instance(level int) (_ reflect.Value, err error) {
 	for _, in := range n.in {
 		var value reflect.Value
 		if value, err = in.Instance(level + 1); err != nil {
-			return value, fmt.Errorf("%s build error: %s", in.Type(), err)
+			return value, errors.Wrapf(err, "%s", in.Type())
 		}
 		values = append(values, value)
 	}
@@ -133,9 +136,11 @@ func (n *provideNode) Instance(level int) (_ reflect.Value, err error) {
 	n.instance = &result[0]
 
 	if len(result) == 2 {
-		fmt.Println(result[1].Interface().(error))
+		if result[1].IsNil() {
+			return *n.instance, nil
+		}
 
-		return *n.instance, result[1].Interface().(error)
+		return *n.instance, errors.WithStack(result[1].Interface().(error))
 	}
 
 	return *n.instance, nil
@@ -156,23 +161,22 @@ func (n *provideNode) Instance(level int) (_ reflect.Value, err error) {
 // 	return result
 // }
 
-func newGroup(bindings ...interface{}) *groupNode {
-	if len(bindings) < 2 {
-		panic("need two types to bind")
+func newGroup(of interface{}, members ...interface{}) (_ *groupNode, err error) {
+	if of == nil {
+		return nil, errors.Errorf("group of must be a interface pointer like new(http.Handler)")
 	}
 
 	var args []reflect.Type
-	for _, impl := range bindings[1:] {
-		var implType = reflect.TypeOf(impl)
-		args = append(args, implType)
+	for _, member := range members {
+		args = append(args, reflect.TypeOf(member))
 	}
 
 	return &groupNode{
 		baseNode: &baseNode{
-			resultType: reflect.SliceOf(reflect.TypeOf(bindings[0]).Elem()),
+			resultType: reflect.SliceOf(reflect.TypeOf(of).Elem()),
 			args:       args,
 		},
-	}
+	}, nil
 }
 
 type groupNode struct {
@@ -191,7 +195,7 @@ func (n *groupNode) Instance(level int) (_ reflect.Value, err error) {
 	for _, in := range n.in {
 		var value reflect.Value
 		if value, err = in.Instance(level + 1); err != nil {
-			return value, fmt.Errorf("%s", err)
+			return value, errors.Wrapf(err, "%s", in.Type())
 		}
 		values = append(values, value)
 	}
@@ -229,7 +233,7 @@ func (n *bindNode) Instance(level int) (value reflect.Value, err error) {
 	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
 
 	if value, err = n.in[0].Instance(level + 1); err != nil {
-		return value, fmt.Errorf("%s", err)
+		return value, errors.Wrapf(err, "%s", n.in[0].Type())
 	}
 
 	n.instance = &value

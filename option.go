@@ -2,15 +2,25 @@ package injector
 
 // Provide ...
 func Provide(providers ...interface{}) Option {
-	return option(func(c *Injector) {
-		c.providers = append(c.providers, providers...)
+	return option(func(injector *Injector) {
+		injector.providers = append(injector.providers, providers...)
 	})
 }
 
 // Bind ...
 func Bind(bindings ...interface{}) Option {
-	return option(func(c *Injector) {
-		c.binders = append(c.binders, bindings)
+	return option(func(injector *Injector) {
+		injector.bindings = append(injector.bindings, bindings)
+	})
+}
+
+// Group
+func Group(of interface{}, members ...interface{}) Option {
+	return option(func(injector *Injector) {
+		injector.groups = append(injector.groups, &group{
+			of:      of,
+			members: members,
+		})
 	})
 }
 
