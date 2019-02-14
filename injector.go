@@ -171,6 +171,7 @@ func (i *Injector) connect(n1, n2 node) error {
 	if !dependencyExist {
 		return fmt.Errorf("%s not found", n1.Type())
 	}
+
 	if !nodeExists {
 		return fmt.Errorf("%s not found", n2.Type())
 	}

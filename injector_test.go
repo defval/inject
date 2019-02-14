@@ -7,11 +7,6 @@ import (
 	"net/rpc"
 	"testing"
 
-	"github.com/defval/injector/testdata/controllers"
-	"github.com/defval/injector/testdata/mux"
-	"github.com/defval/injector/testdata/order"
-	"github.com/defval/injector/testdata/product"
-	"github.com/defval/injector/testdata/storage/memory"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,6 +20,34 @@ type InjectionTestCase struct {
 
 // testCases
 var testCases = []InjectionTestCase{
+	{
+		Name: "Bundle",
+		Options: []Option{
+			Provide(
+				func(addrs []net.Addr, s string) bool {
+					return (len(addrs) == 2) && (s == "dude")
+				},
+			),
+			Bundle(
+				Provide(
+					func() *net.TCPAddr {
+						return &net.TCPAddr{}
+					},
+					func() *net.UDPAddr {
+						return &net.UDPAddr{}
+					},
+				),
+				Group(new(net.Addr), &net.TCPAddr{}, &net.UDPAddr{}),
+			),
+			Bundle(
+				Provide(
+					func() string {
+						return "dude"
+					},
+				),
+			),
+		},
+	},
 	{
 		Name:    "PopulateNotExist",
 		Options: []Option{},
@@ -307,69 +330,4 @@ func TestInjector(t *testing.T) {
 
 		})
 	}
-}
-
-func TestApp(t *testing.T) {
-	t.Run("DummyApplication", func(t *testing.T) {
-		var container, err = New(
-			// HTTP
-			Bundle(
-				Provide(
-					mux.NewHandler,
-					mux.NewServer,
-				),
-				Bind(new(http.Handler), new(mux.Handler)),
-
-				// Controllers
-				Group(new(mux.Controller),
-					new(controllers.ProductController),
-					new(controllers.OrderController),
-				),
-			),
-
-			// Product
-			Bundle(
-				Provide(
-					controllers.NewProductController,
-					memory.NewProductRepository,
-				),
-				Bind(new(product.Repository), new(memory.ProductRepository)),
-			),
-
-			// Order
-			Bundle(
-				Provide(
-					memory.NewOrderRepository,
-					order.NewInteractor,
-					controllers.NewOrderController,
-				),
-				Bind(new(order.Repository), new(memory.OrderRepository)),
-			),
-		)
-
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		var server *http.Server
-		if err = container.Populate(&server); err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		assert.NotNil(t, server)
-
-		var cs []mux.Controller
-		if err = container.Populate(&cs); err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		assert.Len(t, cs, 2)
-
-		var products order.Repository
-		if err = container.Populate(&products); err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		assert.NotNil(t, products)
-	})
 }
