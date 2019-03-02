@@ -1,4 +1,4 @@
-package injector
+package inject
 
 // group
 type group struct {

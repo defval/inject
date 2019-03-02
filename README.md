@@ -1,6 +1,6 @@
 # Injector
-[![Build Status](https://img.shields.io/travis/defval/injector.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/injector)
-[![Code Coverage](https://img.shields.io/codecov/c/github/defval/injector.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/injector)
+[![Build Status](https://img.shields.io/travis/defval/inject.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/inject)
+[![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/inject)
 
 ```go
 package main
@@ -9,40 +9,40 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/defval/injector"
-	"github.com/defval/injector/testdata/controllers"
-	"github.com/defval/injector/testdata/mux"
-	"github.com/defval/injector/testdata/order"
-	"github.com/defval/injector/testdata/product"
-	"github.com/defval/injector/testdata/storage/memory"
+	"github.com/defval/inject"
+	"github.com/defval/inject/testdata/controllers"
+	"github.com/defval/inject/testdata/mux"
+	"github.com/defval/inject/testdata/order"
+	"github.com/defval/inject/testdata/product"
+	"github.com/defval/inject/testdata/storage/memory"
 )
 
 func main() {
-	var container, err = injector.New(
+	var container, err = inject.New(
 		// HTTP
-		injector.Provide(
+		inject.Provide(
 			mux.NewHandler,
 			mux.NewServer,
 		),
 		// Product
-		injector.Provide(
+		inject.Provide(
 			controllers.NewProductController,
 			memory.NewProductRepository,
 		),
 		// Order
-		injector.Provide(
+		inject.Provide(
 			memory.NewOrderRepository,
 			order.NewInteractor,
 			controllers.NewOrderController,
 		),
 
 		// Binds
-		injector.Bind(new(order.Repository), &memory.OrderRepository{}),
-		injector.Bind(new(product.Repository), &memory.ProductRepository{}),
-		injector.Bind(new(http.Handler), &mux.Handler{}),
+		inject.Bind(new(order.Repository), &memory.OrderRepository{}),
+		inject.Bind(new(product.Repository), &memory.ProductRepository{}),
+		inject.Bind(new(http.Handler), &mux.Handler{}),
 
 		// Controllers
-		injector.Group(new(mux.Controller),
+		inject.Group(new(mux.Controller),
 			&controllers.ProductController{},
 			&controllers.OrderController{},
 		),

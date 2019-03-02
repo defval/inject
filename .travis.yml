@@ -1,4 +1,4 @@
-go_import_path: github.com/defval/injector
+go_import_path: github.com/defval/inject
 
 language: go
 

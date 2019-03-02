@@ -1,4 +1,4 @@
-package injector
+package inject
 
 import (
 	"fmt"
@@ -20,6 +20,17 @@ type InjectionTestCase struct {
 
 // testCases
 var testCases = []InjectionTestCase{
+	// {
+	// 	Name: "Cycle",
+	// 	Options: []Option{
+	// 		Provide(
+	// 			func() bool {
+	// 				return true
+	// 			},
+	// 			func() {},
+	// 		),
+	// 	},
+	// },
 	{
 		Name: "Bundle",
 		Options: []Option{

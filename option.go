@@ -1,4 +1,4 @@
-package injector
+package inject
 
 // Provide ...
 func Provide(providers ...interface{}) Option {
