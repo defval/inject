@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -43,8 +42,6 @@ func New(options ...Option) (_ *Injector, err error) {
 
 // Injector ...
 type Injector struct {
-	lock sync.Mutex
-
 	providers []interface{}
 	bindings  [][]interface{}
 	groups    []*group
@@ -138,9 +135,6 @@ func (i *Injector) connectNodes() (err error) {
 }
 
 func (i *Injector) add(node *node) (err error) {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-
 	log.Printf("INJECT: %s", node.resultType)
 
 	if _, ok := i.nodes[node.resultType]; ok {
@@ -155,9 +149,6 @@ func (i *Injector) add(node *node) (err error) {
 func (i *Injector) connect(n1, n2 *node) error {
 	dependencyExist := false
 	nodeExists := false
-
-	i.lock.Lock()
-	defer i.lock.Unlock()
 
 	for _, cur := range i.nodes {
 		if cur == n1 {
