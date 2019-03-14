@@ -3,66 +3,19 @@ package inject
 import (
 	"log"
 	"reflect"
-	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
 )
 
-// node
-type node interface {
-	Instance(level int) (value reflect.Value, err error)
-	Type() reflect.Type
-	Args() []reflect.Type
-	AddIn(node node)
-	AddOut(node node)
-	In() []node
-	Out() []node
-}
+const (
+	nodeTypeProvider = iota + 1
+	nodeTypeGroup
+	nodeTypeBind
+)
 
-type baseNode struct {
-	node
-	resultType reflect.Type
-	args       []reflect.Type // arguments types
-
-	in  []node
-	out []node
-
-	instance *reflect.Value
-}
-
-// Type
-func (n *baseNode) Type() reflect.Type {
-	return n.resultType
-}
-
-// Args
-func (n *baseNode) Args() []reflect.Type {
-	return n.args
-}
-
-// AddIn
-func (n *baseNode) AddIn(node node) {
-	n.in = append(n.in, node)
-}
-
-// AddOut
-func (n *baseNode) AddOut(node node) {
-	n.out = append(n.out, node)
-}
-
-// In
-func (n *baseNode) In() []node {
-	return n.in
-}
-
-// Out
-func (n *baseNode) Out() []node {
-	return n.out
-}
-
-// newProvide
-func newProvide(ctor interface{}) (_ *provideNode, err error) {
+// newProvider
+func newProvider(ctor interface{}) (_ *node, err error) {
 	if ctor == nil {
 		return nil, errors.New("nil could not be injected")
 	}
@@ -81,87 +34,25 @@ func newProvide(ctor interface{}) (_ *provideNode, err error) {
 		return nil, errors.Errorf("injection argument must be a function with returned value and optional error")
 	}
 
-	var cvalue = reflect.ValueOf(ctor)
-	var cptr = cvalue.Pointer()
-	var cfunc = runtime.FuncForPC(cvalue.Pointer())
-	var cname = cfunc.Name()
+	// var cptr = cvalue.Pointer()
+	// var cfunc = runtime.FuncForPC(cvalue.Pointer())
+	// var cname = cfunc.Name()
+
 	var arguments = make([]reflect.Type, 0)
 
 	for i := 0; i < ctype.NumIn(); i++ {
 		arguments = append(arguments, ctype.In(i))
 	}
 
-	return &provideNode{
-		ctype:  ctype,
-		cvalue: reflect.ValueOf(ctor),
-		cptr:   cptr,
-		cfunc:  cfunc,
-		cname:  cname,
-		baseNode: &baseNode{
-			resultType: ctype.Out(0),
-			args:       arguments,
-		},
+	return &node{
+		nodeType:   nodeTypeProvider,
+		provider:   reflect.ValueOf(ctor),
+		resultType: ctype.Out(0),
+		args:       arguments,
 	}, nil
 }
 
-// provideNode
-type provideNode struct {
-	ctype  reflect.Type
-	cvalue reflect.Value
-	cptr   uintptr
-	cfunc  *runtime.Func
-	cname  string
-
-	*baseNode
-}
-
-// Instance
-func (n *provideNode) Instance(level int) (_ reflect.Value, err error) {
-	if n.instance != nil {
-		return *n.instance, nil
-	}
-
-	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
-
-	var values []reflect.Value
-	for _, in := range n.in {
-		var value reflect.Value
-		if value, err = in.Instance(level + 1); err != nil {
-			return value, errors.Wrapf(err, "%s", in.Type())
-		}
-		values = append(values, value)
-	}
-
-	var result = n.cvalue.Call(values)
-	n.instance = &result[0]
-
-	if len(result) == 2 {
-		if result[1].IsNil() {
-			return *n.instance, nil
-		}
-
-		return *n.instance, errors.WithStack(result[1].Interface().(error))
-	}
-
-	return *n.instance, nil
-}
-
-//
-// func (n *provideNode) instability() float64 {
-// 	if len(n.in) == 0 && len(n.out) == 0 {
-// 		return -1
-// 	}
-//
-// 	return float64(len(n.in) / (len(n.in) + len(n.out)))
-// }
-//
-// func (n *provideNode) String() string {
-// 	result := fmt.Sprintf("%s in: %d out: %d instability: %.2f\n", n.resultType.String(), len(n.in), len(n.out), n.instability())
-//
-// 	return result
-// }
-
-func newGroup(of interface{}, members ...interface{}) (_ *groupNode, err error) {
+func newGroup(of interface{}, members ...interface{}) (_ *node, err error) {
 	if of == nil {
 		return nil, errors.Errorf("group of must be a interface pointer like new(http.Handler)")
 	}
@@ -171,74 +62,125 @@ func newGroup(of interface{}, members ...interface{}) (_ *groupNode, err error) 
 		args = append(args, reflect.TypeOf(member))
 	}
 
-	return &groupNode{
-		baseNode: &baseNode{
-			resultType: reflect.SliceOf(reflect.TypeOf(of).Elem()),
-			args:       args,
-		},
+	return &node{
+		nodeType:   nodeTypeGroup,
+		resultType: reflect.SliceOf(reflect.TypeOf(of).Elem()),
+		args:       args,
 	}, nil
 }
 
-type groupNode struct {
-	*baseNode
-}
-
-// Instance
-func (n *groupNode) Instance(level int) (_ reflect.Value, err error) {
-	if n.instance != nil {
-		return *n.instance, err
-	}
-
-	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
-
-	var values []reflect.Value
-	for _, in := range n.in {
-		var value reflect.Value
-		if value, err = in.Instance(level + 1); err != nil {
-			return value, errors.Wrapf(err, "%s", in.Type())
-		}
-		values = append(values, value)
-	}
-
-	elemSlice := reflect.MakeSlice(n.resultType, 0, 10)
-	elemSlice = reflect.Append(elemSlice, values...)
-
-	n.instance = &elemSlice
-
-	return *n.instance, err
-}
-
-func newBind(target interface{}, source interface{}) *bindNode {
+func newBind(target interface{}, source interface{}) *node {
 	var args []reflect.Type
 	var implType = reflect.TypeOf(source)
 	args = append(args, implType)
 
-	return &bindNode{
-		baseNode: &baseNode{
-			resultType: reflect.TypeOf(target).Elem(),
-			args:       args,
-		},
+	return &node{
+		nodeType:   nodeTypeBind,
+		resultType: reflect.TypeOf(target).Elem(),
+		args:       args,
 	}
 }
 
-type bindNode struct {
-	*baseNode
+// node
+type node struct {
+	nodeType int
+	provider reflect.Value // only for nodes with provider type
+
+	resultType reflect.Type
+	args       []reflect.Type // arguments types
+
+	in  []*node
+	out []*node
+
+	instance *reflect.Value
 }
 
-func (n *bindNode) Instance(level int) (value reflect.Value, err error) {
+// addIn
+func (n *node) addIn(node *node) {
+	n.in = append(n.in, node)
+}
+
+// addOut
+func (n *node) addOut(node *node) {
+	n.out = append(n.out, node)
+}
+
+//
+// func (n *providerNode) instability() float64 {
+// 	if len(n.in) == 0 && len(n.out) == 0 {
+// 		return -1
+// 	}
+//
+// 	return float64(len(n.in) / (len(n.in) + len(n.out)))
+// }
+//
+// func (n *providerNode) String() string {
+// 	result := fmt.Sprintf("%s in: %d out: %d instability: %.2f\n", n.resultType.String(), len(n.in), len(n.out), n.instability())
+//
+// 	return result
+// }
+
+func (n *node) get(depth int) (value reflect.Value, err error) {
 	if n.instance != nil {
+		return *n.instance, nil
+	}
+
+	switch n.nodeType {
+	case nodeTypeProvider:
+		log.Print(Pad, strings.Repeat(LevelSymbol, depth), n.resultType.String())
+
+		var values []reflect.Value
+		for _, in := range n.in {
+			var value reflect.Value
+			if value, err = in.get(depth + 1); err != nil {
+				return value, errors.Wrapf(err, "%s", in.resultType)
+			}
+			values = append(values, value)
+		}
+
+		var result = n.provider.Call(values)
+		n.instance = &result[0]
+
+		if len(result) == 2 {
+			if result[1].IsNil() {
+				return *n.instance, nil
+			}
+
+			return *n.instance, errors.WithStack(result[1].Interface().(error))
+		}
+
+		return *n.instance, nil
+	case nodeTypeGroup:
+		log.Print(Pad, strings.Repeat(LevelSymbol, depth), n.resultType.String())
+
+		var values []reflect.Value
+		for _, in := range n.in {
+			var value reflect.Value
+			if value, err = in.get(depth + 1); err != nil {
+				return value, errors.Wrapf(err, "%s", in.resultType)
+			}
+			values = append(values, value)
+		}
+
+		elemSlice := reflect.MakeSlice(n.resultType, 0, 10)
+		elemSlice = reflect.Append(elemSlice, values...)
+
+		n.instance = &elemSlice
+
+		return *n.instance, err
+	case nodeTypeBind:
+		log.Print(Pad, strings.Repeat(LevelSymbol, depth), n.resultType.String())
+
+		if value, err = n.in[0].get(depth + 1); err != nil {
+			return value, errors.Wrapf(err, "%s", n.in[0].resultType)
+		}
+
+		n.instance = &value
+
 		return *n.instance, err
 	}
 
-	log.Print(Pad, strings.Repeat(LevelSymbol, level), n.resultType.String())
-
-	if value, err = n.in[0].Instance(level + 1); err != nil {
-		return value, errors.Wrapf(err, "%s", n.in[0].Type())
-	}
-
-	n.instance = &value
-
-	return *n.instance, err
+	panic("unknown node type")
 }
 
 const Pad = " "

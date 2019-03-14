@@ -12,7 +12,7 @@ import (
 // New creates new container
 func New(options ...Option) (_ *Injector, err error) {
 	var injector = &Injector{
-		nodes: make(map[reflect.Type]node),
+		nodes: make(map[reflect.Type]*node),
 	}
 
 	for _, opt := range options {
@@ -49,7 +49,7 @@ type Injector struct {
 	bindings  [][]interface{}
 	groups    []*group
 
-	nodes map[reflect.Type]node
+	nodes map[reflect.Type]*node
 }
 
 // Populate
@@ -57,13 +57,13 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 	for _, target := range targets {
 		var targetValue = reflect.ValueOf(target).Elem()
 
-		var node node
+		var node *node
 		if node, err = i.get(targetValue.Type()); err != nil {
 			return errors.WithStack(err)
 		}
 
 		var instance reflect.Value
-		if instance, err = node.Instance(0); err != nil {
+		if instance, err = node.get(0); err != nil {
 			return errors.Wrapf(err, "%s", targetValue.Type())
 		}
 
@@ -77,8 +77,8 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 
 func (i *Injector) processProviders() (err error) {
 	for _, provider := range i.providers {
-		var provide *provideNode
-		if provide, err = newProvide(provider); err != nil {
+		var provide *node
+		if provide, err = newProvider(provider); err != nil {
 			return errors.WithStack(err)
 		}
 
@@ -106,7 +106,7 @@ func (i *Injector) processBindings() (err error) {
 
 func (i *Injector) processGroups() (err error) {
 	for _, group := range i.groups {
-		var node *groupNode
+		var node *node
 		if node, err = newGroup(group.of, group.members...); err != nil {
 			return errors.WithStack(err)
 		}
@@ -121,7 +121,7 @@ func (i *Injector) processGroups() (err error) {
 
 func (i *Injector) connectNodes() (err error) {
 	for _, node := range i.nodes {
-		for _, arg := range node.Args() {
+		for _, arg := range node.args {
 			arg, err := i.get(arg)
 
 			if err != nil {
@@ -137,22 +137,22 @@ func (i *Injector) connectNodes() (err error) {
 	return nil
 }
 
-func (i *Injector) add(node node) (err error) {
+func (i *Injector) add(node *node) (err error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	log.Printf("INJECT: %s", node.Type())
+	log.Printf("INJECT: %s", node.resultType)
 
-	if _, ok := i.nodes[node.Type()]; ok {
-		return fmt.Errorf("%s already injected", node.Type())
+	if _, ok := i.nodes[node.resultType]; ok {
+		return fmt.Errorf("%s already injected", node.resultType)
 	}
 
-	i.nodes[node.Type()] = node
+	i.nodes[node.resultType] = node
 
 	return nil
 }
 
-func (i *Injector) connect(n1, n2 node) error {
+func (i *Injector) connect(n1, n2 *node) error {
 	dependencyExist := false
 	nodeExists := false
 
@@ -169,26 +169,26 @@ func (i *Injector) connect(n1, n2 node) error {
 	}
 
 	if !dependencyExist {
-		return fmt.Errorf("%s not found", n1.Type())
+		return fmt.Errorf("%s not found", n1.resultType)
 	}
 
 	if !nodeExists {
-		return fmt.Errorf("%s not found", n2.Type())
+		return fmt.Errorf("%s not found", n2.resultType)
 	}
 
-	for _, n := range n1.Out() {
+	for _, n := range n1.out {
 		if n == n2 {
-			return fmt.Errorf("%v already injected in to %v", n1.Type(), n2.Type())
+			return fmt.Errorf("%v already injected in to %v", n1.resultType, n2.resultType)
 		}
 	}
 
-	n1.AddOut(n2)
-	n2.AddIn(n1)
+	n1.addOut(n2)
+	n2.addIn(n1)
 
 	return nil
 }
 
-func (i *Injector) get(typ reflect.Type) (node node, _ error) {
+func (i *Injector) get(typ reflect.Type) (node *node, _ error) {
 	var found bool
 	if node, found = i.nodes[typ]; !found {
 		return nil, fmt.Errorf("%s not found", typ)
@@ -197,7 +197,7 @@ func (i *Injector) get(typ reflect.Type) (node node, _ error) {
 	return node, nil
 }
 
-// func (i *Injector) out(n *provideNode) ([]node, error) {
+// func (i *Injector) out(n *providerNode) ([]node, error) {
 // 	var successors []node
 //
 // 	_, found := i.get(n.resultType)
@@ -212,7 +212,7 @@ func (i *Injector) get(typ reflect.Type) (node node, _ error) {
 // 	return successors, nil
 // }
 //
-// func (i *Injector) in(n *provideNode) ([]node, error) {
+// func (i *Injector) in(n *providerNode) ([]node, error) {
 // 	var predecessors []node
 //
 // 	_, found := i.get(n.resultType)
@@ -230,7 +230,7 @@ func (i *Injector) get(typ reflect.Type) (node node, _ error) {
 //
 // // String implements stringer interface.
 // //
-// // Prints an string representation of this Instance.
+// // Prints an string representation of this get.
 // func (c *Injector) String() string {
 // 	// resultType := fmt.Sprintf("DAG Vertices: %c - Edges: %c\n", c.Order(), c.Size())
 //
