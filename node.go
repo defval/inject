@@ -1,6 +1,7 @@
 package inject
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -12,6 +13,12 @@ const (
 	nodeTypeProvider = iota + 1
 	nodeTypeGroup
 	nodeTypeBind
+)
+
+const (
+	visitMarkUnmarked = iota
+	visitMarkTemporary
+	visitMarkPermanent
 )
 
 // newProvider
@@ -83,6 +90,7 @@ func newBind(target interface{}, source interface{}) *node {
 
 // node
 type node struct {
+	visited  int
 	nodeType int
 	provider reflect.Value // only for nodes with provider type
 
@@ -181,6 +189,28 @@ func (n *node) get(depth int) (value reflect.Value, err error) {
 	}
 
 	panic("unknown node type")
+}
+
+func (n *node) visit() (err error) {
+	if n.visited == visitMarkPermanent {
+		return
+	}
+
+	if n.visited == visitMarkTemporary {
+		return fmt.Errorf("%s", n.resultType)
+	}
+
+	n.visited = visitMarkTemporary
+
+	for _, outNode := range n.out {
+		if err = outNode.visit(); err != nil {
+			return errors.Wrapf(err, "%s", n.resultType)
+		}
+	}
+
+	n.visited = visitMarkPermanent
+
+	return nil
 }
 
 const Pad = " "

@@ -37,6 +37,10 @@ func New(options ...Option) (_ *Injector, err error) {
 		return nil, errors.WithStack(err)
 	}
 
+	if err = injector.verifyCycles(); err != nil {
+		return nil, errors.Wrap(err, "cycle not allowed")
+	}
+
 	log.Printf("BUILDED")
 	log.Println()
 
@@ -191,6 +195,18 @@ func (i *Injector) get(typ reflect.Type) (node *node, _ error) {
 	}
 
 	return node, nil
+}
+
+func (i *Injector) verifyCycles() (err error) {
+	for _, n := range i.nodes.all() {
+		if n.visited == visitMarkUnmarked {
+			if err = n.visit(); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // func (i *Injector) out(n *providerNode) ([]node, error) {

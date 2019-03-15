@@ -20,17 +20,20 @@ type InjectionTestCase struct {
 
 // testCases
 var testCases = []InjectionTestCase{
-	// {
-	// 	Name: "Cycle",
-	// 	Options: []Option{
-	// 		Provide(
-	// 			func() bool {
-	// 				return true
-	// 			},
-	// 			func() {},
-	// 		),
-	// 	},
-	// },
+	{
+		Name: "SimpleCycle",
+		Options: []Option{
+			Provide(
+				func(s string) bool {
+					return true
+				},
+				func(b bool) string {
+					return ""
+				},
+			),
+		},
+		Error: "cycle not allowed: bool: string: bool",
+	},
 	{
 		Name: "Bundle",
 		Options: []Option{
