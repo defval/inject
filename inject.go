@@ -147,10 +147,6 @@ func (i *Injector) connectNodes() (err error) {
 func (i *Injector) add(node *node) (err error) {
 	log.Printf("INJECT: %s", node.resultType)
 
-	if _, found := i.nodes.get(node.resultType); found {
-		return fmt.Errorf("%s already injected", node.resultType)
-	}
-
 	if err = i.nodes.add(node); err != nil {
 		return errors.WithStack(err)
 	}
