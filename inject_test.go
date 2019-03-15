@@ -20,24 +20,24 @@ type InjectionTestCase struct {
 
 // testCases
 var testCases = []InjectionTestCase{
-	// {
-	// 	Name: "AddImplementationIntoExistingGroup",
-	// 	Options: []Option{
-	// 		Provide(
-	// 			func(addrs []net.Addr) bool {
-	// 				return len(addrs) == 2
-	// 			},
-	// 			func() *net.TCPAddr {
-	// 				return &net.TCPAddr{}
-	// 			},
-	// 			func() *net.UDPAddr {
-	// 				return &net.UDPAddr{}
-	// 			},
-	// 		),
-	// 		Group(new(net.Addr), &net.TCPAddr{}),
-	// 		Group(new(net.Addr), &net.UDPAddr{}),
-	// 	},
-	// },
+	{
+		Name: "AddImplementationIntoExistingGroup",
+		Options: []Option{
+			Provide(
+				func(addrs []net.Addr) bool {
+					return len(addrs) == 2
+				},
+				func() *net.TCPAddr {
+					return &net.TCPAddr{}
+				},
+				func() *net.UDPAddr {
+					return &net.UDPAddr{}
+				},
+			),
+			Group(new(net.Addr), &net.TCPAddr{}),
+			Group(new(net.Addr), &net.UDPAddr{}),
+		},
+	},
 	{
 		Name: "SimpleCycle",
 		Options: []Option{
