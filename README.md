@@ -67,8 +67,8 @@ func main() {
 ```
 
 TODO:
-- Test coverage
-- Verify cycles
-- Bundles
-- Bind type to interfaces
+- ~~Test coverage~~
+- ~~Verify cycles~~
+- ~~Bundles~~
+- ~~Bind type to interfaces~~
 - Replace dependency
