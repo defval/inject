@@ -13,8 +13,14 @@ type nodeStorage struct {
 
 // add
 func (s *nodeStorage) add(n *node) (err error) {
-	if _, ok := s.nodes[n.resultType]; ok {
-		return fmt.Errorf("%s already injected", n.resultType)
+	if existingNode, ok := s.nodes[n.resultType]; ok {
+		if existingNode.nodeType != nodeTypeGroup {
+			return fmt.Errorf("%s already injected", n.resultType)
+		}
+
+		existingNode.args = append(existingNode.args, n.args...)
+
+		return nil
 	}
 
 	s.nodes[n.resultType] = n
