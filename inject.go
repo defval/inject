@@ -11,7 +11,10 @@ import (
 // New creates new container
 func New(options ...Option) (_ *Injector, err error) {
 	var injector = &Injector{
-		nodes: make(map[reflect.Type]*node),
+		nodes: &nodeStorage{
+			keys:  []reflect.Type{},
+			nodes: map[reflect.Type]*node{},
+		},
 	}
 
 	for _, opt := range options {
@@ -46,7 +49,7 @@ type Injector struct {
 	bindings  [][]interface{}
 	groups    []*group
 
-	nodes map[reflect.Type]*node
+	nodes *nodeStorage
 }
 
 // Populate
@@ -117,7 +120,7 @@ func (i *Injector) processGroups() (err error) {
 }
 
 func (i *Injector) connectNodes() (err error) {
-	for _, node := range i.nodes {
+	for _, node := range i.nodes.all() {
 		for _, arg := range node.args {
 			arg, err := i.get(arg)
 
@@ -137,11 +140,13 @@ func (i *Injector) connectNodes() (err error) {
 func (i *Injector) add(node *node) (err error) {
 	log.Printf("INJECT: %s", node.resultType)
 
-	if _, ok := i.nodes[node.resultType]; ok {
+	if _, found := i.nodes.get(node.resultType); found {
 		return fmt.Errorf("%s already injected", node.resultType)
 	}
 
-	i.nodes[node.resultType] = node
+	if err = i.nodes.add(node); err != nil {
+		return errors.WithStack(err)
+	}
 
 	return nil
 }
@@ -150,7 +155,7 @@ func (i *Injector) connect(n1, n2 *node) error {
 	dependencyExist := false
 	nodeExists := false
 
-	for _, cur := range i.nodes {
+	for _, cur := range i.nodes.all() {
 		if cur == n1 {
 			dependencyExist = true
 		}
@@ -169,7 +174,7 @@ func (i *Injector) connect(n1, n2 *node) error {
 
 	for _, n := range n1.out {
 		if n == n2 {
-			return fmt.Errorf("%v already injected in to %v", n1.resultType, n2.resultType)
+			return fmt.Errorf("%v already injected into %v", n1.resultType, n2.resultType)
 		}
 	}
 
@@ -181,7 +186,7 @@ func (i *Injector) connect(n1, n2 *node) error {
 
 func (i *Injector) get(typ reflect.Type) (node *node, _ error) {
 	var found bool
-	if node, found = i.nodes[typ]; !found {
+	if node, found = i.nodes.get(typ); !found {
 		return nil, fmt.Errorf("%s not found", typ)
 	}
 
