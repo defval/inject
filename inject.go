@@ -130,9 +130,14 @@ func (i *Injector) connectNodes() (err error) {
 				return errors.WithStack(err)
 			}
 
-			if err = i.connect(arg, node); err != nil {
-				return errors.WithStack(err)
+			for _, currentOut := range arg.out {
+				if currentOut == node {
+					return fmt.Errorf("%v already injected into %v", arg.resultType, node.resultType)
+				}
 			}
+
+			arg.addOut(node)
+			node.addIn(arg)
 		}
 	}
 
@@ -149,39 +154,6 @@ func (i *Injector) add(node *node) (err error) {
 	if err = i.nodes.add(node); err != nil {
 		return errors.WithStack(err)
 	}
-
-	return nil
-}
-
-func (i *Injector) connect(n1, n2 *node) error {
-	dependencyExist := false
-	nodeExists := false
-
-	for _, cur := range i.nodes.all() {
-		if cur == n1 {
-			dependencyExist = true
-		}
-		if cur == n2 {
-			nodeExists = true
-		}
-	}
-
-	if !dependencyExist {
-		return fmt.Errorf("%s not found", n1.resultType)
-	}
-
-	if !nodeExists {
-		return fmt.Errorf("%s not found", n2.resultType)
-	}
-
-	for _, n := range n1.out {
-		if n == n2 {
-			return fmt.Errorf("%v already injected into %v", n1.resultType, n2.resultType)
-		}
-	}
-
-	n1.addOut(n2)
-	n2.addIn(n1)
 
 	return nil
 }
