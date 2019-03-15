@@ -5,65 +5,49 @@
 ## Usage
 
 ```go
-package main
+var container, err = inject.New(
+    // HTTP
+    inject.Provide(
+        mux.NewHandler,
+        mux.NewServer,
+    ),
+    // Product
+    inject.Provide(
+        controllers.NewProductController,
+        memory.NewProductRepository,
+    ),
+    // Order
+    inject.Provide(
+        memory.NewOrderRepository,
+        order.NewInteractor,
+        controllers.NewOrderController,
+    ),
 
-import (
-	"log"
-	"net/http"
+    // Binds
+    inject.Bind(new(order.Repository), &memory.OrderRepository{}),
+    inject.Bind(new(product.Repository), &memory.ProductRepository{}),
+    inject.Bind(new(http.Handler), &mux.Handler{}),
 
-	"github.com/defval/inject"
-	"github.com/defval/inject/testdata/controllers"
-	"github.com/defval/inject/testdata/mux"
-	"github.com/defval/inject/testdata/order"
-	"github.com/defval/inject/testdata/product"
-	"github.com/defval/inject/testdata/storage/memory"
+    // Controllers
+    inject.Group(new(mux.Controller),
+        &controllers.ProductController{},
+        &controllers.OrderController{},
+    ),
 )
 
-func main() {
-	var container, err = inject.New(
-		// HTTP
-		inject.Provide(
-			mux.NewHandler,
-			mux.NewServer,
-		),
-		// Product
-		inject.Provide(
-			controllers.NewProductController,
-			memory.NewProductRepository,
-		),
-		// Order
-		inject.Provide(
-			memory.NewOrderRepository,
-			order.NewInteractor,
-			controllers.NewOrderController,
-		),
+if err != nil {
+    log.Fatal(err)
+}
 
-		// Binds
-		inject.Bind(new(order.Repository), &memory.OrderRepository{}),
-		inject.Bind(new(product.Repository), &memory.ProductRepository{}),
-		inject.Bind(new(http.Handler), &mux.Handler{}),
+var server *http.Server
+if err = container.Populate(&server); err != nil {
+    log.Fatal(err)
+}
 
-		// Controllers
-		inject.Group(new(mux.Controller),
-			&controllers.ProductController{},
-			&controllers.OrderController{},
-		),
-	)
+log.Println("Successful run")
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var server *http.Server
-	if err = container.Populate(&server); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Successful run")
-
-	if err = server.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
+if err = server.ListenAndServe(); err != nil {
+    log.Fatal(err)
 }
 
 ```
