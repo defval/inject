@@ -42,7 +42,6 @@ func New(options ...Option) (_ *Injector, err error) {
 	}
 
 	log.Printf("BUILDED")
-	log.Println()
 
 	return injector, nil
 }
@@ -72,8 +71,6 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 		}
 
 		targetValue.Set(instance)
-
-		log.Println()
 	}
 
 	return nil
@@ -96,7 +93,10 @@ func (i *Injector) processProviders() (err error) {
 
 func (i *Injector) processBindings() (err error) {
 	for _, binding := range i.bindings {
-		var bind = newBind(binding.iface, binding.implementation)
+		var bind *node
+		if bind, err = newBind(binding.iface, binding.implementation); err != nil {
+			return errors.WithStack(err)
+		}
 
 		if err = i.add(bind); err != nil {
 			return errors.WithStack(err)

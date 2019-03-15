@@ -86,7 +86,82 @@ var testCases = []InjectionTestCase{
 		Error: "bool: []net.Addr: *net.TCPAddr: dude was gone",
 	},
 	{
-		Name: "GroupNilOf",
+		Name: "GroupInvalidTypeString",
+		Options: []Option{
+			Provide(
+				func(addr net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+			),
+			Group("invalid bind", &net.UDPAddr{}),
+		},
+		Error: "group iface must be a interface pointer like new(http.Handler), got string",
+	},
+	{
+		Name: "GroupInvalidTypePointer",
+		Options: []Option{
+			Provide(
+				func(addr net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+			),
+			Group(&net.UDPAddr{}, &net.UDPAddr{}),
+		},
+		Error: "group iface must be a interface pointer like new(http.Handler), got *net.UDPAddr",
+	},
+	{
+		Name: "BindInvalidTypeString",
+		Options: []Option{
+			Provide(
+				func(addr net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+			),
+			Bind("invalid bind", &net.UDPAddr{}),
+		},
+		Error: "bind iface must be a interface pointer like new(http.Handler), got string",
+	},
+	{
+		Name: "BindInvalidTypePointer",
+		Options: []Option{
+			Provide(
+				func(addr net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+			),
+			Bind(&net.UDPAddr{}, &net.UDPAddr{}),
+		},
+		Error: "bind iface must be a interface pointer like new(http.Handler), got *net.UDPAddr",
+	},
+	{
+		Name: "BindNil",
+		Options: []Option{
+			Provide(
+				func(addr net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+			),
+			Bind(net.Addr(nil), &net.UDPAddr{}),
+		},
+		Error: "bind iface must be a interface pointer like new(http.Handler), got nil",
+	},
+	{
+		Name: "GroupNil",
 		Options: []Option{
 			Provide(
 				func(addrs []net.Addr) bool {
@@ -101,7 +176,7 @@ var testCases = []InjectionTestCase{
 			),
 			Group(net.Addr(nil), &net.UDPAddr{}, &net.TCPAddr{}),
 		},
-		Error: "group of must be a interface pointer like new(http.Handler)",
+		Error: "group iface must be a interface pointer like new(http.Handler), got nil",
 	},
 	{
 		Name: "InjectError",
@@ -315,8 +390,6 @@ var testCases = []InjectionTestCase{
 
 // TestNew
 func TestInjector(t *testing.T) {
-
-	// Injection
 	for _, row := range testCases {
 		t.Run(row.Name, func(t *testing.T) {
 			var injector, err = New(

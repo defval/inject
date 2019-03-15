@@ -57,7 +57,13 @@ func newProvider(ctor interface{}) (_ *node, err error) {
 
 func newGroup(iface interface{}, implementations ...interface{}) (_ *node, err error) {
 	if iface == nil {
-		return nil, errors.Errorf("group iface must be a interface pointer like new(http.Handler)")
+		return nil, errors.Errorf("group iface must be a interface pointer like new(http.Handler), got nil")
+	}
+
+	var ifaceType = reflect.TypeOf(iface)
+
+	if ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
+		return nil, errors.Errorf("group iface must be a interface pointer like new(http.Handler), got %s", ifaceType)
 	}
 
 	var args []reflect.Type
@@ -67,21 +73,31 @@ func newGroup(iface interface{}, implementations ...interface{}) (_ *node, err e
 
 	return &node{
 		nodeType:   nodeTypeGroup,
-		resultType: reflect.SliceOf(reflect.TypeOf(iface).Elem()),
+		resultType: reflect.SliceOf(ifaceType.Elem()),
 		args:       args,
 	}, nil
 }
 
-func newBind(iface interface{}, implementation interface{}) *node {
+func newBind(iface interface{}, implementation interface{}) (_ *node, err error) {
+	if iface == nil {
+		return nil, errors.Errorf("bind iface must be a interface pointer like new(http.Handler), got nil")
+	}
+
+	var ifaceType = reflect.TypeOf(iface)
+
+	if ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
+		return nil, errors.Errorf("bind iface must be a interface pointer like new(http.Handler), got %s", ifaceType)
+	}
+
 	var args []reflect.Type
 	var implType = reflect.TypeOf(implementation)
 	args = append(args, implType)
 
 	return &node{
 		nodeType:   nodeTypeBind,
-		resultType: reflect.TypeOf(iface).Elem(),
+		resultType: ifaceType.Elem(),
 		args:       args,
-	}
+	}, nil
 }
 
 // node
