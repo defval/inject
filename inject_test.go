@@ -86,6 +86,42 @@ var testCases = []InjectionTestCase{
 		Error: "bool: []net.Addr: *net.TCPAddr: dude was gone",
 	},
 	{
+		Name: "GroupInvalidImplementation",
+		Options: []Option{
+			Provide(
+				func(addr []net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+				func() *http.Server {
+					return &http.Server{}
+				},
+			),
+			Group(new(net.Addr), &http.Server{}),
+		},
+		Error: "*http.Server not implement net.Addr",
+	},
+	{
+		Name: "BindInvalidImplementation",
+		Options: []Option{
+			Provide(
+				func(addr []net.Addr) bool {
+					return true
+				},
+				func() (*net.UDPAddr, error) {
+					return &net.UDPAddr{}, nil
+				},
+				func() *http.Server {
+					return &http.Server{}
+				},
+			),
+			Bind(new(net.Addr), &http.Server{}),
+		},
+		Error: "*http.Server not implement net.Addr",
+	},
+	{
 		Name: "GroupInvalidTypeString",
 		Options: []Option{
 			Provide(

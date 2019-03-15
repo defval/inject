@@ -67,8 +67,14 @@ func newGroup(iface interface{}, implementations ...interface{}) (_ *node, err e
 	}
 
 	var args []reflect.Type
-	for _, member := range implementations {
-		args = append(args, reflect.TypeOf(member))
+	for _, implementation := range implementations {
+		var implementationType = reflect.TypeOf(implementation)
+
+		if !implementationType.Implements(ifaceType.Elem()) {
+			return nil, errors.Errorf("%s not implement %s", implementationType, ifaceType.Elem())
+		}
+
+		args = append(args, reflect.TypeOf(implementation))
 	}
 
 	return &node{
@@ -89,9 +95,14 @@ func newBind(iface interface{}, implementation interface{}) (_ *node, err error)
 		return nil, errors.Errorf("bind iface must be a interface pointer like new(http.Handler), got %s", ifaceType)
 	}
 
+	var implementationType = reflect.TypeOf(implementation)
+
+	if !implementationType.Implements(ifaceType.Elem()) {
+		return nil, errors.Errorf("%s not implement %s", implementationType, ifaceType.Elem())
+	}
+
 	var args []reflect.Type
-	var implType = reflect.TypeOf(implementation)
-	args = append(args, implType)
+	args = append(args, implementationType)
 
 	return &node{
 		nodeType:   nodeTypeBind,
