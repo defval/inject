@@ -41,10 +41,6 @@ func newProvider(ctor interface{}) (_ *node, err error) {
 		return nil, errors.Errorf("injection argument must be a function with returned value and optional error")
 	}
 
-	// var cptr = cvalue.Pointer()
-	// var cfunc = runtime.FuncForPC(cvalue.Pointer())
-	// var cname = cfunc.Name()
-
 	var arguments = make([]reflect.Type, 0)
 
 	for i := 0; i < ctype.NumIn(); i++ {
@@ -112,21 +108,6 @@ func (n *node) addIn(node *node) {
 func (n *node) addOut(node *node) {
 	n.out = append(n.out, node)
 }
-
-//
-// func (n *providerNode) instability() float64 {
-// 	if len(n.in) == 0 && len(n.out) == 0 {
-// 		return -1
-// 	}
-//
-// 	return float64(len(n.in) / (len(n.in) + len(n.out)))
-// }
-//
-// func (n *providerNode) String() string {
-// 	result := fmt.Sprintf("%s in: %d out: %d instability: %.2f\n", n.resultType.String(), len(n.in), len(n.out), n.instability())
-//
-// 	return result
-// }
 
 func (n *node) get(depth int) (value reflect.Value, err error) {
 	if n.instance != nil {

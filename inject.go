@@ -209,57 +209,8 @@ func (i *Injector) verifyCycles() (err error) {
 	return nil
 }
 
-// func (i *Injector) out(n *providerNode) ([]node, error) {
-// 	var successors []node
-//
-// 	_, found := i.get(n.resultType)
-// 	if found != nil {
-// 		return successors, fmt.Errorf("%s not found", n.resultType)
-// 	}
-//
-// 	for _, v := range n.out {
-// 		successors = append(successors, v)
-// 	}
-//
-// 	return successors, nil
-// }
-//
-// func (i *Injector) in(n *providerNode) ([]node, error) {
-// 	var predecessors []node
-//
-// 	_, found := i.get(n.resultType)
-// 	if found != nil {
-// 		return predecessors, fmt.Errorf("%s not found", n.resultType)
-// 	}
-//
-// 	for _, v := range n.in {
-// 		predecessors = append(predecessors, v)
-// 	}
-//
-// 	return predecessors, nil
-// }
-
-//
-// // String implements stringer interface.
-// //
-// // Prints an string representation of this get.
-// func (c *Injector) String() string {
-// 	// resultType := fmt.Sprintf("DAG Vertices: %c - Edges: %c\n", c.Order(), c.Size())
-//
-// 	var s []node
-// 	for _, node := range c.nodes {
-// 		s = append(s, node)
-// 	}
-//
-// 	sort.Slice(s, func(i, j int) bool {
-// 		return s[i].instability() < s[j].instability()
-// 	})
-//
-// 	var result string
-// 	result += fmt.Sprintf("Nodes:\n")
-// 	for _, node := range s {
-// 		result += fmt.Sprintf("%s", node)
-// 	}
-//
-// 	return result
-// }
+// group
+type group struct {
+	of      interface{}
+	members []interface{}
+}
