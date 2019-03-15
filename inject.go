@@ -50,7 +50,7 @@ func New(options ...Option) (_ *Injector, err error) {
 // Injector ...
 type Injector struct {
 	providers []interface{}
-	bindings  [][]interface{}
+	bindings  []*bind
 	groups    []*group
 
 	nodes *nodeStorage
@@ -96,12 +96,10 @@ func (i *Injector) processProviders() (err error) {
 
 func (i *Injector) processBindings() (err error) {
 	for _, binding := range i.bindings {
-		if len(binding) == 2 {
-			var bind = newBind(binding[0], binding[1])
+		var bind = newBind(binding.iface, binding.implementation)
 
-			if err = i.add(bind); err != nil {
-				return errors.WithStack(err)
-			}
+		if err = i.add(bind); err != nil {
+			return errors.WithStack(err)
 		}
 	}
 
@@ -111,7 +109,7 @@ func (i *Injector) processBindings() (err error) {
 func (i *Injector) processGroups() (err error) {
 	for _, group := range i.groups {
 		var node *node
-		if node, err = newGroup(group.of, group.members...); err != nil {
+		if node, err = newGroup(group.iface, group.implementations...); err != nil {
 			return errors.WithStack(err)
 		}
 
@@ -211,6 +209,11 @@ func (i *Injector) verifyCycles() (err error) {
 
 // group
 type group struct {
-	of      interface{}
-	members []interface{}
+	iface           interface{}
+	implementations []interface{}
+}
+
+type bind struct {
+	iface          interface{}
+	implementation interface{}
 }

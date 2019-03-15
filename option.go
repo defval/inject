@@ -8,9 +8,12 @@ func Provide(providers ...interface{}) Option {
 }
 
 // Bind ...
-func Bind(bindings ...interface{}) Option {
+func Bind(iface interface{}, implementation interface{}) Option {
 	return option(func(injector *Injector) {
-		injector.bindings = append(injector.bindings, bindings)
+		injector.bindings = append(injector.bindings, &bind{
+			iface:          iface,
+			implementation: implementation,
+		})
 	})
 }
 
@@ -18,8 +21,8 @@ func Bind(bindings ...interface{}) Option {
 func Group(of interface{}, members ...interface{}) Option {
 	return option(func(injector *Injector) {
 		injector.groups = append(injector.groups, &group{
-			of:      of,
-			members: members,
+			iface:           of,
+			implementations: members,
 		})
 	})
 }
