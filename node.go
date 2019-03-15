@@ -55,31 +55,31 @@ func newProvider(ctor interface{}) (_ *node, err error) {
 	}, nil
 }
 
-func newGroup(of interface{}, members ...interface{}) (_ *node, err error) {
-	if of == nil {
-		return nil, errors.Errorf("group of must be a interface pointer like new(http.Handler)")
+func newGroup(iface interface{}, implementations ...interface{}) (_ *node, err error) {
+	if iface == nil {
+		return nil, errors.Errorf("group iface must be a interface pointer like new(http.Handler)")
 	}
 
 	var args []reflect.Type
-	for _, member := range members {
+	for _, member := range implementations {
 		args = append(args, reflect.TypeOf(member))
 	}
 
 	return &node{
 		nodeType:   nodeTypeGroup,
-		resultType: reflect.SliceOf(reflect.TypeOf(of).Elem()),
+		resultType: reflect.SliceOf(reflect.TypeOf(iface).Elem()),
 		args:       args,
 	}, nil
 }
 
-func newBind(target interface{}, source interface{}) *node {
+func newBind(iface interface{}, implementation interface{}) *node {
 	var args []reflect.Type
-	var implType = reflect.TypeOf(source)
+	var implType = reflect.TypeOf(implementation)
 	args = append(args, implType)
 
 	return &node{
 		nodeType:   nodeTypeBind,
-		resultType: reflect.TypeOf(target).Elem(),
+		resultType: reflect.TypeOf(iface).Elem(),
 		args:       args,
 	}
 }
