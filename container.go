@@ -78,7 +78,7 @@ func (b *Container) add(def *definition) (err error) {
 	}
 
 	// load arguments
-	for _, key := range def.provider.args() {
+	for _, key := range def.provider.args {
 		in, err := b.get(key)
 
 		if err != nil {

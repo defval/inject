@@ -28,8 +28,14 @@ func newFuncProvider(provider interface{}) (*providerWrapper, error) {
 
 	var resultType = pvalue.Type().Out(0) // todo
 
+	var args []key
+	for i := 0; i < ptype.NumIn(); i++ {
+		args = append(args, key{typ: ptype.In(i)})
+	}
+
 	return &providerWrapper{
 		providerType:  providerTypeFunc,
+		args:          args,
 		providerValue: pvalue,
 		resultType:    resultType,
 	}, nil
@@ -40,10 +46,22 @@ func newStructProvider(provider interface{}) (*providerWrapper, error) {
 	var ptype = reflect.TypeOf(provider)
 	var pvalue = reflect.ValueOf(provider)
 
-	// todo: add validation
+	var args []key
+	for i := 0; i < ptype.Elem().NumField(); i++ {
+		var field = ptype.Elem().Field(i)
+
+		name, exists := field.Tag.Lookup("inject")
+
+		if !exists {
+			continue
+		}
+
+		args = append(args, key{typ: field.Type, name: name})
+	}
 
 	return &providerWrapper{
 		providerType:  providerTypeStruct,
+		args:          args,
 		providerValue: pvalue,
 		resultType:    ptype,
 	}, nil
@@ -52,30 +70,7 @@ func newStructProvider(provider interface{}) (*providerWrapper, error) {
 // providerWrapper
 type providerWrapper struct {
 	providerType  providerType
+	args          []key
 	providerValue reflect.Value
 	resultType    reflect.Type
-}
-
-// args
-func (w *providerWrapper) args() (args []key) {
-	switch w.providerType {
-	case providerTypeFunc:
-		for i := 0; i < w.providerValue.Type().NumIn(); i++ {
-			args = append(args, key{typ: w.providerValue.Type().In(i)})
-		}
-	case providerTypeStruct:
-		for i := 0; i < w.resultType.Elem().NumField(); i++ {
-			var field = w.resultType.Elem().Field(i)
-
-			name, exists := field.Tag.Lookup("inject")
-
-			if !exists {
-				continue
-			}
-
-			args = append(args, key{typ: field.Type, name: name})
-		}
-	}
-
-	return args
 }
