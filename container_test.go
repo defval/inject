@@ -68,9 +68,22 @@ func TestBuilder_Provide(t *testing.T) {
 		var builder = &Container{}
 
 		type StructProvider struct {
+			TCPAddr *net.TCPAddr `inject:""`
+			UDPAddr *net.UDPAddr `inject:""`
 		}
 
-		require.EqualError(t, builder.Provide(&StructProvider{}), "provide failed: struct provider not implemented yet")
+		require.NoError(t, builder.Provide(func() *net.TCPAddr {
+			return &net.TCPAddr{Zone: "tcp"}
+		}))
+		require.NoError(t, builder.Provide(func() *net.UDPAddr {
+			return &net.UDPAddr{Zone: "udp"}
+		}))
+		require.NoError(t, builder.Provide(&StructProvider{}))
+
+		var sp *StructProvider
+		require.NoError(t, builder.Populate(&sp))
+		require.Equal(t, "tcp", sp.TCPAddr.Zone)
+		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
 }
 

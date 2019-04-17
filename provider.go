@@ -37,7 +37,16 @@ func newFuncProvider(provider interface{}) (*providerWrapper, error) {
 
 // structProvider
 func newStructProvider(provider interface{}) (*providerWrapper, error) {
-	return nil, errors.New("struct provider not implemented yet")
+	var ptype = reflect.TypeOf(provider)
+	var pvalue = reflect.ValueOf(provider)
+
+	// todo: add validation
+
+	return &providerWrapper{
+		providerType:  providerTypeStruct,
+		providerValue: pvalue,
+		resultType:    ptype,
+	}, nil
 }
 
 // providerWrapper
@@ -53,6 +62,18 @@ func (w *providerWrapper) args() (args []key) {
 	case providerTypeFunc:
 		for i := 0; i < w.providerValue.Type().NumIn(); i++ {
 			args = append(args, key{typ: w.providerValue.Type().In(i)})
+		}
+	case providerTypeStruct:
+		for i := 0; i < w.resultType.Elem().NumField(); i++ {
+			var field = w.resultType.Elem().Field(i)
+
+			name, exists := field.Tag.Lookup("inject")
+
+			if !exists {
+				continue
+			}
+
+			args = append(args, key{typ: field.Type, name: name})
 		}
 	}
 

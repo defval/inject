@@ -56,6 +56,10 @@ func (d *definition) String() string {
 }
 
 func (d *definition) instance() (_ reflect.Value, err error) {
+	if d.value.IsValid() {
+		return d.value, nil
+	}
+
 	var values []reflect.Value
 	for _, in := range d.in {
 		var value reflect.Value
@@ -65,15 +69,36 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 		values = append(values, value)
 	}
 
-	var result = d.provider.providerValue.Call(values)
-	d.value = result[0]
+	switch d.provider.providerType {
+	case providerTypeFunc:
+		var result = d.provider.providerValue.Call(values)
 
-	if len(result) == 2 {
-		if result[1].IsNil() {
-			return d.value, nil
+		d.value = result[0]
+
+		if len(result) == 2 {
+			if result[1].IsNil() {
+				return d.value, nil
+			}
+
+			return d.value, errors.WithStack(result[1].Interface().(error))
+		}
+	case providerTypeStruct:
+		var skip = 0
+		for i := 0; i < d.provider.providerValue.Elem().Type().NumField(); i++ {
+			var fieldType = d.provider.providerValue.Elem().Type().Field(i)
+			var fieldValue = d.provider.providerValue.Elem().Field(i)
+
+			_, exists := fieldType.Tag.Lookup("inject")
+
+			if !exists {
+				skip++
+				continue
+			}
+
+			fieldValue.Set(values[i-skip])
 		}
 
-		return d.value, errors.WithStack(result[1].Interface().(error))
+		d.value = d.provider.providerValue
 	}
 
 	return d.value, nil
