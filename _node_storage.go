@@ -5,14 +5,14 @@ import (
 	"reflect"
 )
 
-// nodeStorage is ordered node map
+// nodeStorage is ordered oldNode map
 type nodeStorage struct {
 	keys  []reflect.Type
-	nodes map[reflect.Type]*node
+	nodes map[reflect.Type]*oldNode
 }
 
 // add
-func (s *nodeStorage) add(n *node) (err error) {
+func (s *nodeStorage) add(n *oldNode) (err error) {
 	if existingNode, ok := s.nodes[n.resultType]; ok {
 		if existingNode.nodeType != nodeTypeGroup {
 			return fmt.Errorf("%s already injected", n.resultType)
@@ -29,13 +29,13 @@ func (s *nodeStorage) add(n *node) (err error) {
 	return nil
 }
 
-func (s *nodeStorage) get(typ reflect.Type) (n *node, found bool) {
+func (s *nodeStorage) get(typ reflect.Type) (n *oldNode, found bool) {
 	n, found = s.nodes[typ]
 	return n, found
 }
 
-func (s *nodeStorage) all() []*node {
-	nodes := make([]*node, len(s.nodes))
+func (s *nodeStorage) all() []*oldNode {
+	nodes := make([]*oldNode, len(s.nodes))
 	for i, key := range s.keys {
 		nodes[i] = s.nodes[key]
 	}

@@ -22,7 +22,7 @@ const (
 )
 
 // newProvider
-func newProvider(ctor interface{}) (_ *node, err error) {
+func newProvider(ctor interface{}) (_ *oldNode, err error) {
 	if ctor == nil {
 		return nil, errors.New("nil could not be injected")
 	}
@@ -47,7 +47,7 @@ func newProvider(ctor interface{}) (_ *node, err error) {
 		arguments = append(arguments, ctype.In(i))
 	}
 
-	return &node{
+	return &oldNode{
 		nodeType:   nodeTypeProvider,
 		provider:   reflect.ValueOf(ctor),
 		resultType: ctype.Out(0),
@@ -55,7 +55,7 @@ func newProvider(ctor interface{}) (_ *node, err error) {
 	}, nil
 }
 
-func newGroup(iface interface{}, implementations ...interface{}) (_ *node, err error) {
+func newGroup(iface interface{}, implementations ...interface{}) (_ *oldNode, err error) {
 	if iface == nil {
 		return nil, errors.Errorf("group iface must be a interface pointer like new(http.Handler), got nil")
 	}
@@ -77,14 +77,14 @@ func newGroup(iface interface{}, implementations ...interface{}) (_ *node, err e
 		args = append(args, reflect.TypeOf(implementation))
 	}
 
-	return &node{
+	return &oldNode{
 		nodeType:   nodeTypeGroup,
 		resultType: reflect.SliceOf(ifaceType.Elem()),
 		args:       args,
 	}, nil
 }
 
-func newBind(iface interface{}, implementation interface{}) (_ *node, err error) {
+func newBind(iface interface{}, implementation interface{}) (_ *oldNode, err error) {
 	if iface == nil {
 		return nil, errors.Errorf("bind iface must be a interface pointer like new(http.Handler), got nil")
 	}
@@ -104,39 +104,39 @@ func newBind(iface interface{}, implementation interface{}) (_ *node, err error)
 	var args []reflect.Type
 	args = append(args, implementationType)
 
-	return &node{
+	return &oldNode{
 		nodeType:   nodeTypeBind,
 		resultType: ifaceType.Elem(),
 		args:       args,
 	}, nil
 }
 
-// node
-type node struct {
+// oldNode
+type oldNode struct {
 	visited  int
 	nodeType int
-	provider reflect.Value // only for nodes with provider type
+	provider reflect.Value // only for defs with optionedProvider type
 
 	resultType reflect.Type
 	args       []reflect.Type // arguments types
 
-	in  []*node
-	out []*node
+	in  []*oldNode
+	out []*oldNode
 
 	instance *reflect.Value
 }
 
 // addIn
-func (n *node) addIn(node *node) {
+func (n *oldNode) addIn(node *oldNode) {
 	n.in = append(n.in, node)
 }
 
 // addOut
-func (n *node) addOut(node *node) {
+func (n *oldNode) addOut(node *oldNode) {
 	n.out = append(n.out, node)
 }
 
-func (n *node) get(depth int) (value reflect.Value, err error) {
+func (n *oldNode) get(depth int) (value reflect.Value, err error) {
 	if n.instance != nil {
 		return *n.instance, nil
 	}
@@ -196,10 +196,10 @@ func (n *node) get(depth int) (value reflect.Value, err error) {
 		return *n.instance, err
 	}
 
-	panic("unknown node type")
+	panic("unknown oldNode type")
 }
 
-func (n *node) visit() (err error) {
+func (n *oldNode) visit() (err error) {
 	if n.visited == visitMarkPermanent {
 		return
 	}

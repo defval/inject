@@ -13,7 +13,7 @@ func New(options ...Option) (_ *Injector, err error) {
 	var injector = &Injector{
 		nodes: &nodeStorage{
 			keys:  []reflect.Type{},
-			nodes: map[reflect.Type]*node{},
+			nodes: map[reflect.Type]*oldNode{},
 		},
 	}
 
@@ -60,7 +60,7 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 	for _, target := range targets {
 		var targetValue = reflect.ValueOf(target).Elem()
 
-		var node *node
+		var node *oldNode
 		if node, err = i.get(targetValue.Type()); err != nil {
 			return errors.WithStack(err)
 		}
@@ -78,7 +78,7 @@ func (i *Injector) Populate(targets ...interface{}) (err error) {
 
 func (i *Injector) processProviders() (err error) {
 	for _, provider := range i.providers {
-		var provide *node
+		var provide *oldNode
 		if provide, err = newProvider(provider); err != nil {
 			return errors.WithStack(err)
 		}
@@ -93,7 +93,7 @@ func (i *Injector) processProviders() (err error) {
 
 func (i *Injector) processBindings() (err error) {
 	for _, binding := range i.bindings {
-		var bind *node
+		var bind *oldNode
 		if bind, err = newBind(binding.iface, binding.implementation); err != nil {
 			return errors.WithStack(err)
 		}
@@ -108,7 +108,7 @@ func (i *Injector) processBindings() (err error) {
 
 func (i *Injector) processGroups() (err error) {
 	for _, group := range i.groups {
-		var node *node
+		var node *oldNode
 		if node, err = newGroup(group.iface, group.implementations...); err != nil {
 			return errors.WithStack(err)
 		}
@@ -144,7 +144,7 @@ func (i *Injector) connectNodes() (err error) {
 	return nil
 }
 
-func (i *Injector) add(node *node) (err error) {
+func (i *Injector) add(node *oldNode) (err error) {
 	log.Printf("INJECT: %s", node.resultType)
 
 	if err = i.nodes.add(node); err != nil {
@@ -154,7 +154,7 @@ func (i *Injector) add(node *node) (err error) {
 	return nil
 }
 
-func (i *Injector) get(typ reflect.Type) (node *node, _ error) {
+func (i *Injector) get(typ reflect.Type) (node *oldNode, _ error) {
 	var found bool
 	if node, found = i.nodes.get(typ); !found {
 		return nil, fmt.Errorf("%s not found", typ)
