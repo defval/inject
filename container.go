@@ -16,17 +16,15 @@ var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
 // Container
 type Container struct {
-	init            sync.Once
+	init sync.Once
+
+	providers       []*provideOptions
 	nodes           map[key]*definition
 	implementations map[key][]*definition
 }
 
 // Provide
-func (b *Container) Provide(provider interface{}, options ...ProvideOption) (err error) {
-	if provider == nil {
-		return errors.New("could not provide nil")
-	}
-
+func (b *Container) Provide(provider interface{}, options ...ProvideOption) {
 	var po = &provideOptions{
 		provider: provider,
 	}
@@ -35,16 +33,7 @@ func (b *Container) Provide(provider interface{}, options ...ProvideOption) (err
 		opt(po)
 	}
 
-	var def *definition
-	if def, err = po.definition(); err != nil {
-		return errors.Wrapf(err, "provide failed")
-	}
-
-	if err = b.add(def); err != nil {
-		return errors.Wrap(err, "could not add node")
-	}
-
-	return nil
+	b.providers = append(b.providers, po)
 }
 
 // Populate
@@ -77,17 +66,6 @@ func (b *Container) add(def *definition) (err error) {
 		return errors.Wrapf(err, "%s already provided", def.provider.resultType)
 	}
 
-	// load arguments
-	for _, key := range def.provider.args {
-		in, err := b.get(key)
-
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		def.in = append(def.in, in)
-	}
-
 	b.nodes[def.key] = def
 
 	for _, key := range def.implements {
@@ -112,8 +90,38 @@ func (b *Container) get(key key) (_ *definition, err error) {
 }
 
 // Build
-func (b *Container) Build() (_ *Container, err error) {
-	return b, nil
+func (b *Container) Compile() (err error) {
+	// register providers
+	for _, po := range b.providers {
+		if po.provider == nil {
+			return errors.New("could not provide nil")
+		}
+
+		var def *definition
+		if def, err = po.definition(); err != nil {
+			return errors.Wrapf(err, "provide failed")
+		}
+
+		if err = b.add(def); err != nil {
+			return errors.Wrap(err, "could not add node")
+		}
+	}
+
+	// connect nodes
+	for _, def := range b.nodes {
+		// load arguments
+		for _, key := range def.provider.args {
+			in, err := b.get(key)
+
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			def.in = append(def.in, in)
+		}
+	}
+
+	return nil
 }
 
 // ProvideOption
