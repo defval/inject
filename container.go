@@ -14,6 +14,56 @@ var (
 
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
+// New
+func New(options ...Option) (_ *Container, err error) {
+	var container = &Container{}
+
+	for _, opt := range options {
+		opt.apply(container)
+	}
+
+	if err = container.compile(); err != nil {
+		return nil, errors.Wrapf(err, "could not compile container")
+	}
+
+	return container, nil
+}
+
+// Provide
+func Provide(provider interface{}, options ...ProvideOption) Option {
+	return option(func(container *Container) {
+		var po = &provideOptions{
+			provider: provider,
+		}
+
+		for _, opt := range options {
+			opt(po)
+		}
+
+		container.providers = append(container.providers, po)
+	})
+}
+
+// Package
+func Package(options ...Option) Option {
+	return option(func(container *Container) {
+		for _, opt := range options {
+			opt.apply(container)
+		}
+	})
+}
+
+// Option
+type Option interface {
+	apply(container *Container)
+}
+
+type option func(container *Container)
+
+func (o option) apply(container *Container) {
+	o(container)
+}
+
 // Container
 type Container struct {
 	init sync.Once
@@ -21,19 +71,6 @@ type Container struct {
 	providers       []*provideOptions
 	nodes           map[key]*definition
 	implementations map[key][]*definition
-}
-
-// Provide
-func (b *Container) Provide(provider interface{}, options ...ProvideOption) {
-	var po = &provideOptions{
-		provider: provider,
-	}
-
-	for _, opt := range options {
-		opt(po)
-	}
-
-	b.providers = append(b.providers, po)
 }
 
 // Populate
@@ -90,7 +127,7 @@ func (b *Container) get(key key) (_ *definition, err error) {
 }
 
 // Build
-func (b *Container) Compile() (err error) {
+func (b *Container) compile() (err error) {
 	// register providers
 	for _, po := range b.providers {
 		if po.provider == nil {

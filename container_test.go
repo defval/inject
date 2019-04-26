@@ -11,88 +11,84 @@ import (
 
 func TestBuilder_Provide(t *testing.T) {
 	t.Run("function", func(t *testing.T) {
-		var container = &Container{}
+		container, err := New(
+			Provide(func() *http.Server {
+				return &http.Server{}
+			}),
+			Provide(func(server *http.Server) *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "test",
+				}
+			}),
+		)
 
-		container.Provide(func() *http.Server {
-			return &http.Server{}
-		})
-
-		container.Provide(func(server *http.Server) *net.TCPAddr {
-			return &net.TCPAddr{
-				Zone: "test",
-			}
-		})
-
-		require.NoError(t, container.Compile())
+		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		err := container.Populate(&addr)
-		require.NoError(t, err)
+		require.NoError(t, container.Populate(&addr))
 		require.NotNil(t, addr)
 		require.Equal(t, "test", addr.Zone)
 	})
 
 	t.Run("function with error", func(t *testing.T) {
-		var container = &Container{}
+		container, err := New(
+			Provide(func() (*net.TCPAddr, error) {
+				return &net.TCPAddr{
+					Zone: "test",
+				}, errors.New("build error")
+			}),
+		)
 
-		container.Provide(func() (*net.TCPAddr, error) {
-			return &net.TCPAddr{
-				Zone: "test",
-			}, errors.New("build error")
-		})
-
-		require.NoError(t, container.Compile())
+		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		err := container.Populate(&addr)
-		require.EqualError(t, err, "*net.TCPAddr: build error")
+		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
 	})
 
 	t.Run("function with nil error", func(t *testing.T) {
-		var container = &Container{}
+		container, err := New(
+			Provide(func() (*net.TCPAddr, error) {
+				return &net.TCPAddr{
+					Zone: "test",
+				}, nil
+			}),
+		)
 
-		container.Provide(func() (*net.TCPAddr, error) {
-			return &net.TCPAddr{
-				Zone: "test",
-			}, nil
-		})
-
-		require.NoError(t, container.Compile())
+		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		err := container.Populate(&addr)
-		require.NoError(t, err)
+		require.NoError(t, container.Populate(&addr))
 		require.NotNil(t, addr)
 		require.Equal(t, "test", addr.Zone)
 	})
 
 	t.Run("function without arguments", func(t *testing.T) {
-		var container = &Container{}
+		_, err := New(
+			Provide(func() {}),
+		)
 
 		// todo: improve error message
-		container.Provide(func() {})
+		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with returned value and optional error")
 	})
 
 	// todo: implement struct provide
 	t.Run("struct", func(t *testing.T) {
-		var container = &Container{}
-
 		type StructProvider struct {
 			TCPAddr *net.TCPAddr `inject:""`
 			UDPAddr *net.UDPAddr `inject:""`
 		}
 
-		container.Provide(func() *net.TCPAddr {
-			return &net.TCPAddr{Zone: "tcp"}
-		})
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "tcp"}
+			}),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{Zone: "udp"}
+			}),
+			Provide(&StructProvider{}),
+		)
 
-		container.Provide(func() *net.UDPAddr {
-			return &net.UDPAddr{Zone: "udp"}
-		})
-
-		container.Provide(&StructProvider{})
-
-		require.NoError(t, container.Compile())
+		require.NoError(t, err)
 
 		var sp *StructProvider
 		require.NoError(t, container.Populate(&sp))
@@ -103,18 +99,15 @@ func TestBuilder_Provide(t *testing.T) {
 
 func TestBuilder_ProvideAs(t *testing.T) {
 	t.Run("provide as", func(t *testing.T) {
-		var container = &Container{}
-
-		container.Provide(
-			func() *net.TCPAddr {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{
 					Zone: "test",
 				}
-			},
-			As(new(net.Addr)),
+			}, As(new(net.Addr))),
 		)
 
-		require.NoError(t, container.Compile())
+		require.NoError(t, err)
 
 		var addr net.Addr
 		require.NoError(t, container.Populate(&addr))
@@ -122,27 +115,33 @@ func TestBuilder_ProvideAs(t *testing.T) {
 	})
 
 	t.Run("provide as struct", func(t *testing.T) {
-		var container = &Container{}
+		_, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, As(http.Server{})),
+		)
 
-		container.Provide(func() *net.TCPAddr {
-			return &net.TCPAddr{}
-		}, As(http.Server{}))
+		require.EqualError(t, err, "could not compile container: provide failed: argument for As() must be pointer to interface type, got http.Server")
 	})
 
 	t.Run("provide as struct pointer", func(t *testing.T) {
-		var container = &Container{}
+		_, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, As(new(http.Server))),
+		)
 
-		container.Provide(func() *net.TCPAddr {
-			return &net.TCPAddr{}
-		}, As(new(http.Server)))
+		require.EqualError(t, err, "could not compile container: provide failed: argument for As() must be pointer to interface type, got *http.Server")
 	})
 
 	t.Run("provide as not implemented interface", func(t *testing.T) {
-		var container = &Container{}
+		_, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, As(new(http.Handler))),
+		)
 
-		container.Provide(func() *net.TCPAddr {
-			return &net.TCPAddr{}
-		}, As(new(http.Handler)))
+		require.EqualError(t, err, "could not compile container: provide failed: *net.TCPAddr not implement http.Handler interface")
 	})
 }
 
