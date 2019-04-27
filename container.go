@@ -3,20 +3,23 @@ package inject
 import (
 	"log"
 	"reflect"
-	"sync"
 
 	"github.com/pkg/errors"
 )
 
 var (
-	ErrIncorrectProviderType = errors.New("provider must be a function with returned value and optional error")
+	ErrIncorrectProviderType      = errors.New("provider must be a function with value and optional error as result")
+	ErrIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")
 )
 
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
 // New
 func New(options ...Option) (_ *Container, err error) {
-	var container = &Container{}
+	var container = &Container{
+		nodes:           map[key]*definition{},
+		implementations: map[key][]*definition{},
+	}
 
 	for _, opt := range options {
 		opt.apply(container)
@@ -31,8 +34,6 @@ func New(options ...Option) (_ *Container, err error) {
 
 // Container
 type Container struct {
-	init sync.Once
-
 	providers       []*providerOptions
 	modifiers       []*modifierOptions
 	nodes           map[key]*definition
@@ -60,11 +61,6 @@ func (b *Container) Populate(target interface{}, options ...ProvideOption) (err 
 
 // add
 func (b *Container) add(def *definition) (err error) {
-	b.init.Do(func() {
-		b.nodes = make(map[key]*definition, 8)
-		b.implementations = make(map[key][]*definition, 8)
-	})
-
 	if _, ok := b.nodes[def.key]; ok {
 		return errors.Wrapf(err, "%s already provided", def.provider.resultType)
 	}
@@ -80,6 +76,7 @@ func (b *Container) add(def *definition) (err error) {
 	return nil
 }
 
+// get
 func (b *Container) get(key key) (_ *definition, err error) {
 	if def, ok := b.nodes[key]; ok {
 		return def, nil
@@ -92,7 +89,7 @@ func (b *Container) get(key key) (_ *definition, err error) {
 	return nil, errors.Errorf("%s not provided yet", key)
 }
 
-// Build
+// compile
 func (b *Container) compile() (err error) {
 	// register providers
 	for _, po := range b.providers {
@@ -127,7 +124,7 @@ func (b *Container) compile() (err error) {
 	// apply modifiers
 	for _, mo := range b.modifiers {
 		if err = mo.apply(b); err != nil {
-			return errors.Wrap(err, "could not apply modifier")
+			return err
 		}
 	}
 
@@ -186,10 +183,12 @@ func (o *providerOptions) definition() (_ *definition, err error) {
 	}, nil
 }
 
+// modifierOptions
 type modifierOptions struct {
 	modifier interface{}
 }
 
+// apply
 func (o *modifierOptions) apply(container *Container) (err error) {
 	if o.modifier == nil {
 		return errors.New("nil modifier")
@@ -197,7 +196,20 @@ func (o *modifierOptions) apply(container *Container) (err error) {
 
 	// todo: validation
 	var modifierValue = reflect.ValueOf(o.modifier)
+
+	if modifierValue.Kind() != reflect.Func {
+		return errors.WithStack(ErrIncorrectModifierSignature)
+	}
+
 	var modifierType = modifierValue.Type()
+
+	if modifierType.NumOut() > 1 {
+		return errors.WithStack(ErrIncorrectModifierSignature)
+	}
+
+	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
+		return errors.WithStack(ErrIncorrectModifierSignature)
+	}
 
 	var args []reflect.Value
 	for i := 0; i < modifierType.NumIn(); i++ {
@@ -215,7 +227,11 @@ func (o *modifierOptions) apply(container *Container) (err error) {
 		args = append(args, arg)
 	}
 
-	modifierValue.Call(args)
+	var result = modifierValue.Call(args)
+
+	if len(result) == 1 {
+		return errors.Wrap(result[0].Interface().(error), "apply error")
+	}
 
 	return nil
 }

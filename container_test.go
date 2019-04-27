@@ -164,6 +164,55 @@ func TestContainer_Apply(t *testing.T) {
 		require.NoError(t, container.Populate(&addr))
 		require.Equal(t, "two", addr.Zone)
 	})
+
+	t.Run("apply without result", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "one",
+				}
+			}),
+			Apply(func(addr *net.TCPAddr) {
+				addr.Zone = "two"
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var addr *net.TCPAddr
+		require.NoError(t, container.Populate(&addr))
+		require.Equal(t, "two", addr.Zone)
+	})
+
+	t.Run("apply error", func(t *testing.T) {
+		_, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "one",
+				}
+			}),
+			Apply(func(addr *net.TCPAddr) (err error) {
+				return errors.New("boom")
+			}),
+		)
+
+		require.EqualError(t, err, "could not compile container: apply error: boom")
+	})
+
+	t.Run("apply incorrect function", func(t *testing.T) {
+		_, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "one",
+				}
+			}),
+			Apply(func(addr *net.TCPAddr) (s string) {
+				return "string"
+			}),
+		)
+
+		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
+	})
 }
 
 //

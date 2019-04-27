@@ -13,6 +13,14 @@ const (
 	providerTypeStruct
 )
 
+// providerWrapper
+type providerWrapper struct {
+	providerType  providerType
+	args          []key
+	providerValue reflect.Value
+	resultType    reflect.Type
+}
+
 // funcProvider
 func newFuncProvider(provider interface{}) (*providerWrapper, error) {
 	var ptype = reflect.TypeOf(provider)
@@ -65,12 +73,4 @@ func newStructProvider(provider interface{}) (*providerWrapper, error) {
 		providerValue: pvalue,
 		resultType:    ptype,
 	}, nil
-}
-
-// providerWrapper
-type providerWrapper struct {
-	providerType  providerType
-	args          []key
-	providerValue reflect.Value
-	resultType    reflect.Type
 }
