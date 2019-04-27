@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuilder_Provide(t *testing.T) {
+func TestContainer_Provide(t *testing.T) {
 	t.Run("function", func(t *testing.T) {
 		container, err := New(
 			Provide(func() *http.Server {
@@ -97,7 +97,7 @@ func TestBuilder_Provide(t *testing.T) {
 	})
 }
 
-func TestBuilder_ProvideAs(t *testing.T) {
+func TestContainer_ProvideAs(t *testing.T) {
 	t.Run("provide as", func(t *testing.T) {
 		container, err := New(
 			Provide(func() *net.TCPAddr {
@@ -145,8 +145,29 @@ func TestBuilder_ProvideAs(t *testing.T) {
 	})
 }
 
+func TestContainer_Apply(t *testing.T) {
+	t.Run("apply function", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "one",
+				}
+			}),
+			Apply(func(addr *net.TCPAddr) {
+				addr.Zone = "two"
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var addr *net.TCPAddr
+		require.NoError(t, container.Populate(&addr))
+		require.Equal(t, "two", addr.Zone)
+	})
+}
+
 //
-// func TestBuilder_ProvideName(t *testing.T) {
+// func TestContainer_ProvideName(t *testing.T) {
 // 	t.Run("provide two named implementations as one interface", func(t *testing.T) {
 // 		var container = &Container{}
 //
