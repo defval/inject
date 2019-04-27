@@ -23,11 +23,11 @@ func Apply(modifier interface{}, options ...ApplyOption) Option {
 
 // ApplyOption
 type ApplyOption interface {
-	apply(options *modifierOptions)
+	apply(modifier *modifierOptions)
 }
-type applyOption func(options *modifierOptions)
+type applyOption func(modifier *modifierOptions)
 
-func (o applyOption) apply(options *modifierOptions) { o(options) }
+func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }
 
 // Package
 func Package(options ...Option) Option {
@@ -57,21 +57,21 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 type ProvideOption interface {
 	apply(options *providerOptions)
 }
-type provideOption func(options *providerOptions)
+type provideOption func(provider *providerOptions)
 
-func (o provideOption) apply(options *providerOptions) { o(options) }
+func (o provideOption) apply(provider *providerOptions) { o(provider) }
 
 // Name
 func Name(name string) ProvideOption {
-	return provideOption(func(options *providerOptions) {
-		options.name = name
+	return provideOption(func(provider *providerOptions) {
+		provider.name = name
 	})
 }
 
 // As
 func As(ifaces ...interface{}) ProvideOption {
-	return provideOption(func(options *providerOptions) {
-		options.implements = append(options.implements, ifaces...)
+	return provideOption(func(provider *providerOptions) {
+		provider.implements = append(provider.implements, ifaces...)
 
 	})
 }
