@@ -29,46 +29,12 @@ func New(options ...Option) (_ *Container, err error) {
 	return container, nil
 }
 
-// Provide
-func Provide(provider interface{}, options ...ProvideOption) Option {
-	return option(func(container *Container) {
-		var po = &provideOptions{
-			provider: provider,
-		}
-
-		for _, opt := range options {
-			opt(po)
-		}
-
-		container.providers = append(container.providers, po)
-	})
-}
-
-// Package
-func Package(options ...Option) Option {
-	return option(func(container *Container) {
-		for _, opt := range options {
-			opt.apply(container)
-		}
-	})
-}
-
-// Option
-type Option interface {
-	apply(container *Container)
-}
-
-type option func(container *Container)
-
-func (o option) apply(container *Container) {
-	o(container)
-}
-
 // Container
 type Container struct {
 	init sync.Once
 
-	providers       []*provideOptions
+	providers       []*providerOptions
+	modifiers       []*modifierOptions
 	nodes           map[key]*definition
 	implementations map[key][]*definition
 }
@@ -158,36 +124,25 @@ func (b *Container) compile() (err error) {
 		}
 	}
 
+	// apply modifiers
+	for _, mo := range b.modifiers {
+		if err = mo.apply(b); err != nil {
+			return errors.Wrap(err, "could not apply modifier")
+		}
+	}
+
 	return nil
 }
 
-// ProvideOption
-type ProvideOption func(d *provideOptions)
-
-// Name
-func Name(name string) ProvideOption {
-	return func(options *provideOptions) {
-		options.name = name
-	}
-}
-
-// As
-func As(ifaces ...interface{}) ProvideOption {
-	return func(options *provideOptions) {
-		options.implements = append(options.implements, ifaces...)
-
-	}
-}
-
-// provideOptions
-type provideOptions struct {
+// providerOptions
+type providerOptions struct {
 	provider   interface{}
 	name       string
 	implements []interface{}
 }
 
 // definition
-func (o *provideOptions) definition() (_ *definition, err error) {
+func (o *providerOptions) definition() (_ *definition, err error) {
 	ptype := reflect.TypeOf(o.provider)
 
 	var wrapper *providerWrapper
@@ -229,4 +184,38 @@ func (o *provideOptions) definition() (_ *definition, err error) {
 		provider:   wrapper,
 		implements: implements,
 	}, nil
+}
+
+type modifierOptions struct {
+	modifier interface{}
+}
+
+func (o *modifierOptions) apply(container *Container) (err error) {
+	if o.modifier == nil {
+		return errors.New("nil modifier")
+	}
+
+	// todo: validation
+	var modifierValue = reflect.ValueOf(o.modifier)
+	var modifierType = modifierValue.Type()
+
+	var args []reflect.Value
+	for i := 0; i < modifierType.NumIn(); i++ {
+		// todo: add name
+		var def *definition
+		if def, err = container.get(key{typ: modifierType.In(i)}); err != nil {
+			return errors.WithStack(err)
+		}
+
+		var arg reflect.Value
+		if arg, err = def.instance(); err != nil {
+			return errors.WithStack(err)
+		}
+
+		args = append(args, arg)
+	}
+
+	modifierValue.Call(args)
+
+	return nil
 }
