@@ -68,10 +68,9 @@ func TestContainer_Provide(t *testing.T) {
 		)
 
 		// todo: improve error message
-		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with returned value and optional error")
+		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with value and optional error as result")
 	})
 
-	// todo: implement struct provide
 	t.Run("struct", func(t *testing.T) {
 		type StructProvider struct {
 			TCPAddr *net.TCPAddr `inject:""`
