@@ -6,6 +6,20 @@ type option func(container *Container)
 
 func (o option) apply(container *Container) { o(container) }
 
+// Logger
+func SetLogger(logger Logger) Option {
+	return option(func(container *Container) {
+		container.logger = logger
+	})
+}
+
+// NopLogger
+func NopLogger(logger Logger) Option {
+	return option(func(container *Container) {
+		container.logger = &nopLogger{}
+	})
+}
+
 // Apply apply function on
 func Apply(modifier interface{}, options ...ApplyOption) Option {
 	return option(func(container *Container) {

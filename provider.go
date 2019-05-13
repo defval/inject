@@ -13,28 +13,21 @@ const (
 	providerTypeStruct
 )
 
-// providerWrapper
-type providerWrapper struct {
-	providerType  providerType
-	args          []key
-	providerValue reflect.Value
-	resultType    reflect.Type
-}
-
 // funcProvider
 func newFuncProvider(provider interface{}) (*providerWrapper, error) {
 	var ptype = reflect.TypeOf(provider)
 	var pvalue = reflect.ValueOf(provider)
 
+	// check function result types
 	if ptype.NumOut() <= 0 || ptype.NumOut() > 2 {
 		return nil, errors.WithStack(ErrIncorrectProviderType)
 	}
 
-	if ptype.NumOut() == 2 && ptype.Out(1).Implements(errorInterface) == false {
+	if ptype.NumOut() == 2 && !ptype.Out(1).Implements(errorInterface) {
 		return nil, errors.WithStack(ErrIncorrectProviderType)
 	}
 
-	var resultType = pvalue.Type().Out(0) // todo
+	var resultType = pvalue.Type().Out(0)
 
 	var args []key
 	for i := 0; i < ptype.NumIn(); i++ {
@@ -73,4 +66,12 @@ func newStructProvider(provider interface{}) (*providerWrapper, error) {
 		providerValue: pvalue,
 		resultType:    ptype,
 	}, nil
+}
+
+// providerWrapper
+type providerWrapper struct {
+	providerType  providerType
+	args          []key
+	providerValue reflect.Value
+	resultType    reflect.Type
 }

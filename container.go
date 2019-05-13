@@ -8,21 +8,29 @@ import (
 )
 
 var (
-	ErrIncorrectProviderType      = errors.New("provider must be a function with value and optional error as result")
+	// ErrIncorrectProviderType
+	ErrIncorrectProviderType = errors.New("provider must be a function with value and optional error as result")
+
+	// ErrIncorrectModifierSignature
 	ErrIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")
 )
 
+// errorInterface type for error interface implementation checking
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
-// New
+// New creates new container with provided options.
 func New(options ...Option) (_ *Container, err error) {
 	var container = &Container{
-		nodes:           map[key]*definition{},
-		implementations: map[key][]*definition{},
+		nodes:           make(map[key]*definition),
+		implementations: make(map[key][]*definition),
 	}
 
 	for _, opt := range options {
 		opt.apply(container)
+	}
+
+	if container.logger == nil {
+		container.logger = &defaultLogger{}
 	}
 
 	if err = container.compile(); err != nil {
@@ -34,6 +42,7 @@ func New(options ...Option) (_ *Container, err error) {
 
 // Container
 type Container struct {
+	logger          Logger
 	providers       []*providerOptions
 	modifiers       []*modifierOptions
 	nodes           map[key]*definition

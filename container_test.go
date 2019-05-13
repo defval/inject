@@ -10,7 +10,7 @@ import (
 )
 
 func TestContainer_Provide(t *testing.T) {
-	t.Run("function", func(t *testing.T) {
+	t.Run("constructor", func(t *testing.T) {
 		container, err := New(
 			Provide(func() *http.Server {
 				return &http.Server{}
@@ -30,7 +30,7 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "test", addr.Zone)
 	})
 
-	t.Run("function with error", func(t *testing.T) {
+	t.Run("constructor with error", func(t *testing.T) {
 		container, err := New(
 			Provide(func() (*net.TCPAddr, error) {
 				return &net.TCPAddr{
@@ -44,6 +44,19 @@ func TestContainer_Provide(t *testing.T) {
 		var addr *net.TCPAddr
 		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
 	})
+
+	// t.Run("constructor provide nil", func(t *testing.T) {
+	// 	container, err := New(
+	// 		Provide(func() *net.TCPAddr {
+	// 			return nil
+	// 		}),
+	// 	)
+	//
+	// 	require.NoError(t, err)
+	//
+	// 	var addr *net.TCPAddr
+	// 	require.EqualError(t, container.Populate(&addr), "nil *net.TCPAddr provided")
+	// })
 
 	t.Run("function with nil error", func(t *testing.T) {
 		container, err := New(
