@@ -1,7 +1,6 @@
 package inject
 
 import (
-	"log"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -50,11 +49,11 @@ type Container struct {
 }
 
 // Populate
-func (b *Container) Populate(target interface{}, options ...ProvideOption) (err error) {
+func (c *Container) Populate(target interface{}, options ...ProvideOption) (err error) {
 	var targetValue = reflect.ValueOf(target).Elem()
 
 	var def *definition
-	if def, err = b.get(key{typ: targetValue.Type()}); err != nil {
+	if def, err = c.get(key{typ: targetValue.Type()}); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -69,39 +68,39 @@ func (b *Container) Populate(target interface{}, options ...ProvideOption) (err 
 }
 
 // add
-func (b *Container) add(def *definition) (err error) {
-	if _, ok := b.nodes[def.key]; ok {
+func (c *Container) add(def *definition) (err error) {
+	if _, ok := c.nodes[def.key]; ok {
 		return errors.Wrapf(err, "%s already provided", def.provider.resultType)
 	}
 
-	b.nodes[def.key] = def
+	c.nodes[def.key] = def
 
 	for _, key := range def.implements {
-		b.implementations[key] = append(b.implementations[key], def)
+		c.implementations[key] = append(c.implementations[key], def)
 	}
 
-	log.Printf("Provide: %s", def)
+	c.logger.Printf("Provide: %s", def)
 
 	return nil
 }
 
 // get
-func (b *Container) get(key key) (_ *definition, err error) {
-	if def, ok := b.nodes[key]; ok {
+func (c *Container) get(key key) (_ *definition, err error) {
+	if def, ok := c.nodes[key]; ok {
 		return def, nil
 	}
 
-	if len(b.implementations[key]) > 0 {
-		return b.implementations[key][0], nil // todo: return element
+	if len(c.implementations[key]) > 0 {
+		return c.implementations[key][0], nil // todo: return element
 	}
 
 	return nil, errors.Errorf("%s not provided yet", key)
 }
 
 // compile
-func (b *Container) compile() (err error) {
+func (c *Container) compile() (err error) {
 	// register providers
-	for _, po := range b.providers {
+	for _, po := range c.providers {
 		if po.provider == nil {
 			return errors.New("could not provide nil")
 		}
@@ -111,16 +110,16 @@ func (b *Container) compile() (err error) {
 			return errors.Wrapf(err, "provide failed")
 		}
 
-		if err = b.add(def); err != nil {
+		if err = c.add(def); err != nil {
 			return errors.Wrap(err, "could not add node")
 		}
 	}
 
 	// connect nodes
-	for _, def := range b.nodes {
+	for _, def := range c.nodes {
 		// load arguments
 		for _, key := range def.provider.args {
-			in, err := b.get(key)
+			in, err := c.get(key)
 
 			if err != nil {
 				return errors.WithStack(err)
@@ -131,8 +130,8 @@ func (b *Container) compile() (err error) {
 	}
 
 	// apply modifiers
-	for _, mo := range b.modifiers {
-		if err = mo.apply(b); err != nil {
+	for _, mo := range c.modifiers {
+		if err = mo.apply(c); err != nil {
 			return err
 		}
 	}
