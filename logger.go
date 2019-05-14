@@ -15,7 +15,7 @@ type defaultLogger struct {
 }
 
 func (l *defaultLogger) Printf(format string, args ...interface{}) {
-	log.Fatalf(format+"\n", args...)
+	log.Printf(format+"\n", args...)
 }
 
 // nopLogger

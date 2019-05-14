@@ -14,7 +14,7 @@ func SetLogger(logger Logger) Option {
 }
 
 // NopLogger
-func NopLogger(logger Logger) Option {
+func NopLogger() Option {
 	return option(func(container *Container) {
 		container.logger = &nopLogger{}
 	})
