@@ -107,6 +107,19 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "tcp", sp.TCPAddr.Zone)
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
+
+	t.Run("cycle", func(t *testing.T) {
+		_, err := New(
+			Provide(func(string) bool {
+				return true
+			}),
+			Provide(func(bool) string {
+				return "string"
+			}),
+		)
+
+		require.EqualError(t, err, "could not compile container: detect cycle: bool: string: bool")
+	})
 }
 
 func TestContainer_ProvideAs(t *testing.T) {

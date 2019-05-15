@@ -27,9 +27,11 @@ type definition struct {
 	provider   *providerWrapper
 	implements []key
 
-	in []*definition
+	in  []*definition
+	out []*definition
 
-	value reflect.Value
+	value   reflect.Value
+	visited int
 }
 
 func (d *definition) String() string {
@@ -106,4 +108,26 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 	}
 
 	return d.value, nil
+}
+
+func (d *definition) visit() (err error) {
+	if d.visited == visitMarkPermanent {
+		return
+	}
+
+	if d.visited == visitMarkTemporary {
+		return fmt.Errorf("%s", d.provider.resultType)
+	}
+
+	d.visited = visitMarkTemporary
+
+	for _, outNode := range d.out {
+		if err = outNode.visit(); err != nil {
+			return errors.Wrapf(err, "%s", d.provider.resultType)
+		}
+	}
+
+	d.visited = visitMarkPermanent
+
+	return nil
 }

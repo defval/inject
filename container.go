@@ -6,6 +6,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	visitMarkUnmarked = iota
+	visitMarkTemporary
+	visitMarkPermanent
+)
+
 var (
 	// ErrIncorrectProviderType
 	ErrIncorrectProviderType = errors.New("provider must be a function with value and optional error as result")
@@ -126,6 +132,16 @@ func (c *Container) compile() (err error) {
 			}
 
 			def.in = append(def.in, in)
+			in.out = append(in.out, def)
+		}
+	}
+
+	// verify cycles
+	for _, n := range c.nodes {
+		if n.visited == visitMarkUnmarked {
+			if err = n.visit(); err != nil {
+				return errors.Wrap(err, "detect cycle")
+			}
 		}
 	}
 
