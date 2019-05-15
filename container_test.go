@@ -45,18 +45,18 @@ func TestContainer_Provide(t *testing.T) {
 		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
 	})
 
-	// t.Run("constructor provide nil", func(t *testing.T) {
-	// 	container, err := New(
-	// 		Provide(func() *net.TCPAddr {
-	// 			return nil
-	// 		}),
-	// 	)
-	//
-	// 	require.NoError(t, err)
-	//
-	// 	var addr *net.TCPAddr
-	// 	require.EqualError(t, container.Populate(&addr), "nil *net.TCPAddr provided")
-	// })
+	t.Run("constructor provide nil", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return nil
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var addr *net.TCPAddr
+		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: nil provided")
+	})
 
 	t.Run("function with nil error", func(t *testing.T) {
 		container, err := New(
@@ -154,6 +154,28 @@ func TestContainer_ProvideAs(t *testing.T) {
 		)
 
 		require.EqualError(t, err, "could not compile container: provide failed: *net.TCPAddr not implement http.Handler interface")
+	})
+
+	t.Run("provide as interface with struct injection", func(t *testing.T) {
+		type TestStruct struct {
+			Addr net.Addr `inject:""`
+		}
+
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "zone",
+				}
+			}, As(new(net.Addr))),
+			Provide(&TestStruct{}),
+		)
+
+		require.NoError(t, err)
+
+		var s *TestStruct
+		require.NoError(t, container.Populate(&s))
+		require.NotNil(t, s.Addr)
+		require.Equal(t, "zone", s.Addr.(*net.TCPAddr).Zone)
 	})
 }
 

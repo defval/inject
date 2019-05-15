@@ -101,5 +101,9 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 		d.value = d.provider.providerValue
 	}
 
+	if d.value.IsNil() {
+		return d.value, errors.Errorf("nil provided")
+	}
+
 	return d.value, nil
 }
