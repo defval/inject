@@ -26,8 +26,11 @@ var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 // New creates new container with provided options.
 func New(options ...Option) (_ *Container, err error) {
 	var container = &Container{
-		nodes:           make(map[key]*definition),
-		implementations: make(map[key][]*definition),
+		storage: &definitions{
+			keys:            make([]key, 0, 8),
+			definitions:     make(map[key]*definition, 8),
+			implementations: make(map[key][]*definition, 8),
+		},
 	}
 
 	for _, opt := range options {
@@ -47,11 +50,12 @@ func New(options ...Option) (_ *Container, err error) {
 
 // Container
 type Container struct {
-	logger          Logger
-	providers       []*providerOptions
-	modifiers       []*modifierOptions
-	nodes           map[key]*definition
-	implementations map[key][]*definition
+	logger Logger
+
+	providers []*providerOptions
+	modifiers []*modifierOptions
+
+	storage *definitions
 }
 
 // Populate
@@ -59,7 +63,7 @@ func (c *Container) Populate(target interface{}, options ...ProvideOption) (err 
 	var targetValue = reflect.ValueOf(target).Elem()
 
 	var def *definition
-	if def, err = c.get(key{typ: targetValue.Type()}); err != nil {
+	if def, err = c.storage.get(key{typ: targetValue.Type()}); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -71,36 +75,6 @@ func (c *Container) Populate(target interface{}, options ...ProvideOption) (err 
 	targetValue.Set(instance)
 
 	return nil
-}
-
-// add
-func (c *Container) add(def *definition) (err error) {
-	if _, ok := c.nodes[def.key]; ok {
-		return errors.Wrapf(err, "%s already provided", def.provider.resultType)
-	}
-
-	c.nodes[def.key] = def
-
-	for _, key := range def.implements {
-		c.implementations[key] = append(c.implementations[key], def)
-	}
-
-	c.logger.Printf("Provide: %s", def)
-
-	return nil
-}
-
-// get
-func (c *Container) get(key key) (_ *definition, err error) {
-	if def, ok := c.nodes[key]; ok {
-		return def, nil
-	}
-
-	if len(c.implementations[key]) > 0 {
-		return c.implementations[key][0], nil // todo: return element
-	}
-
-	return nil, errors.Errorf("%s not provided yet", key)
 }
 
 // compile
@@ -116,16 +90,16 @@ func (c *Container) compile() (err error) {
 			return errors.Wrapf(err, "provide failed")
 		}
 
-		if err = c.add(def); err != nil {
+		if err = c.storage.add(def); err != nil {
 			return errors.Wrap(err, "could not add node")
 		}
 	}
 
-	// connect nodes
-	for _, def := range c.nodes {
+	// connect definitions
+	for _, def := range c.storage.all() {
 		// load arguments
 		for _, key := range def.provider.args {
-			in, err := c.get(key)
+			in, err := c.storage.get(key)
 
 			if err != nil {
 				return errors.WithStack(err)
@@ -137,7 +111,7 @@ func (c *Container) compile() (err error) {
 	}
 
 	// verify cycles
-	for _, n := range c.nodes {
+	for _, n := range c.storage.all() {
 		if n.visited == visitMarkUnmarked {
 			if err = n.visit(); err != nil {
 				return errors.Wrap(err, "detect cycle")
@@ -213,7 +187,7 @@ type modifierOptions struct {
 }
 
 // apply
-func (o *modifierOptions) apply(container *Container) (err error) {
+func (o *modifierOptions) apply(c *Container) (err error) {
 	if o.modifier == nil {
 		return errors.New("nil modifier")
 	}
@@ -239,7 +213,7 @@ func (o *modifierOptions) apply(container *Container) (err error) {
 	for i := 0; i < modifierType.NumIn(); i++ {
 		// todo: add name
 		var def *definition
-		if def, err = container.get(key{typ: modifierType.In(i)}); err != nil {
+		if def, err = c.storage.get(key{typ: modifierType.In(i)}); err != nil {
 			return errors.WithStack(err)
 		}
 
