@@ -219,7 +219,7 @@ func (o *modifierOptions) apply(c *Container) (err error) {
 
 		var arg reflect.Value
 		if arg, err = def.instance(); err != nil {
-			return errors.WithStack(err)
+			return errors.Wrapf(err, "%s", def.key)
 		}
 
 		args = append(args, arg)

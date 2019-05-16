@@ -104,7 +104,7 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 		d.value = d.provider.providerValue
 	}
 
-	if d.value.IsNil() {
+	if d.value.Kind() == reflect.Ptr && d.value.IsNil() {
 		return d.value, errors.Errorf("nil provided")
 	}
 
