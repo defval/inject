@@ -30,35 +30,7 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "test", addr.Zone)
 	})
 
-	t.Run("constructor with error", func(t *testing.T) {
-		container, err := New(
-			Provide(func() (*net.TCPAddr, error) {
-				return &net.TCPAddr{
-					Zone: "test",
-				}, errors.New("build error")
-			}),
-		)
-
-		require.NoError(t, err)
-
-		var addr *net.TCPAddr
-		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
-	})
-
-	t.Run("constructor provide nil", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
-				return nil
-			}),
-		)
-
-		require.NoError(t, err)
-
-		var addr *net.TCPAddr
-		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: nil provided")
-	})
-
-	t.Run("function with nil error", func(t *testing.T) {
+	t.Run("constructor with nil error", func(t *testing.T) {
 		container, err := New(
 			Provide(func() (*net.TCPAddr, error) {
 				return &net.TCPAddr{
@@ -75,13 +47,19 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "test", addr.Zone)
 	})
 
-	t.Run("function without arguments", func(t *testing.T) {
-		_, err := New(
-			Provide(func() {}),
+	t.Run("constructor with error", func(t *testing.T) {
+		container, err := New(
+			Provide(func() (*net.TCPAddr, error) {
+				return &net.TCPAddr{
+					Zone: "test",
+				}, errors.New("build error")
+			}),
 		)
 
-		// todo: improve error message
-		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with value and optional error as result")
+		require.NoError(t, err)
+
+		var addr *net.TCPAddr
+		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
 	})
 
 	t.Run("struct", func(t *testing.T) {
@@ -109,6 +87,50 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "tcp", sp.TCPAddr.Zone)
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
+
+	t.Run("provide nil", func(t *testing.T) {
+		_, err := New(
+			Provide(nil),
+		)
+
+		require.EqualError(t, err, "could not compile container: could not provide nil")
+	})
+
+	t.Run("constructor provide nil", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return nil
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var addr *net.TCPAddr
+		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: nil provided")
+	})
+
+	t.Run("function without arguments", func(t *testing.T) {
+		_, err := New(
+			Provide(func() {}),
+		)
+
+		// todo: improve error message
+		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with value and optional error as result")
+	})
+
+	// todo: wtf?
+	// t.Run("provide duplicate type", func(t *testing.T) {
+	// 	_, err := New(
+	// 		Provide(func() *net.TCPAddr {
+	// 			return &net.TCPAddr{}
+	// 		}),
+	// 		Provide(func() *net.TCPAddr {
+	// 			return &net.TCPAddr{}
+	// 		}),
+	// 	)
+	//
+	// 	require.EqualError(t, err, "")
+	// })
 
 	t.Run("cycle", func(t *testing.T) {
 		_, err := New(
@@ -261,6 +283,17 @@ func TestContainer_Apply(t *testing.T) {
 		)
 
 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
+	})
+}
+
+func TestContainer_Populate(t *testing.T) {
+	t.Run("not existing type", func(t *testing.T) {
+		container, err := New()
+
+		require.NoError(t, err)
+
+		var s string
+		require.EqualError(t, container.Populate(&s), "type string not provided")
 	})
 }
 

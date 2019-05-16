@@ -1,6 +1,8 @@
 package inject
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+)
 
 // definitions
 type definitions struct {
@@ -35,7 +37,7 @@ func (s *definitions) get(k key) (_ *definition, err error) {
 		return s.implementations[k][0], nil // todo: return element
 	}
 
-	return nil, errors.Errorf("%s not provided yet", k)
+	return nil, errors.Errorf("type %s not provided", k)
 }
 
 // all
