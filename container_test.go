@@ -87,6 +87,8 @@ func TestContainer_Provide(t *testing.T) {
 	t.Run("struct", func(t *testing.T) {
 		type StructProvider struct {
 			TCPAddr *net.TCPAddr `inject:""`
+			Public  string
+			private string
 			UDPAddr *net.UDPAddr `inject:""`
 		}
 
