@@ -34,6 +34,7 @@ type definition struct {
 	visited int
 }
 
+// String
 func (d *definition) String() string {
 	var builder strings.Builder
 
@@ -121,8 +122,8 @@ func (d *definition) visit() (err error) {
 
 	d.visited = visitMarkTemporary
 
-	for _, outNode := range d.out {
-		if err = outNode.visit(); err != nil {
+	for _, out := range d.out {
+		if err = out.visit(); err != nil {
 			return errors.Wrapf(err, "%s", d.provider.resultType)
 		}
 	}

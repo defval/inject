@@ -25,7 +25,7 @@ var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
 // New creates new container with provided options.
 func New(options ...Option) (_ *Container, err error) {
-	var container = &Container{
+	var c = &Container{
 		storage: &definitions{
 			keys:            make([]key, 0, 8),
 			definitions:     make(map[key]*definition, 8),
@@ -34,18 +34,18 @@ func New(options ...Option) (_ *Container, err error) {
 	}
 
 	for _, opt := range options {
-		opt.apply(container)
+		opt.apply(c)
 	}
 
-	if container.logger == nil {
-		container.logger = &defaultLogger{}
+	if c.logger == nil {
+		c.logger = &defaultLogger{}
 	}
 
-	if err = container.compile(); err != nil {
+	if err = c.compile(); err != nil {
 		return nil, errors.Wrapf(err, "could not compile container")
 	}
 
-	return container, nil
+	return c, nil
 }
 
 // Container
@@ -91,7 +91,7 @@ func (c *Container) compile() (err error) {
 		}
 
 		if err = c.storage.add(def); err != nil {
-			return errors.Wrap(err, "could not add node")
+			return errors.Wrap(err, "could not add definition")
 		}
 	}
 
