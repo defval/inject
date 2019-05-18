@@ -14,7 +14,7 @@ type definitions struct {
 // add
 func (s *definitions) add(def *definition) (err error) {
 	if _, ok := s.definitions[def.key]; ok {
-		return errors.Errorf("%s already provided", def.key) // todo: provider.String()
+		return errors.Errorf("%s already provided", def.key) // todo: value.String()
 	}
 
 	s.keys = append(s.keys, def.key)

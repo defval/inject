@@ -21,6 +21,40 @@ func (k key) String() string {
 	return fmt.Sprintf("%s", k.typ)
 }
 
+// createDefinition
+func createDefinition(po *providerOptions) (def *definition, err error) {
+	var wrapper *providerWrapper
+	if wrapper, err = wrapProvider(po.provider); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var implements []key
+	for _, iface := range po.implements {
+		ifaceType := reflect.TypeOf(iface)
+
+		if ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
+			return nil, errors.Errorf("argument for As() must be pointer to interface type, got %s", ifaceType)
+		}
+
+		ifaceTypeElem := ifaceType.Elem()
+
+		if !wrapper.result.Implements(ifaceTypeElem) {
+			return nil, errors.Errorf("%s not implement %s interface", wrapper.result, ifaceTypeElem)
+		}
+
+		implements = append(implements, key{typ: ifaceTypeElem})
+	}
+
+	return &definition{
+		key: key{
+			typ:  wrapper.result,
+			name: po.name,
+		},
+		provider:   wrapper,
+		implements: implements,
+	}, nil
+}
+
 // definition
 type definition struct {
 	key        key
@@ -72,9 +106,9 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 		values = append(values, value)
 	}
 
-	switch d.provider.providerType {
+	switch d.provider.wrapperType {
 	case providerTypeFunc:
-		var result = d.provider.providerValue.Call(values)
+		var result = d.provider.value.Call(values)
 
 		d.value = result[0]
 
@@ -87,9 +121,9 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 		}
 	case providerTypeStruct:
 		var skip = 0
-		for i := 0; i < d.provider.providerValue.Elem().Type().NumField(); i++ {
-			var fieldType = d.provider.providerValue.Elem().Type().Field(i)
-			var fieldValue = d.provider.providerValue.Elem().Field(i)
+		for i := 0; i < d.provider.value.Elem().Type().NumField(); i++ {
+			var fieldType = d.provider.value.Elem().Type().Field(i)
+			var fieldValue = d.provider.value.Elem().Field(i)
 
 			_, exists := fieldType.Tag.Lookup("inject")
 
@@ -101,7 +135,7 @@ func (d *definition) instance() (_ reflect.Value, err error) {
 			fieldValue.Set(values[i-skip])
 		}
 
-		d.value = d.provider.providerValue
+		d.value = d.provider.value
 	}
 
 	if d.value.Kind() == reflect.Ptr && d.value.IsNil() {
@@ -117,14 +151,14 @@ func (d *definition) visit() (err error) {
 	}
 
 	if d.visited == visitMarkTemporary {
-		return fmt.Errorf("%s", d.provider.resultType)
+		return fmt.Errorf("%s", d.provider.result)
 	}
 
 	d.visited = visitMarkTemporary
 
 	for _, out := range d.out {
 		if err = out.visit(); err != nil {
-			return errors.Wrapf(err, "%s", d.provider.resultType)
+			return errors.Wrapf(err, "%s", d.provider.result)
 		}
 	}
 

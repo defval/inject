@@ -118,7 +118,7 @@ func TestContainer_Provide(t *testing.T) {
 		)
 
 		// todo: improve error message
-		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: value must be a function with value and optional error as result")
 	})
 
 	t.Run("constructor with incorrect signature", func(t *testing.T) {
@@ -128,7 +128,7 @@ func TestContainer_Provide(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: value must be a function with value and optional error as result")
 	})
 
 	t.Run("provide duplicate type", func(t *testing.T) {
@@ -154,12 +154,12 @@ func TestContainer_Provide(t *testing.T) {
 		require.EqualError(t, err, "could not compile container: type *net.TCPAddr not provided")
 	})
 
-	t.Run("incorrect provider type", func(t *testing.T) {
+	t.Run("incorrect value type", func(t *testing.T) {
 		_, err := New(
 			Provide("string"),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: provider must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: value must be a function with value and optional error as result")
 	})
 
 	t.Run("cycle", func(t *testing.T) {
@@ -400,6 +400,18 @@ func TestContainer_Populate(t *testing.T) {
 
 		var s string
 		require.EqualError(t, container.Populate(&s), "type string not provided")
+	})
+
+	t.Run("nil", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}),
+		)
+
+		require.NoError(t, err)
+
+		require.EqualError(t, container.Populate(nil), "could not populate nil")
 	})
 }
 

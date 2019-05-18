@@ -14,7 +14,7 @@ const (
 
 var (
 	// ErrIncorrectProviderType
-	ErrIncorrectProviderType = errors.New("provider must be a function with value and optional error as result")
+	ErrIncorrectProviderType = errors.New("value must be a function with value and optional error as result")
 
 	// ErrIncorrectModifierSignature
 	ErrIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")
@@ -60,19 +60,25 @@ type Container struct {
 
 // Populate
 func (c *Container) Populate(target interface{}, options ...ProvideOption) (err error) {
-	var targetValue = reflect.ValueOf(target).Elem()
+	rvalue := reflect.ValueOf(target)
+
+	if !rvalue.IsValid() || rvalue.IsNil() {
+		return errors.New("could not populate nil")
+	}
+
+	rvalue = rvalue.Elem()
 
 	var def *definition
-	if def, err = c.storage.get(key{typ: targetValue.Type()}); err != nil {
+	if def, err = c.storage.get(key{typ: rvalue.Type()}); err != nil {
 		return errors.WithStack(err)
 	}
 
 	var instance reflect.Value
 	if instance, err = def.instance(); err != nil {
-		return errors.Wrapf(err, "%s", targetValue.Type())
+		return errors.Wrapf(err, "%s", rvalue.Type())
 	}
 
-	targetValue.Set(instance)
+	rvalue.Set(instance)
 
 	return nil
 }
@@ -86,7 +92,7 @@ func (c *Container) compile() (err error) {
 		}
 
 		var def *definition
-		if def, err = po.definition(); err != nil {
+		if def, err = createDefinition(po); err != nil {
 			return errors.Wrapf(err, "provide failed")
 		}
 
@@ -98,7 +104,7 @@ func (c *Container) compile() (err error) {
 	// connect definitions
 	for _, def := range c.storage.all() {
 		// load arguments
-		for _, key := range def.provider.args {
+		for _, key := range def.provider.arguments {
 			in, err := c.storage.get(key)
 
 			if err != nil {
@@ -134,51 +140,6 @@ type providerOptions struct {
 	provider   interface{}
 	name       string
 	implements []interface{}
-}
-
-// definition
-func (o *providerOptions) definition() (_ *definition, err error) {
-	ptype := reflect.TypeOf(o.provider)
-
-	var wrapper *providerWrapper
-	switch true {
-	case ptype.Kind() == reflect.Func:
-		wrapper, err = newFuncProvider(o.provider)
-	case ptype.Kind() == reflect.Ptr && ptype.Elem().Kind() == reflect.Struct:
-		wrapper, err = newStructProvider(o.provider)
-	default:
-		return nil, errors.WithStack(ErrIncorrectProviderType)
-	}
-
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var implements []key
-	for _, iface := range o.implements {
-		ifaceType := reflect.TypeOf(iface)
-
-		if ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
-			return nil, errors.Errorf("argument for As() must be pointer to interface type, got %s", ifaceType)
-		}
-
-		ifaceTypeElem := ifaceType.Elem()
-
-		if !wrapper.resultType.Implements(ifaceTypeElem) {
-			return nil, errors.Errorf("%s not implement %s interface", wrapper.resultType, ifaceTypeElem)
-		}
-
-		implements = append(implements, key{typ: ifaceTypeElem})
-	}
-
-	return &definition{
-		key: key{
-			typ:  wrapper.resultType,
-			name: o.name,
-		},
-		provider:   wrapper,
-		implements: implements,
-	}, nil
 }
 
 // modifierOptions
@@ -219,7 +180,7 @@ func (o *modifierOptions) apply(c *Container) (err error) {
 
 		var arg reflect.Value
 		if arg, err = def.instance(); err != nil {
-			return errors.Wrapf(err, "%s", def.key)
+			return errors.Wrapf(err, "%s", def)
 		}
 
 		args = append(args, arg)
