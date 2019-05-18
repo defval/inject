@@ -15,10 +15,54 @@ const (
 
 // providerWrapper
 type providerWrapper struct {
-	wrapperType providerType
-	value       reflect.Value
-	arguments   []key
-	result      reflect.Type
+	typ       providerType
+	value     reflect.Value
+	result    reflect.Type
+	arguments []key
+}
+
+// instance
+func (w *providerWrapper) instance(arguments []reflect.Value) (_ reflect.Value, err error) {
+	switch w.typ {
+	case providerTypeFunc:
+		var result = w.value.Call(arguments)
+
+		if len(result) == 1 || result[1].IsNil() {
+			return result[0], nil
+		}
+
+		if len(result) == 2 {
+			return result[0], errors.WithStack(result[1].Interface().(error))
+		}
+
+		panic("incorrect constructor function")
+	case providerTypeStruct:
+		pe := w.value.Elem()
+
+		skip := 0
+		for i := 0; i < pe.Type().NumField(); i++ {
+			var fieldType = pe.Type().Field(i)
+			var fieldValue = pe.Field(i)
+
+			_, exists := fieldType.Tag.Lookup("inject")
+
+			if !exists {
+				skip++
+				continue
+			}
+
+			fieldValue.Set(arguments[i-skip])
+		}
+
+		if w.value.Kind() == reflect.Ptr && w.value.IsNil() {
+			return w.value, errors.Errorf("nil provided")
+		}
+
+		return w.value, nil
+	}
+
+	panic("unknown provider type")
+
 }
 
 // wrapProvider
@@ -56,10 +100,10 @@ func wrapFunction(provider interface{}) (_ *providerWrapper, err error) {
 	}
 
 	return &providerWrapper{
-		wrapperType: providerTypeFunc,
-		arguments:   args,
-		value:       pv,
-		result:      result,
+		typ:       providerTypeFunc,
+		arguments: args,
+		value:     pv,
+		result:    result,
 	}, nil
 }
 
@@ -85,10 +129,10 @@ func wrapStruct(provider interface{}) (*providerWrapper, error) {
 	}
 
 	return &providerWrapper{
-		wrapperType: providerTypeStruct,
-		value:       pv,
-		arguments:   args,
-		result:      pt,
+		typ:       providerTypeStruct,
+		value:     pv,
+		arguments: args,
+		result:    pt,
 	}, nil
 }
 

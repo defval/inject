@@ -64,8 +64,8 @@ type definition struct {
 	in  []*definition
 	out []*definition
 
-	value   reflect.Value
-	visited int
+	instance reflect.Value
+	visited  int
 }
 
 // String
@@ -77,7 +77,7 @@ func (d *definition) String() string {
 	if len(d.implements) > 0 {
 		builder.WriteString(" as ")
 		for i, key := range d.implements {
-			builder.WriteString(fmt.Sprintf("%s", key.typ))
+			builder.WriteString(fmt.Sprintf("%s", key))
 
 			if i != len(d.implements)-1 {
 				builder.WriteString(", ")
@@ -85,66 +85,39 @@ func (d *definition) String() string {
 		}
 	}
 
-	if d.key.name != "" {
-		builder.WriteString(fmt.Sprintf(" with name `%s`", d.key.name))
-	}
-
 	return builder.String()
 }
 
-func (d *definition) instance() (_ reflect.Value, err error) {
-	if d.value.IsValid() {
-		return d.value, nil
+// init
+func (d *definition) init() (instance reflect.Value, err error) {
+	if d.instance.IsValid() {
+		return d.instance, nil
 	}
 
-	var values []reflect.Value
-	for _, in := range d.in {
-		var value reflect.Value
-		if value, err = in.instance(); err != nil {
-			return value, errors.Wrapf(err, "%s", in.key)
+	var arguments []reflect.Value
+	for _, arg := range d.in {
+		instance, err := arg.init()
+
+		if err != nil {
+			return reflect.Value{}, errors.Wrapf(err, "%s", arg)
 		}
-		values = append(values, value)
+		arguments = append(arguments, instance)
 	}
 
-	switch d.provider.wrapperType {
-	case providerTypeFunc:
-		var result = d.provider.value.Call(values)
-
-		d.value = result[0]
-
-		if len(result) == 2 {
-			if result[1].IsNil() {
-				return d.value, nil
-			}
-
-			return d.value, errors.WithStack(result[1].Interface().(error))
-		}
-	case providerTypeStruct:
-		var skip = 0
-		for i := 0; i < d.provider.value.Elem().Type().NumField(); i++ {
-			var fieldType = d.provider.value.Elem().Type().Field(i)
-			var fieldValue = d.provider.value.Elem().Field(i)
-
-			_, exists := fieldType.Tag.Lookup("inject")
-
-			if !exists {
-				skip++
-				continue
-			}
-
-			fieldValue.Set(values[i-skip])
-		}
-
-		d.value = d.provider.value
+	if instance, err = d.provider.instance(arguments); err != nil {
+		return reflect.Value{}, errors.WithStack(err)
 	}
 
-	if d.value.Kind() == reflect.Ptr && d.value.IsNil() {
-		return d.value, errors.Errorf("nil provided")
+	if instance.Kind() == reflect.Ptr && instance.IsNil() {
+		return reflect.Value{}, errors.New("nil provided")
 	}
 
-	return d.value, nil
+	d.instance = instance
+
+	return instance, nil
 }
 
+// visit
 func (d *definition) visit() (err error) {
 	if d.visited == visitMarkPermanent {
 		return

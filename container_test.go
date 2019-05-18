@@ -393,6 +393,27 @@ func TestContainer_Package(t *testing.T) {
 }
 
 func TestContainer_Populate(t *testing.T) {
+	t.Run("not pointer", func(t *testing.T) {
+		container, err := New(
+			Provide(func() string {
+				return "string"
+			}),
+			Provide(func() int32 {
+				return 32
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var s string
+		require.NoError(t, container.Populate(&s))
+		require.Equal(t, s, "string")
+
+		var i32 int32
+		require.NoError(t, container.Populate(&i32))
+		require.Equal(t, i32, int32(32))
+	})
+
 	t.Run("not existing type", func(t *testing.T) {
 		container, err := New()
 

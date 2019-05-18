@@ -62,7 +62,7 @@ type Container struct {
 func (c *Container) Populate(target interface{}, options ...ProvideOption) (err error) {
 	rvalue := reflect.ValueOf(target)
 
-	if !rvalue.IsValid() || rvalue.IsNil() {
+	if !rvalue.IsValid() || (rvalue.Kind() == reflect.Ptr && rvalue.IsNil()) {
 		return errors.New("could not populate nil")
 	}
 
@@ -74,7 +74,7 @@ func (c *Container) Populate(target interface{}, options ...ProvideOption) (err 
 	}
 
 	var instance reflect.Value
-	if instance, err = def.instance(); err != nil {
+	if instance, err = def.init(); err != nil {
 		return errors.Wrapf(err, "%s", rvalue.Type())
 	}
 
@@ -179,7 +179,7 @@ func (o *modifierOptions) apply(c *Container) (err error) {
 		}
 
 		var arg reflect.Value
-		if arg, err = def.instance(); err != nil {
+		if arg, err = def.init(); err != nil {
 			return errors.Wrapf(err, "%s", def)
 		}
 
