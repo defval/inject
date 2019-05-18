@@ -10,7 +10,8 @@
 
 ## WIP
 
-- Named definitions
+- providing as group of interfaces
+- named definitions
 
 ## Usage
 
