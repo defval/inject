@@ -383,6 +383,22 @@ func TestApply(t *testing.T) {
 
 		require.EqualError(t, err, "could not compile container: *net.TCPAddr: wow")
 	})
+
+	t.Run("group", func(t *testing.T) {
+		_, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, As(new(net.Addr))),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{}
+			}, As(new(net.Addr))),
+			Apply(func(addrs []net.Addr) {
+				require.Len(t, addrs, 2)
+			}),
+		)
+
+		require.NoError(t, err)
+	})
 }
 
 func TestContainer_Package(t *testing.T) {

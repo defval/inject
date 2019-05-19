@@ -87,32 +87,34 @@ func (c *Container) Populate(target interface{}, options ...PopulateOption) (err
 		return c.populateSlice(rv)
 	}
 
-	k := key{
-		typ:  rv.Type(),
-		name: po.name,
-	}
-
-	if instance, err := c.populate(k); err != nil {
+	if err := c.populate(rv, po.name); err != nil {
 		return errors.WithStack(err)
-	} else {
-		rv.Set(instance)
 	}
 
 	return nil
 }
 
 // populate
-func (c *Container) populate(k key) (instance reflect.Value, err error) {
+func (c *Container) populate(value reflect.Value, name string) (err error) {
+	k := key{
+		typ:  value.Type(),
+		name: name,
+	}
+
 	var def *definition
 	if def, err = c.storage.get(k); err != nil {
-		return instance, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	if instance, err = def.load(); err != nil {
-		return instance, errors.Wrapf(err, "%s", k)
+	instance, err := def.load()
+
+	if err != nil {
+		return errors.Wrapf(err, "%s", k)
 	}
 
-	return instance, nil
+	value.Set(instance)
+
+	return nil
 }
 
 func (c *Container) populateSlice(targetValue reflect.Value) (err error) {
@@ -205,22 +207,19 @@ func (c *Container) apply(mo *modifierOptions) (err error) {
 
 	var args []reflect.Value
 	for i := 0; i < mt.NumIn(); i++ {
-		key := key{
-			typ: mt.In(i),
+		rv := reflect.New(mt.In(i)).Elem()
+
+		if rv.Kind() == reflect.Slice {
+			if err = c.populateSlice(rv); err != nil {
+				return errors.WithStack(err)
+			}
+		} else {
+			if err = c.populate(rv, ""); err != nil {
+				return errors.WithStack(err)
+			}
 		}
 
-		// todo: add name
-		var def *definition
-		if def, err = c.storage.get(key); err != nil {
-			return errors.WithStack(err)
-		}
-
-		var arg reflect.Value
-		if arg, err = def.load(); err != nil {
-			return errors.Wrapf(err, "%s", def)
-		}
-
-		args = append(args, arg)
+		args = append(args, rv)
 	}
 
 	var result = mv.Call(args)

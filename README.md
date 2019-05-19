@@ -18,7 +18,7 @@ structures without the need to having specify each constructor argument manually
 
 - documentation
 
-## Usage
+## Full example
 
 ```go
 package main
@@ -33,11 +33,12 @@ import (
 	"github.com/defval/inject"
 )
 
-//
 func main() {
 	container, err := inject.New(
 		inject.Provide(NewHTTPServer),
 		inject.Provide(NewServeMux, inject.As(new(http.Handler))),
+		inject.Provide(&UserController{}, inject.As(new(Controller))),
+		inject.Provide(&AccountController{}, inject.As(new(Controller))),
 		inject.Apply(RegisterRoutes),
 	)
 
@@ -81,11 +82,36 @@ func NewServeMux() *http.ServeMux {
 }
 
 // RegisterRoutes
-func RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/echo", func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte("echo"))
+func RegisterRoutes(mux *http.ServeMux, controllers []Controller) {
+	for _, ctrl := range controllers {
+		ctrl.RegisterRoutes(mux)
+	}
+}
+
+// Controller
+type Controller interface {
+	RegisterRoutes(mux *http.ServeMux)
+}
+
+// UserController
+type UserController struct {
+}
+
+func (c *UserController) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/user", func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("user"))
 	})
 }
+
+// UserController
+type AccountController struct {
+}
+
+func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/account", func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("account"))
+	})
+}
+
 
 ```
