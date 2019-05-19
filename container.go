@@ -144,27 +144,22 @@ func (c *Container) apply(mo *modifierOptions) (err error) {
 	}
 
 	// todo: validation
-	var modifierValue = reflect.ValueOf(mo.modifier)
+	mv := reflect.ValueOf(mo.modifier)
+	mt := mv.Type()
 
-	if modifierValue.Kind() != reflect.Func {
-		return errors.WithStack(errIncorrectModifierSignature)
-	}
-
-	var modifierType = modifierValue.Type()
-
-	if modifierType.NumOut() > 1 {
-		return errors.WithStack(errIncorrectModifierSignature)
-	}
-
-	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
-		return errors.WithStack(errIncorrectModifierSignature)
+	if err = checkModifier(mv); err != nil {
+		return errors.WithStack(err)
 	}
 
 	var args []reflect.Value
-	for i := 0; i < modifierType.NumIn(); i++ {
+	for i := 0; i < mt.NumIn(); i++ {
+		key := key{
+			typ: mt.In(i),
+		}
+
 		// todo: add name
 		var def *definition
-		if def, err = c.storage.get(key{typ: modifierType.In(i)}); err != nil {
+		if def, err = c.storage.get(key); err != nil {
 			return errors.WithStack(err)
 		}
 
@@ -176,10 +171,29 @@ func (c *Container) apply(mo *modifierOptions) (err error) {
 		args = append(args, arg)
 	}
 
-	var result = modifierValue.Call(args)
+	var result = mv.Call(args)
 
 	if len(result) == 1 {
 		return errors.Wrap(result[0].Interface().(error), "apply error")
+	}
+
+	return nil
+}
+
+// checkModifier.
+func checkModifier(mv reflect.Value) (err error) {
+	if mv.Kind() != reflect.Func {
+		return errors.WithStack(errIncorrectModifierSignature)
+	}
+
+	var modifierType = mv.Type()
+
+	if modifierType.NumOut() > 1 {
+		return errors.WithStack(errIncorrectModifierSignature)
+	}
+
+	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
+		return errors.WithStack(errIncorrectModifierSignature)
 	}
 
 	return nil
