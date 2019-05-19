@@ -13,17 +13,18 @@ const (
 )
 
 var (
-	// ErrIncorrectProviderType
-	ErrIncorrectProviderType = errors.New("value must be a function with value and optional error as result")
+	// errIncorrectProviderType.
+	errIncorrectProviderType = errors.New("value must be a function with value and optional error as result")
 
-	// ErrIncorrectModifierSignature
-	ErrIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")
+	// errIncorrectModifierSignature.
+	errIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")
 )
 
 // errorInterface type for error interface implementation checking
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
 // New creates new container with provided options.
+// Fore more information about container options see `Option` type.
 func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
 		storage: &definitions{
@@ -33,6 +34,7 @@ func New(options ...Option) (_ *Container, err error) {
 		},
 	}
 
+	// apply options.
 	for _, opt := range options {
 		opt.apply(c)
 	}
@@ -48,7 +50,7 @@ func New(options ...Option) (_ *Container, err error) {
 	return c, nil
 }
 
-// Container
+// Container.
 type Container struct {
 	logger Logger
 
@@ -58,7 +60,7 @@ type Container struct {
 	storage *definitions
 }
 
-// Populate
+// Populate populates given target pointer with type instance provided in container.
 func (c *Container) Populate(target interface{}, options ...ProvideOption) (err error) {
 	rvalue := reflect.ValueOf(target)
 
@@ -83,7 +85,7 @@ func (c *Container) Populate(target interface{}, options ...ProvideOption) (err 
 	return nil
 }
 
-// compile
+// compile.
 func (c *Container) compile() (err error) {
 	// register providers
 	for _, po := range c.providers {
@@ -127,7 +129,7 @@ func (c *Container) compile() (err error) {
 
 	// apply modifiers
 	for _, mo := range c.modifiers {
-		if err = mo.apply(c); err != nil {
+		if err = c.apply(mo); err != nil {
 			return err
 		}
 	}
@@ -135,39 +137,27 @@ func (c *Container) compile() (err error) {
 	return nil
 }
 
-// providerOptions
-type providerOptions struct {
-	provider   interface{}
-	name       string
-	implements []interface{}
-}
-
-// modifierOptions
-type modifierOptions struct {
-	modifier interface{}
-}
-
-// apply
-func (o *modifierOptions) apply(c *Container) (err error) {
-	if o.modifier == nil {
+// apply.
+func (c *Container) apply(mo *modifierOptions) (err error) {
+	if mo.modifier == nil {
 		return errors.New("nil modifier")
 	}
 
 	// todo: validation
-	var modifierValue = reflect.ValueOf(o.modifier)
+	var modifierValue = reflect.ValueOf(mo.modifier)
 
 	if modifierValue.Kind() != reflect.Func {
-		return errors.WithStack(ErrIncorrectModifierSignature)
+		return errors.WithStack(errIncorrectModifierSignature)
 	}
 
 	var modifierType = modifierValue.Type()
 
 	if modifierType.NumOut() > 1 {
-		return errors.WithStack(ErrIncorrectModifierSignature)
+		return errors.WithStack(errIncorrectModifierSignature)
 	}
 
 	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
-		return errors.WithStack(ErrIncorrectModifierSignature)
+		return errors.WithStack(errIncorrectModifierSignature)
 	}
 
 	var args []reflect.Value
@@ -193,4 +183,16 @@ func (o *modifierOptions) apply(c *Container) (err error) {
 	}
 
 	return nil
+}
+
+// providerOptions.
+type providerOptions struct {
+	provider   interface{}
+	name       string
+	implements []interface{}
+}
+
+// modifierOptions.
+type modifierOptions struct {
+	modifier interface{}
 }

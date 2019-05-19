@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// key.
 type key struct {
 	// type of provided value
 	typ reflect.Type
@@ -16,12 +17,12 @@ type key struct {
 	name string
 }
 
-// String
+// String.
 func (k key) String() string {
 	return fmt.Sprintf("%s", k.typ)
 }
 
-// createDefinition
+// createDefinition.
 func createDefinition(po *providerOptions) (def *definition, err error) {
 	var wrapper *providerWrapper
 	if wrapper, err = wrapProvider(po.provider); err != nil {
@@ -55,7 +56,7 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 	}, nil
 }
 
-// definition
+// definition.
 type definition struct {
 	key        key
 	provider   *providerWrapper
@@ -68,7 +69,7 @@ type definition struct {
 	visited  int
 }
 
-// String
+// String.
 func (d *definition) String() string {
 	var builder strings.Builder
 
@@ -88,7 +89,7 @@ func (d *definition) String() string {
 	return builder.String()
 }
 
-// init
+// init.
 func (d *definition) init() (instance reflect.Value, err error) {
 	if d.instance.IsValid() {
 		return d.instance, nil
@@ -117,7 +118,7 @@ func (d *definition) init() (instance reflect.Value, err error) {
 	return instance, nil
 }
 
-// visit
+// visit.
 func (d *definition) visit() (err error) {
 	if d.visited == visitMarkPermanent {
 		return

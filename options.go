@@ -1,56 +1,17 @@
 package inject
 
-// Option modify container.
-type Option interface{ apply(container *Container) }
-type option func(container *Container)
+// OPTIONS
 
-func (o option) apply(container *Container) { o(container) }
+// Option modifies container.
+type Option interface{ apply(*Container) }
 
-// Logger
-func SetLogger(logger Logger) Option {
-	return option(func(container *Container) {
-		container.logger = logger
-	})
-}
+// ProvideOption
+type ProvideOption interface{ apply(*providerOptions) }
 
-// NopLogger
-func NopLogger() Option {
-	return option(func(container *Container) {
-		container.logger = &nopLogger{}
-	})
-}
+// ApplyOption.
+type ApplyOption interface{ apply(*modifierOptions) }
 
-// Apply apply function on
-func Apply(modifier interface{}, options ...ApplyOption) Option {
-	return option(func(container *Container) {
-		var mo = &modifierOptions{
-			modifier: modifier,
-		}
-
-		for _, opt := range options {
-			opt.apply(mo)
-		}
-
-		container.modifiers = append(container.modifiers, mo)
-	})
-}
-
-// ApplyOption
-type ApplyOption interface {
-	apply(modifier *modifierOptions)
-}
-type applyOption func(modifier *modifierOptions)
-
-func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }
-
-// Package
-func Package(options ...Option) Option {
-	return option(func(container *Container) {
-		for _, opt := range options {
-			opt.apply(container)
-		}
-	})
-}
+// CONTAINER OPTIONS.
 
 // Provide provide dependency with options.
 func Provide(provider interface{}, options ...ProvideOption) Option {
@@ -67,13 +28,45 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 	})
 }
 
-// ProvideOption
-type ProvideOption interface {
-	apply(options *providerOptions)
-}
-type provideOption func(provider *providerOptions)
+// Apply.
+func Apply(modifier interface{}, options ...ApplyOption) Option {
+	return option(func(container *Container) {
+		var mo = &modifierOptions{
+			modifier: modifier,
+		}
 
-func (o provideOption) apply(provider *providerOptions) { o(provider) }
+		for _, opt := range options {
+			opt.apply(mo)
+		}
+
+		container.modifiers = append(container.modifiers, mo)
+	})
+}
+
+// Package
+func Package(options ...Option) Option {
+	return option(func(container *Container) {
+		for _, opt := range options {
+			opt.apply(container)
+		}
+	})
+}
+
+// SetLogger.
+func SetLogger(logger Logger) Option {
+	return option(func(container *Container) {
+		container.logger = logger
+	})
+}
+
+// NopLogger.
+func NopLogger() Option {
+	return option(func(container *Container) {
+		container.logger = &nopLogger{}
+	})
+}
+
+// PROVIDE OPTIONS.
 
 // Name
 func Name(name string) ProvideOption {
@@ -89,3 +82,18 @@ func As(ifaces ...interface{}) ProvideOption {
 
 	})
 }
+
+// option internal
+type option func(container *Container)
+
+func (o option) apply(container *Container) { o(container) }
+
+// provide option internal
+type provideOption func(provider *providerOptions)
+
+func (o provideOption) apply(provider *providerOptions) { o(provider) }
+
+// apply option internal
+type applyOption func(modifier *modifierOptions)
+
+func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }

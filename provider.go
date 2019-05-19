@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// providerType.
 type providerType int
 
 const (
@@ -77,7 +78,7 @@ func wrapProvider(provider interface{}) (wrapper *providerWrapper, err error) {
 		return wrapStruct(provider)
 	}
 
-	return nil, errors.WithStack(ErrIncorrectProviderType)
+	return nil, errors.WithStack(errIncorrectProviderType)
 }
 
 // wrapFunction
@@ -140,11 +141,11 @@ func wrapStruct(provider interface{}) (*providerWrapper, error) {
 func checkFunctionProvider(pt reflect.Type) (err error) {
 	// check function result types
 	if pt.NumOut() <= 0 || pt.NumOut() > 2 {
-		return errors.WithStack(ErrIncorrectProviderType)
+		return errors.WithStack(errIncorrectProviderType)
 	}
 
 	if pt.NumOut() == 2 && !pt.Out(1).Implements(errorInterface) {
-		return errors.WithStack(ErrIncorrectProviderType)
+		return errors.WithStack(errIncorrectProviderType)
 	}
 
 	return nil
