@@ -17,9 +17,16 @@ type key struct {
 	name string
 }
 
+// createGroupKey
+func createGroupKey(k key) key {
+	return key{
+		typ: reflect.SliceOf(k.typ),
+	}
+}
+
 // String.
 func (k key) String() string {
-	return fmt.Sprintf("%s", k.typ)
+	return fmt.Sprintf("%s", k.typ) // todo: add name
 }
 
 // createDefinition.
@@ -43,7 +50,7 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 			return nil, errors.Errorf("%s not implement %s interface", wrapper.result, ifaceTypeElem)
 		}
 
-		implements = append(implements, key{typ: ifaceTypeElem})
+		implements = append(implements, key{typ: ifaceTypeElem, name: po.name})
 	}
 
 	return &definition{
@@ -89,15 +96,15 @@ func (d *definition) String() string {
 	return builder.String()
 }
 
-// init.
-func (d *definition) init() (instance reflect.Value, err error) {
+// load.
+func (d *definition) load() (instance reflect.Value, err error) {
 	if d.instance.IsValid() {
 		return d.instance, nil
 	}
 
 	var arguments []reflect.Value
 	for _, arg := range d.in {
-		instance, err := arg.init()
+		instance, err := arg.load()
 
 		if err != nil {
 			return reflect.Value{}, errors.Wrapf(err, "%s", arg)

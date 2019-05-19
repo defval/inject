@@ -10,11 +10,13 @@ structures without the need to having specify each constructor argument manually
 - constructor injection
 - tagged struct fields injection
 - inject as interface
+- inject group slices
+- group default value
+- inject named definition
 
 ## WIP
 
-- providing as group of interfaces
-- named definitions
+- documentation
 
 ## Usage
 

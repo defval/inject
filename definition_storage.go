@@ -9,12 +9,13 @@ type definitions struct {
 	keys            []key
 	definitions     map[key]*definition
 	implementations map[key][]*definition
+	groups          map[key][]*definition
 }
 
 // add
 func (s *definitions) add(def *definition) (err error) {
 	if _, ok := s.definitions[def.key]; ok {
-		return errors.Errorf("%s already provided", def.key) // todo: value.String()
+		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.key) // todo: value.String()
 	}
 
 	s.keys = append(s.keys, def.key)
@@ -22,6 +23,14 @@ func (s *definitions) add(def *definition) (err error) {
 
 	for _, key := range def.implements {
 		s.implementations[key] = append(s.implementations[key], def)
+
+		if _, ok := s.groups[key]; !ok {
+			s.groups[key] = make([]*definition, 0, 8)
+		}
+
+		groupKey := createGroupKey(key)
+
+		s.groups[groupKey] = append(s.groups[groupKey], def)
 	}
 
 	return nil
@@ -47,4 +56,12 @@ func (s *definitions) all() (defs []*definition) {
 	}
 
 	return defs
+}
+
+func (s *definitions) clearGroups() {
+	for key, group := range s.groups {
+		if len(group) == 1 {
+			delete(s.groups, key)
+		}
+	}
 }

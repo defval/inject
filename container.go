@@ -31,6 +31,7 @@ func New(options ...Option) (_ *Container, err error) {
 			keys:            make([]key, 0, 8),
 			definitions:     make(map[key]*definition, 8),
 			implementations: make(map[key][]*definition, 8),
+			groups:          make(map[key][]*definition, 8),
 		},
 	}
 
@@ -61,26 +62,75 @@ type Container struct {
 }
 
 // Populate populates given target pointer with type instance provided in container.
-func (c *Container) Populate(target interface{}, options ...ProvideOption) (err error) {
-	rvalue := reflect.ValueOf(target)
+func (c *Container) Populate(target interface{}, options ...PopulateOption) (err error) {
+	rv := reflect.ValueOf(target)
 
-	if !rvalue.IsValid() || (rvalue.Kind() == reflect.Ptr && rvalue.IsNil()) {
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("populate target must be a not nil pointer")
+	}
+
+	if !rv.IsValid() {
 		return errors.New("could not populate nil")
 	}
 
-	rvalue = rvalue.Elem()
+	rv = rv.Elem()
 
-	var def *definition
-	if def, err = c.storage.get(key{typ: rvalue.Type()}); err != nil {
+	var po = &populateOptions{
+		target: rv,
+	}
+
+	for _, opt := range options {
+		opt.apply(po)
+	}
+
+	if rv.Kind() == reflect.Slice {
+		return c.populateSlice(rv)
+	}
+
+	k := key{
+		typ:  rv.Type(),
+		name: po.name,
+	}
+
+	if instance, err := c.populate(k); err != nil {
 		return errors.WithStack(err)
+	} else {
+		rv.Set(instance)
 	}
 
-	var instance reflect.Value
-	if instance, err = def.init(); err != nil {
-		return errors.Wrapf(err, "%s", rvalue.Type())
+	return nil
+}
+
+// populate
+func (c *Container) populate(k key) (instance reflect.Value, err error) {
+	var def *definition
+	if def, err = c.storage.get(k); err != nil {
+		return instance, errors.WithStack(err)
 	}
 
-	rvalue.Set(instance)
+	if instance, err = def.load(); err != nil {
+		return instance, errors.Wrapf(err, "%s", k)
+	}
+
+	return instance, nil
+}
+
+func (c *Container) populateSlice(targetValue reflect.Value) (err error) {
+	k := key{typ: targetValue.Type()}
+
+	if _, ok := c.storage.groups[k]; !ok {
+		return errors.Errorf("%s group not exists", targetValue.Type())
+	}
+
+	for _, def := range c.storage.groups[k] {
+		instance, err := def.load()
+
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		targetValue.Set(reflect.Append(targetValue, instance))
+	}
 
 	return nil
 }
@@ -127,6 +177,8 @@ func (c *Container) compile() (err error) {
 		}
 	}
 
+	c.storage.clearGroups()
+
 	// apply modifiers
 	for _, mo := range c.modifiers {
 		if err = c.apply(mo); err != nil {
@@ -164,7 +216,7 @@ func (c *Container) apply(mo *modifierOptions) (err error) {
 		}
 
 		var arg reflect.Value
-		if arg, err = def.init(); err != nil {
+		if arg, err = def.load(); err != nil {
 			return errors.Wrapf(err, "%s", def)
 		}
 
@@ -209,4 +261,10 @@ type providerOptions struct {
 // modifierOptions.
 type modifierOptions struct {
 	modifier interface{}
+}
+
+// populateOptions
+type populateOptions struct {
+	target reflect.Value
+	name   string
 }

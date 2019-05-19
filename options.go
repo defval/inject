@@ -11,6 +11,9 @@ type ProvideOption interface{ apply(*providerOptions) }
 // ApplyOption.
 type ApplyOption interface{ apply(*modifierOptions) }
 
+// PopulateOption.
+type PopulateOption interface{ apply(*populateOptions) }
+
 // CONTAINER OPTIONS.
 
 // Provide provide dependency with options.
@@ -83,6 +86,14 @@ func As(ifaces ...interface{}) ProvideOption {
 	})
 }
 
+// POPULATE OPTIONS.
+
+func PopulateName(name string) PopulateOption {
+	return populateOption(func(populate *populateOptions) {
+		populate.name = name
+	})
+}
+
 // option internal
 type option func(container *Container)
 
@@ -97,3 +108,8 @@ func (o provideOption) apply(provider *providerOptions) { o(provider) }
 type applyOption func(modifier *modifierOptions)
 
 func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }
+
+// populate option internal
+type populateOption func(populate *populateOptions)
+
+func (o populateOption) apply(populate *populateOptions) { o(populate) }

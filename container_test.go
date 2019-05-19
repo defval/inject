@@ -91,6 +91,24 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
 
+	t.Run("two instance of one type with names", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "first"}
+			}, Name("first")),
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "second"}
+			}, Name("second")),
+		)
+
+		require.NoError(t, err)
+		var addr *net.TCPAddr
+		require.NoError(t, container.Populate(&addr, PopulateName("second")))
+		require.Equal(t, "second", addr.Zone)
+		require.NoError(t, container.Populate(&addr, PopulateName("first")))
+		require.Equal(t, "first", addr.Zone)
+	})
+
 	t.Run("provide nil", func(t *testing.T) {
 		_, err := New(
 			Provide(nil),
@@ -141,7 +159,7 @@ func TestContainer_Provide(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: could not add definition: *net.TCPAddr already provided")
+		require.EqualError(t, err, "could not compile container: could not add definition: *net.TCPAddr: use named definition if you have several instances of the same type")
 	})
 
 	t.Run("unknown injection type", func(t *testing.T) {
@@ -432,33 +450,92 @@ func TestContainer_Populate(t *testing.T) {
 
 		require.NoError(t, err)
 
-		require.EqualError(t, container.Populate(nil), "could not populate nil")
+		require.EqualError(t, container.Populate(nil), "populate target must be a not nil pointer")
+	})
+
+	t.Run("not provided named type", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "first"}
+			}, Name("first")),
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "second"}
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var addr *net.TCPAddr
+		require.EqualError(t, container.Populate(&addr, PopulateName("second")), "type *net.TCPAddr not provided")
 	})
 }
 
-//
-// func TestContainer_ProvideName(t *testing.T) {
-// 	t.Run("provide two named implementations as one interface", func(t *testing.T) {
-// 		var container = &Container{}
-//
-// 		require.NoError(t, container.Provide(func() *net.TCPAddr {
-// 			return &net.TCPAddr{}
-// 		}, As(new(net.Addr)), Name("tcp")))
-//
-// 		require.NoError(t, container.Provide(func() *net.UDPAddr {
-// 			return &net.UDPAddr{}
-// 		}, As(new(net.Addr)), Name("udp")))
-// 	})
-//
-// 	t.Run("provide two implementations as one interface without name", func(t *testing.T) {
-// 		var container = &Container{}
-//
-// 		require.NoError(t, container.Provide(func() *net.TCPAddr {
-// 			return &net.TCPAddr{}
-// 		}, As(new(net.Addr))))
-//
-// 		require.NoError(t, container.Provide(func() *net.UDPAddr {
-// 			return &net.UDPAddr{}
-// 		}, As(new(net.Addr))))
-// 	})
-// }
+func TestContainer_Group(t *testing.T) {
+	t.Run("different types", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "tcp",
+				}
+			}, As(new(net.Addr))),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{
+					Zone: "udp",
+				}
+			}, As(new(net.Addr))),
+		)
+
+		require.NoError(t, err)
+		var addrs []net.Addr
+		require.NoError(t, container.Populate(&addrs))
+		require.Len(t, addrs, 2)
+		require.Equal(t, "tcp", addrs[0].(*net.TCPAddr).Zone)
+		require.Equal(t, "udp", addrs[1].(*net.UDPAddr).Zone)
+	})
+
+	t.Run("one type without name", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "first"}
+			}, As(new(net.Addr))),
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "second"}
+			}, As(new(net.Addr))),
+		)
+
+		require.Nil(t, container)
+		require.EqualError(t, err, "could not compile container: could not add definition: *net.TCPAddr: use named definition if you have several instances of the same type")
+	})
+
+	t.Run("default value of group", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "first"}
+			}, Name("first"), As(new(net.Addr))),
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "second"}
+			}, As(new(net.Addr))),
+		)
+
+		require.NoError(t, err)
+		var addr net.Addr
+		require.NoError(t, container.Populate(&addr))
+		require.Equal(t, "second", addr.(*net.TCPAddr).Zone)
+	})
+
+	t.Run("named value of group", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "first"}
+			}, Name("first"), As(new(net.Addr))),
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "second"}
+			}, As(new(net.Addr))),
+		)
+
+		require.NoError(t, err)
+		var addr net.Addr
+		require.NoError(t, container.Populate(&addr, PopulateName("first")))
+		require.Equal(t, "first", addr.(*net.TCPAddr).Zone)
+	})
+}
