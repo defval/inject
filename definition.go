@@ -24,7 +24,7 @@ func (k key) String() string {
 
 // createDefinition.
 func createDefinition(po *providerOptions) (def *definition, err error) {
-	wrapper, err := wrapProvider(po.provider)
+	wrapper, err := wrapProvider(po)
 
 	if err != nil {
 		return nil, errors.WithStack(err)

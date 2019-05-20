@@ -252,9 +252,10 @@ func checkModifier(mv reflect.Value) (err error) {
 
 // providerOptions.
 type providerOptions struct {
-	provider   interface{}
-	name       string
-	implements []interface{}
+	provider           interface{}
+	name               string
+	implements         []interface{}
+	injectPublicFields bool
 }
 
 // modifierOptions.

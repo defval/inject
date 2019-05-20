@@ -91,6 +91,30 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
 
+	t.Run("struct with inject public fields", func(t *testing.T) {
+		type StructProvider struct {
+			TCPAddr *net.TCPAddr
+			UDPAddr *net.UDPAddr
+		}
+
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "tcp"}
+			}),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{Zone: "udp"}
+			}),
+			Provide(&StructProvider{}, PublicFields()),
+		)
+
+		require.NoError(t, err)
+
+		var sp *StructProvider
+		require.NoError(t, container.Populate(&sp))
+		require.Equal(t, "tcp", sp.TCPAddr.Zone)
+		require.Equal(t, "udp", sp.UDPAddr.Zone)
+	})
+
 	t.Run("two instance of one type with names", func(t *testing.T) {
 		container, err := New(
 			Provide(func() *net.TCPAddr {

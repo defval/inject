@@ -14,7 +14,8 @@ type providerWrapper interface {
 }
 
 type structProviderWrapper struct {
-	value reflect.Value
+	value              reflect.Value
+	injectPublicFields bool
 }
 
 func (w *structProviderWrapper) create(arguments []reflect.Value) (_ reflect.Value, err error) {
@@ -22,17 +23,16 @@ func (w *structProviderWrapper) create(arguments []reflect.Value) (_ reflect.Val
 
 	skip := 0
 	for i := 0; i < pe.Type().NumField(); i++ {
-		var fieldType = pe.Type().Field(i)
+		var structField = pe.Type().Field(i)
 		var fieldValue = pe.Field(i)
 
-		_, exists := fieldType.Tag.Lookup("inject")
+		_, exists := structField.Tag.Lookup("inject")
 
-		if !exists {
+		if exists || (w.injectPublicFields && fieldValue.CanSet()) {
+			fieldValue.Set(arguments[i-skip])
+		} else {
 			skip++
-			continue
 		}
-
-		fieldValue.Set(arguments[i-skip])
 	}
 
 	if w.value.Kind() == reflect.Ptr && w.value.IsNil() {
@@ -43,19 +43,18 @@ func (w *structProviderWrapper) create(arguments []reflect.Value) (_ reflect.Val
 }
 
 func (w *structProviderWrapper) args() []key {
-	pt := w.value.Type()
+	pv := w.value
 
 	var args []key
-	for i := 0; i < pt.Elem().NumField(); i++ {
-		var field = pt.Elem().Field(i)
+	for i := 0; i < pv.Type().Elem().NumField(); i++ {
+		structField := pv.Type().Elem().Field(i)
+		fieldValue := pv.Elem().Field(i)
 
-		name, exists := field.Tag.Lookup("inject")
+		name, exists := structField.Tag.Lookup("inject")
 
-		if !exists {
-			continue
+		if exists || (w.injectPublicFields && fieldValue.CanSet()) {
+			args = append(args, key{typ: structField.Type, name: name})
 		}
-
-		args = append(args, key{typ: field.Type, name: name})
 	}
 
 	return args
@@ -101,8 +100,8 @@ func (w *funcProviderWrapper) rtype() reflect.Type {
 }
 
 // wrapProvider
-func wrapProvider(provider interface{}) (wrapper providerWrapper, err error) {
-	pv := reflect.ValueOf(provider)
+func wrapProvider(po *providerOptions) (wrapper providerWrapper, err error) {
+	pv := reflect.ValueOf(po.provider)
 	pt := pv.Type()
 
 	if pt.Kind() == reflect.Func {
@@ -117,7 +116,8 @@ func wrapProvider(provider interface{}) (wrapper providerWrapper, err error) {
 
 	if pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct {
 		return &structProviderWrapper{
-			value: pv,
+			value:              pv,
+			injectPublicFields: po.injectPublicFields,
 		}, nil
 	}
 

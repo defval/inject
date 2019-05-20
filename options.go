@@ -86,6 +86,13 @@ func As(ifaces ...interface{}) ProvideOption {
 	})
 }
 
+// PublicFields
+func PublicFields() ProvideOption {
+	return provideOption(func(provider *providerOptions) {
+		provider.injectPublicFields = true
+	})
+}
+
 // POPULATE OPTIONS.
 
 func PopulateName(name string) PopulateOption {
