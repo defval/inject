@@ -20,7 +20,7 @@ structures without the need to having specify each constructor argument manually
 - documentation
 - inject named definition into constructor
 
-## Full example
+## Example
 
 ```go
 package main
@@ -96,8 +96,7 @@ type Controller interface {
 }
 
 // UserController
-type UserController struct {
-}
+type UserController struct{}
 
 func (c *UserController) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/user", func(writer http.ResponseWriter, request *http.Request) {
@@ -106,14 +105,11 @@ func (c *UserController) RegisterRoutes(mux *http.ServeMux) {
 }
 
 // UserController
-type AccountController struct {
-}
+type AccountController struct{}
 
 func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/account", func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("account"))
 	})
 }
-
-
 ```
