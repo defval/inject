@@ -86,8 +86,8 @@ func As(ifaces ...interface{}) ProvideOption {
 	})
 }
 
-// PublicFields
-func PublicFields() ProvideOption {
+// Exported
+func Exported() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.injectPublicFields = true
 	})

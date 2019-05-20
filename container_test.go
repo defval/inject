@@ -104,7 +104,7 @@ func TestContainer_Provide(t *testing.T) {
 			Provide(func() *net.UDPAddr {
 				return &net.UDPAddr{Zone: "udp"}
 			}),
-			Provide(&StructProvider{}, PublicFields()),
+			Provide(&StructProvider{}, Exported()),
 		)
 
 		require.NoError(t, err)
@@ -129,7 +129,7 @@ func TestContainer_Provide(t *testing.T) {
 			Provide(func() *net.UDPAddr {
 				return &net.UDPAddr{Zone: "udp"}
 			}),
-			Provide(&StructProvider{}, PublicFields()),
+			Provide(&StructProvider{}, Exported()),
 		)
 
 		require.Nil(t, container)
