@@ -5,18 +5,20 @@
 Dependency injection container allows you to inject dependencies into constructors or
 structures without the need to having specify each constructor argument manually.
 
-## Features
+## Injection features
 
-- constructor injection
-- tagged struct fields injection
+- inject result of constructor
+- inject tagged struct fields
+- inject public struct fields
 - inject as interface
-- inject group slices
-- group default value
+- inject interface groups
+- inject default value of interface group
 - inject named definition
 
 ## WIP
 
 - documentation
+- inject named definition into constructor
 
 ## Full example
 
