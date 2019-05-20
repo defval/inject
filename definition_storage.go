@@ -21,14 +21,14 @@ func (s *definitions) add(def *definition) (err error) {
 	s.keys = append(s.keys, def.key)
 	s.definitions[def.key] = def
 
-	for _, key := range def.implements {
-		s.implementations[key] = append(s.implementations[key], def)
+	for _, k := range def.implements {
+		s.implementations[k] = append(s.implementations[k], def)
 
-		if _, ok := s.groups[key]; !ok {
-			s.groups[key] = make([]*definition, 0, 8)
+		if _, ok := s.groups[k]; !ok {
+			s.groups[k] = make([]*definition, 0, 8)
 		}
 
-		groupKey := createGroupKey(key)
+		groupKey := createGroupKey(k)
 
 		s.groups[groupKey] = append(s.groups[groupKey], def)
 	}
@@ -59,9 +59,9 @@ func (s *definitions) all() (defs []*definition) {
 }
 
 func (s *definitions) clearGroups() {
-	for key, group := range s.groups {
+	for k, group := range s.groups {
 		if len(group) == 1 {
-			delete(s.groups, key)
+			delete(s.groups, k)
 		}
 	}
 }

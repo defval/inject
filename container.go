@@ -158,8 +158,8 @@ func (c *Container) compile() (err error) {
 	// connect definitions
 	for _, def := range c.storage.all() {
 		// load arguments
-		for _, key := range def.provider.arguments {
-			in, err := c.storage.get(key)
+		for _, k := range def.provider.arguments {
+			in, err := c.storage.get(k)
 
 			if err != nil {
 				return errors.WithStack(err)

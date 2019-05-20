@@ -84,8 +84,8 @@ func (d *definition) String() string {
 
 	if len(d.implements) > 0 {
 		builder.WriteString(" as ")
-		for i, key := range d.implements {
-			builder.WriteString(fmt.Sprintf("%s", key))
+		for i, k := range d.implements {
+			builder.WriteString(fmt.Sprintf("%s", k))
 
 			if i != len(d.implements)-1 {
 				builder.WriteString(", ")
