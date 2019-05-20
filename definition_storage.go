@@ -1,6 +1,8 @@
 package inject
 
 import (
+	"reflect"
+
 	"github.com/pkg/errors"
 )
 
@@ -28,7 +30,9 @@ func (s *definitions) add(def *definition) (err error) {
 			s.groups[k] = make([]*definition, 0, 8)
 		}
 
-		groupKey := createGroupKey(k)
+		groupKey := key{
+			typ: reflect.SliceOf(k.typ),
+		}
 
 		s.groups[groupKey] = append(s.groups[groupKey], def)
 	}

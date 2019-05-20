@@ -17,13 +17,6 @@ type key struct {
 	name string
 }
 
-// createGroupKey
-func createGroupKey(k key) key {
-	return key{
-		typ: reflect.SliceOf(k.typ),
-	}
-}
-
 // String.
 func (k key) String() string {
 	return fmt.Sprintf("%s", k.typ) // todo: add name
