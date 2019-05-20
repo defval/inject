@@ -115,6 +115,27 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
 
+	t.Run("struct with not provided field", func(t *testing.T) {
+		type StructProvider struct {
+			TCPAddr *net.TCPAddr
+			UDPAddr *net.UDPAddr
+			String  string
+		}
+
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "tcp"}
+			}),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{Zone: "udp"}
+			}),
+			Provide(&StructProvider{}, PublicFields()),
+		)
+
+		require.Nil(t, container)
+		require.EqualError(t, err, "could not compile container: type string not provided") // todo: improve message
+	})
+
 	t.Run("two instance of one type with names", func(t *testing.T) {
 		container, err := New(
 			Provide(func() *net.TCPAddr {
