@@ -13,8 +13,8 @@ const (
 )
 
 var (
-	// errIncorrectProviderType.
-	errIncorrectProviderType = errors.New("value must be a function with value and optional error as result")
+	// errIncorrectFunctionProviderSignature.
+	errIncorrectFunctionProviderSignature = errors.New("constructor must be a function with value and optional error as result")
 
 	// errIncorrectModifierSignature.
 	errIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")

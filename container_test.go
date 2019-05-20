@@ -65,7 +65,7 @@ func TestContainer_Provide(t *testing.T) {
 		require.EqualError(t, container.Populate(&addr), "net.Addr: *net.TCPAddr: build error")
 	})
 
-	t.Run("struct", func(t *testing.T) {
+	t.Run("constructor struct pointer", func(t *testing.T) {
 		type StructProvider struct {
 			TCPAddr *net.TCPAddr `inject:""`
 			Public  string
@@ -91,7 +91,7 @@ func TestContainer_Provide(t *testing.T) {
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
 	})
 
-	t.Run("struct with inject public fields", func(t *testing.T) {
+	t.Run("constructor struct pointer with inject public fields", func(t *testing.T) {
 		type StructProvider struct {
 			TCPAddr *net.TCPAddr
 			UDPAddr *net.UDPAddr
@@ -113,6 +113,20 @@ func TestContainer_Provide(t *testing.T) {
 		require.NoError(t, container.Populate(&sp))
 		require.Equal(t, "tcp", sp.TCPAddr.Zone)
 		require.Equal(t, "udp", sp.UDPAddr.Zone)
+	})
+
+	t.Run("struct", func(t *testing.T) {
+		container, err := New(
+			Provide(net.TCPAddr{
+				Zone: "tcp",
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var addr net.TCPAddr
+		require.NoError(t, container.Populate(&addr))
+		require.Equal(t, "tcp", addr.Zone)
 	})
 
 	t.Run("struct with not provided field", func(t *testing.T) {
@@ -181,7 +195,7 @@ func TestContainer_Provide(t *testing.T) {
 		)
 
 		// todo: improve error message
-		require.EqualError(t, err, "could not compile container: provide failed: value must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
 	})
 
 	t.Run("constructor with incorrect signature", func(t *testing.T) {
@@ -191,7 +205,7 @@ func TestContainer_Provide(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: value must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
 	})
 
 	t.Run("provide duplicate type", func(t *testing.T) {
@@ -222,7 +236,7 @@ func TestContainer_Provide(t *testing.T) {
 			Provide("string"),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: value must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
 	})
 
 	t.Run("cycle", func(t *testing.T) {

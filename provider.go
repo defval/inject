@@ -19,6 +19,53 @@ type structProviderWrapper struct {
 }
 
 func (w *structProviderWrapper) create(arguments []reflect.Value) (_ reflect.Value, err error) {
+	pv := w.value
+
+	skip := 0
+	for i := 0; i < pv.Type().NumField(); i++ {
+		var structField = pv.Type().Field(i)
+		var fieldValue = pv.Field(i)
+
+		_, exists := structField.Tag.Lookup("inject")
+
+		if exists || (w.injectPublicFields && fieldValue.CanSet()) {
+			fieldValue.Set(arguments[i-skip])
+		} else {
+			skip++
+		}
+	}
+
+	return w.value, nil
+}
+
+func (w *structProviderWrapper) args() []key {
+	pv := w.value
+
+	var args []key
+	for i := 0; i < pv.Type().NumField(); i++ {
+		structField := pv.Type().Field(i)
+		fieldValue := pv.Field(i)
+
+		name, exists := structField.Tag.Lookup("inject")
+
+		if exists || (w.injectPublicFields && fieldValue.CanSet()) {
+			args = append(args, key{typ: structField.Type, name: name})
+		}
+	}
+
+	return args
+}
+
+func (w *structProviderWrapper) rtype() reflect.Type {
+	return w.value.Type()
+}
+
+type structPointerProviderWrapper struct {
+	value              reflect.Value
+	injectPublicFields bool
+}
+
+func (w *structPointerProviderWrapper) create(arguments []reflect.Value) (_ reflect.Value, err error) {
 	pe := w.value.Elem()
 
 	skip := 0
@@ -35,14 +82,14 @@ func (w *structProviderWrapper) create(arguments []reflect.Value) (_ reflect.Val
 		}
 	}
 
-	if w.value.Kind() == reflect.Ptr && w.value.IsNil() {
+	if w.value.IsNil() {
 		return w.value, errors.Errorf("nil provided")
 	}
 
 	return w.value, nil
 }
 
-func (w *structProviderWrapper) args() []key {
+func (w *structPointerProviderWrapper) args() []key {
 	pv := w.value
 
 	var args []key
@@ -60,7 +107,7 @@ func (w *structProviderWrapper) args() []key {
 	return args
 }
 
-func (w *structProviderWrapper) rtype() reflect.Type {
+func (w *structPointerProviderWrapper) rtype() reflect.Type {
 	return w.value.Type()
 }
 
@@ -115,24 +162,31 @@ func wrapProvider(po *providerOptions) (wrapper providerWrapper, err error) {
 	}
 
 	if pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct {
+		return &structPointerProviderWrapper{
+			value:              pv,
+			injectPublicFields: po.injectPublicFields,
+		}, nil
+	}
+
+	if pt.Kind() == reflect.Struct {
 		return &structProviderWrapper{
 			value:              pv,
 			injectPublicFields: po.injectPublicFields,
 		}, nil
 	}
 
-	return nil, errors.WithStack(errIncorrectProviderType)
+	return nil, errors.WithStack(errIncorrectFunctionProviderSignature)
 }
 
 // check function provider
 func checkFunctionProvider(pt reflect.Type) (err error) {
 	// check function result types
 	if pt.NumOut() <= 0 || pt.NumOut() > 2 {
-		return errors.WithStack(errIncorrectProviderType)
+		return errors.WithStack(errIncorrectFunctionProviderSignature)
 	}
 
 	if pt.NumOut() == 2 && !pt.Out(1).Implements(errorInterface) {
-		return errors.WithStack(errIncorrectProviderType)
+		return errors.WithStack(errIncorrectFunctionProviderSignature)
 	}
 
 	return nil

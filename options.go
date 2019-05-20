@@ -95,6 +95,7 @@ func Exported() ProvideOption {
 
 // POPULATE OPTIONS.
 
+// PopulateName
 func PopulateName(name string) PopulateOption {
 	return populateOption(func(populate *populateOptions) {
 		populate.name = name
