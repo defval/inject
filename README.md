@@ -7,13 +7,13 @@ structures without the need to having specify each constructor argument manually
 
 ## Injection features
 
-- inject result of constructor
+- inject constructor arguments
 - inject tagged struct fields
 - inject public struct fields
 - inject as interface
 - inject interface groups
 - inject default value of interface group
-- inject named definition
+- inject named definition into structures
 
 ## WIP
 
