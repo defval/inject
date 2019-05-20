@@ -31,8 +31,9 @@ func (k key) String() string {
 
 // createDefinition.
 func createDefinition(po *providerOptions) (def *definition, err error) {
-	var wrapper *providerWrapper
-	if wrapper, err = wrapProvider(po.provider); err != nil {
+	wrapper, err := wrapProvider(po.provider)
+
+	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
@@ -46,8 +47,8 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 
 		ifaceTypeElem := ifaceType.Elem()
 
-		if !wrapper.result.Implements(ifaceTypeElem) {
-			return nil, errors.Errorf("%s not implement %s interface", wrapper.result, ifaceTypeElem)
+		if !wrapper.rtype().Implements(ifaceTypeElem) {
+			return nil, errors.Errorf("%s not implement %s interface", wrapper.rtype(), ifaceTypeElem)
 		}
 
 		implements = append(implements, key{typ: ifaceTypeElem, name: po.name})
@@ -55,7 +56,7 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 
 	return &definition{
 		key: key{
-			typ:  wrapper.result,
+			typ:  wrapper.rtype(),
 			name: po.name,
 		},
 		provider:   wrapper,
@@ -66,7 +67,7 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 // definition.
 type definition struct {
 	key        key
-	provider   *providerWrapper
+	provider   providerWrapper
 	implements []key
 
 	in  []*definition
@@ -112,7 +113,7 @@ func (d *definition) load() (instance reflect.Value, err error) {
 		arguments = append(arguments, instance)
 	}
 
-	if instance, err = d.provider.instance(arguments); err != nil {
+	if instance, err = d.provider.create(arguments); err != nil {
 		return reflect.Value{}, errors.WithStack(err)
 	}
 
@@ -132,14 +133,14 @@ func (d *definition) visit() (err error) {
 	}
 
 	if d.visited == visitMarkTemporary {
-		return fmt.Errorf("%s", d.provider.result)
+		return fmt.Errorf("%s", d.key)
 	}
 
 	d.visited = visitMarkTemporary
 
 	for _, out := range d.out {
 		if err = out.visit(); err != nil {
-			return errors.Wrapf(err, "%s", d.provider.result)
+			return errors.Wrapf(err, "%s", d.key)
 		}
 	}
 

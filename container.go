@@ -158,7 +158,7 @@ func (c *Container) compile() (err error) {
 	// connect definitions
 	for _, def := range c.storage.all() {
 		// load arguments
-		for _, k := range def.provider.arguments {
+		for _, k := range def.provider.args() {
 			in, err := c.storage.get(k)
 
 			if err != nil {
