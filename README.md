@@ -2,10 +2,83 @@
 [![Build Status](https://img.shields.io/travis/defval/inject.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/inject)
 [![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/inject)
 
-Dependency injection container allows you to inject dependencies into constructors or
-structures without the need to having specify each constructor argument manually.
+Dependency injection container allows you to inject dependencies
+into constructors or structures without the need to have specified
+each argument manually.
 
-## Injection features
+## Installing
+
+```shell
+go get -u github.com/defval/inject
+```
+
+## Usage
+
+### Provide dependency
+
+First of all, when creating a new container, you need to describe
+how to create each instance of a dependency. To do this, use the container
+option `inject.Provide()`. The first argument in this function is the `provider`.
+It determines how to create dependency.
+
+Provider can be a constructor function with optional error:
+
+```go
+// dependency constructor function
+func NewDependency(dependency *pkg.AnotherDependency) *pkg.Dependency {
+	return &pkg.Dependency{
+		dependency: dependency,
+	}
+}
+
+// and with possible initialization error
+func NewAnotherDependency() (*pkg.AnotherDependency, error) {
+	if dependency, err = initAnotherDependency(); err != nil {
+		return nil, err
+	}
+	
+	return dependency, nil
+}
+
+// container initialization code
+container, err := New(
+	Provide(NewDependency),
+	Provide(NewDependencyWithPossibleError)
+)
+```
+
+In this case, the container knows what to create `*pkg.Dependency` he
+needs `*pkg.AnotherDependency`, which in turn can return an initialization error.
+
+Also, a provider can be a structure with public fields:
+
+```go
+// package pkg
+type Dependency struct {
+	AnotherDependency *pkg.AnotherDependency `inject:""`
+}
+
+// container initialization code
+container, err := New(
+	// another providing code..
+	
+	// pointer to structure
+    Provide(&Dependency{}),
+    // or structure value
+    Provide(Dependency{})
+)
+```
+
+Необходимость внедрения конкретного поля мы указываем с помощью тега `inject`.
+
+#### Provide hints
+- [Inject named definition]()
+- [Inject all exported struct fields]()
+
+
+### Extracting dependencies from a container
+
+## Features
 
 - inject constructor arguments
 - inject tagged struct fields
