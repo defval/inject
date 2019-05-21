@@ -43,7 +43,7 @@ func NewAnotherDependency() (*pkg.AnotherDependency, error) {
 // container initialization code
 container, err := New(
 	Provide(NewDependency),
-	Provide(NewDependencyWithPossibleError)
+	Provide(NewAnotherDependency)
 )
 ```
 
