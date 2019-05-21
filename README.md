@@ -53,10 +53,16 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	var stop = make(chan os.Signal, 1)
+	var stop = make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
+	var done = make(chan struct{})
+
 	go func() {
+		defer func() {
+			close(done)
+		}()
+
 		err := server.ListenAndServe()
 
 		if err != nil && err != http.ErrServerClosed {
@@ -69,6 +75,8 @@ func main() {
 	if err = server.Close(); err != nil {
 		log.Fatalln(err)
 	}
+
+	<-done
 }
 
 // NewHTTPServer
@@ -112,4 +120,5 @@ func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
 		_, _ = writer.Write([]byte("account"))
 	})
 }
+
 ```
