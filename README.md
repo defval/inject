@@ -63,13 +63,14 @@ container, err := New(
 	// another providing code..
 	
 	// pointer to structure
-    Provide(&Dependency{}),
+    Provide(&pkg.Dependency{}),
     // or structure value
-    Provide(Dependency{})
+    Provide(pkg.Dependency{})
 )
 ```
 
-Необходимость внедрения конкретного поля мы указываем с помощью тега `inject`.
+In this case, the necessity of implementing specific fields are defined
+with the tag `inject`.
 
 #### Provide hints
 - [Inject named definition]()
