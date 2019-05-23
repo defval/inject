@@ -56,7 +56,7 @@ type Container struct {
 	logger Logger
 
 	providers []*providerOptions
-	modifiers []*modifierOptions
+	// modifiers []*modifierOptions
 
 	storage *definitions
 }
@@ -182,73 +182,74 @@ func (c *Container) compile() (err error) {
 	c.storage.clearGroups()
 
 	// apply modifiers
-	for _, mo := range c.modifiers {
-		if err = c.apply(mo); err != nil {
-			return err
-		}
-	}
+	// for _, mo := range c.modifiers {
+	// 	if err = c.apply(mo); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
 
-// apply.
-func (c *Container) apply(mo *modifierOptions) (err error) {
-	if mo.modifier == nil {
-		return errors.New("nil modifier")
-	}
-
-	// todo: validation
-	mv := reflect.ValueOf(mo.modifier)
-	mt := mv.Type()
-
-	if err = checkModifier(mv); err != nil {
-		return errors.WithStack(err)
-	}
-
-	var args []reflect.Value
-	for i := 0; i < mt.NumIn(); i++ {
-		rv := reflect.New(mt.In(i)).Elem()
-
-		if rv.Kind() == reflect.Slice {
-			if err = c.populateSlice(rv); err != nil {
-				return errors.WithStack(err)
-			}
-		} else {
-			if err = c.populate(rv, ""); err != nil {
-				return errors.WithStack(err)
-			}
-		}
-
-		args = append(args, rv)
-	}
-
-	var result = mv.Call(args)
-
-	if len(result) == 1 {
-		return errors.Wrap(result[0].Interface().(error), "apply error")
-	}
-
-	return nil
-}
-
-// checkModifier.
-func checkModifier(mv reflect.Value) (err error) {
-	if mv.Kind() != reflect.Func {
-		return errors.WithStack(errIncorrectModifierSignature)
-	}
-
-	var modifierType = mv.Type()
-
-	if modifierType.NumOut() > 1 {
-		return errors.WithStack(errIncorrectModifierSignature)
-	}
-
-	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
-		return errors.WithStack(errIncorrectModifierSignature)
-	}
-
-	return nil
-}
+//
+// // apply.
+// func (c *Container) apply(mo *modifierOptions) (err error) {
+// 	if mo.modifier == nil {
+// 		return errors.New("nil modifier")
+// 	}
+//
+// 	// todo: validation
+// 	mv := reflect.ValueOf(mo.modifier)
+// 	mt := mv.Type()
+//
+// 	if err = checkModifier(mv); err != nil {
+// 		return errors.WithStack(err)
+// 	}
+//
+// 	var args []reflect.Value
+// 	for i := 0; i < mt.NumIn(); i++ {
+// 		rv := reflect.New(mt.In(i)).Elem()
+//
+// 		if rv.Kind() == reflect.Slice {
+// 			if err = c.populateSlice(rv); err != nil {
+// 				return errors.WithStack(err)
+// 			}
+// 		} else {
+// 			if err = c.populate(rv, ""); err != nil {
+// 				return errors.WithStack(err)
+// 			}
+// 		}
+//
+// 		args = append(args, rv)
+// 	}
+//
+// 	var result = mv.Call(args)
+//
+// 	if len(result) == 1 {
+// 		return errors.Wrap(result[0].Interface().(error), "apply error")
+// 	}
+//
+// 	return nil
+// }
+//
+// // checkModifier.
+// func checkModifier(mv reflect.Value) (err error) {
+// 	if mv.Kind() != reflect.Func {
+// 		return errors.WithStack(errIncorrectModifierSignature)
+// 	}
+//
+// 	var modifierType = mv.Type()
+//
+// 	if modifierType.NumOut() > 1 {
+// 		return errors.WithStack(errIncorrectModifierSignature)
+// 	}
+//
+// 	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
+// 		return errors.WithStack(errIncorrectModifierSignature)
+// 	}
+//
+// 	return nil
+// }
 
 // providerOptions.
 type providerOptions struct {
@@ -258,10 +259,11 @@ type providerOptions struct {
 	injectPublicFields bool
 }
 
-// modifierOptions.
-type modifierOptions struct {
-	modifier interface{}
-}
+//
+// // modifierOptions.
+// type modifierOptions struct {
+// 	modifier interface{}
+// }
 
 // populateOptions
 type populateOptions struct {

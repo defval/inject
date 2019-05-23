@@ -9,7 +9,7 @@ type Option interface{ apply(*Container) }
 type ProvideOption interface{ apply(*providerOptions) }
 
 // ApplyOption.
-type ApplyOption interface{ apply(*modifierOptions) }
+// type ApplyOption interface{ apply(*modifierOptions) }
 
 // PopulateOption.
 type PopulateOption interface{ apply(*populateOptions) }
@@ -32,19 +32,19 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 }
 
 // Apply.
-func Apply(modifier interface{}, options ...ApplyOption) Option {
-	return option(func(container *Container) {
-		var mo = &modifierOptions{
-			modifier: modifier,
-		}
-
-		for _, opt := range options {
-			opt.apply(mo)
-		}
-
-		container.modifiers = append(container.modifiers, mo)
-	})
-}
+// func Apply(modifier interface{}, options ...ApplyOption) Option {
+// 	return option(func(container *Container) {
+// 		var mo = &modifierOptions{
+// 			modifier: modifier,
+// 		}
+//
+// 		for _, opt := range options {
+// 			opt.apply(mo)
+// 		}
+//
+// 		container.modifiers = append(container.modifiers, mo)
+// 	})
+// }
 
 // Package
 func Package(options ...Option) Option {
@@ -113,9 +113,9 @@ type provideOption func(provider *providerOptions)
 func (o provideOption) apply(provider *providerOptions) { o(provider) }
 
 // apply option internal
-type applyOption func(modifier *modifierOptions)
-
-func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }
+// type applyOption func(modifier *modifierOptions)
+//
+// func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }
 
 // populate option internal
 type populateOption func(populate *populateOptions)

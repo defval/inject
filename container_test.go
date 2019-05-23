@@ -329,137 +329,6 @@ func TestContainer_ProvideAs(t *testing.T) {
 	})
 }
 
-func TestApply(t *testing.T) {
-	t.Run("apply function", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{
-					Zone: "one",
-				}
-			}),
-			Apply(func(addr *net.TCPAddr) {
-				addr.Zone = "two"
-			}),
-		)
-
-		require.NoError(t, err)
-
-		var addr *net.TCPAddr
-		require.NoError(t, container.Populate(&addr))
-		require.Equal(t, "two", addr.Zone)
-	})
-
-	t.Run("apply without result", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{
-					Zone: "one",
-				}
-			}),
-			Apply(func(addr *net.TCPAddr) {
-				addr.Zone = "two"
-			}),
-		)
-
-		require.NoError(t, err)
-
-		var addr *net.TCPAddr
-		require.NoError(t, container.Populate(&addr))
-		require.Equal(t, "two", addr.Zone)
-	})
-
-	t.Run("apply error", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{
-					Zone: "one",
-				}
-			}),
-			Apply(func(addr *net.TCPAddr) (err error) {
-				return errors.New("boom")
-			}),
-		)
-
-		require.EqualError(t, err, "could not compile container: apply error: boom")
-	})
-
-	t.Run("apply incorrect function", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{
-					Zone: "one",
-				}
-			}),
-			Apply(func(addr *net.TCPAddr) (s string) {
-				return "string"
-			}),
-		)
-
-		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
-	})
-
-	t.Run("nil", func(t *testing.T) {
-		_, err := New(
-			Apply(nil),
-		)
-
-		require.EqualError(t, err, "could not compile container: nil modifier")
-	})
-
-	t.Run("apply ptr", func(t *testing.T) {
-		_, err := New(
-			Apply(&net.TCPAddr{}),
-		)
-
-		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
-	})
-
-	t.Run("more than one result", func(t *testing.T) {
-		_, err := New(
-			Apply(func() (string, error) {
-				return "string", nil
-			}),
-		)
-
-		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
-	})
-
-	t.Run("use unknown type", func(t *testing.T) {
-		_, err := New(
-			Apply(func(*net.TCPAddr) {}),
-		)
-
-		require.EqualError(t, err, "could not compile container: type *net.TCPAddr not provided")
-	})
-
-	t.Run("apply argument instantiate error", func(t *testing.T) {
-		_, err := New(
-			Provide(func() (*net.TCPAddr, error) {
-				return nil, errors.New("wow")
-			}),
-			Apply(func(*net.TCPAddr) {}),
-		)
-
-		require.EqualError(t, err, "could not compile container: *net.TCPAddr: wow")
-	})
-
-	t.Run("group", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{}
-			}, As(new(net.Addr))),
-			Provide(func() *net.UDPAddr {
-				return &net.UDPAddr{}
-			}, As(new(net.Addr))),
-			Apply(func(addrs []net.Addr) {
-				require.Len(t, addrs, 2)
-			}),
-		)
-
-		require.NoError(t, err)
-	})
-}
-
 func TestContainer_Package(t *testing.T) {
 	t.Run("package", func(t *testing.T) {
 		container, err := New(
@@ -614,3 +483,135 @@ func TestContainer_Group(t *testing.T) {
 		require.Equal(t, "first", addr.(*net.TCPAddr).Zone)
 	})
 }
+
+//
+// func TestApply(t *testing.T) {
+// 	t.Run("apply function", func(t *testing.T) {
+// 		container, err := New(
+// 			Provide(func() *net.TCPAddr {
+// 				return &net.TCPAddr{
+// 					Zone: "one",
+// 				}
+// 			}),
+// 			Apply(func(addr *net.TCPAddr) {
+// 				addr.Zone = "two"
+// 			}),
+// 		)
+//
+// 		require.NoError(t, err)
+//
+// 		var addr *net.TCPAddr
+// 		require.NoError(t, container.Populate(&addr))
+// 		require.Equal(t, "two", addr.Zone)
+// 	})
+//
+// 	t.Run("apply without result", func(t *testing.T) {
+// 		container, err := New(
+// 			Provide(func() *net.TCPAddr {
+// 				return &net.TCPAddr{
+// 					Zone: "one",
+// 				}
+// 			}),
+// 			Apply(func(addr *net.TCPAddr) {
+// 				addr.Zone = "two"
+// 			}),
+// 		)
+//
+// 		require.NoError(t, err)
+//
+// 		var addr *net.TCPAddr
+// 		require.NoError(t, container.Populate(&addr))
+// 		require.Equal(t, "two", addr.Zone)
+// 	})
+//
+// 	t.Run("apply error", func(t *testing.T) {
+// 		_, err := New(
+// 			Provide(func() *net.TCPAddr {
+// 				return &net.TCPAddr{
+// 					Zone: "one",
+// 				}
+// 			}),
+// 			Apply(func(addr *net.TCPAddr) (err error) {
+// 				return errors.New("boom")
+// 			}),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: apply error: boom")
+// 	})
+//
+// 	t.Run("apply incorrect function", func(t *testing.T) {
+// 		_, err := New(
+// 			Provide(func() *net.TCPAddr {
+// 				return &net.TCPAddr{
+// 					Zone: "one",
+// 				}
+// 			}),
+// 			Apply(func(addr *net.TCPAddr) (s string) {
+// 				return "string"
+// 			}),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
+// 	})
+//
+// 	t.Run("nil", func(t *testing.T) {
+// 		_, err := New(
+// 			Apply(nil),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: nil modifier")
+// 	})
+//
+// 	t.Run("apply ptr", func(t *testing.T) {
+// 		_, err := New(
+// 			Apply(&net.TCPAddr{}),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
+// 	})
+//
+// 	t.Run("more than one result", func(t *testing.T) {
+// 		_, err := New(
+// 			Apply(func() (string, error) {
+// 				return "string", nil
+// 			}),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
+// 	})
+//
+// 	t.Run("use unknown type", func(t *testing.T) {
+// 		_, err := New(
+// 			Apply(func(*net.TCPAddr) {}),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: type *net.TCPAddr not provided")
+// 	})
+//
+// 	t.Run("apply argument instantiate error", func(t *testing.T) {
+// 		_, err := New(
+// 			Provide(func() (*net.TCPAddr, error) {
+// 				return nil, errors.New("wow")
+// 			}),
+// 			Apply(func(*net.TCPAddr) {}),
+// 		)
+//
+// 		require.EqualError(t, err, "could not compile container: *net.TCPAddr: wow")
+// 	})
+//
+// 	t.Run("group", func(t *testing.T) {
+// 		_, err := New(
+// 			Provide(func() *net.TCPAddr {
+// 				return &net.TCPAddr{}
+// 			}, As(new(net.Addr))),
+// 			Provide(func() *net.UDPAddr {
+// 				return &net.UDPAddr{}
+// 			}, As(new(net.Addr))),
+// 			Apply(func(addrs []net.Addr) {
+// 				require.Len(t, addrs, 2)
+// 			}),
+// 		)
+//
+// 		require.NoError(t, err)
+// 	})
+// }
