@@ -16,14 +16,14 @@ type storage struct {
 
 // Add.
 func (s *storage) Add(def *definition) (err error) {
-	if _, ok := s.definitions[def.key]; ok {
-		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.key) // todo: value.String()
+	if _, ok := s.definitions[def.Key]; ok {
+		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.Key) // todo: value.String()
 	}
 
-	s.keys = append(s.keys, def.key)
-	s.definitions[def.key] = def
+	s.keys = append(s.keys, def.Key)
+	s.definitions[def.Key] = def
 
-	for _, typ := range def.implements {
+	for _, typ := range def.Implements {
 		s.ifaces[typ] = append(s.ifaces[typ], def)
 	}
 
@@ -39,7 +39,7 @@ func (s *storage) Get(k key) (_ []*definition, err error) {
 	// definition iface
 	if defs, ok := s.ifaces[k.typ]; ok {
 		for _, def := range defs {
-			if def.key.name == k.name {
+			if def.Key.name == k.name {
 				return []*definition{def}, nil
 			}
 		}
@@ -78,7 +78,7 @@ func (s *storage) Value(k key) (v reflect.Value, err error) {
 
 		def := defs[0]
 
-		for _, argKey := range def.in {
+		for _, argKey := range def.In {
 			arg, err := s.Value(argKey)
 
 			if err != nil {
@@ -90,7 +90,7 @@ func (s *storage) Value(k key) (v reflect.Value, err error) {
 
 		instance, err := def.Create(args)
 		if err != nil {
-			return v, errors.Wrapf(err, "%s", def)
+			return v, errors.Wrapf(err, "%s", def.Key)
 		}
 
 		v.Set(instance)
@@ -98,32 +98,32 @@ func (s *storage) Value(k key) (v reflect.Value, err error) {
 		return v, nil
 	}
 
-	if k.IsGroup() {
-		for _, def := range defs {
-			var args []reflect.Value
+	// if k.IsGroup() {
+	for _, def := range defs {
+		var args []reflect.Value
 
-			for _, argKey := range def.in {
-				arg, err := s.Value(argKey)
+		for _, argKey := range def.In {
+			arg, err := s.Value(argKey)
 
-				if err != nil {
-					return v, errors.WithStack(err)
-				}
-
-				args = append(args, arg)
-			}
-
-			instance, err := def.Create(args)
 			if err != nil {
-				return v, errors.Wrapf(err, "%s", def)
+				return v, errors.WithStack(err)
 			}
 
-			v.Set(reflect.Append(v, instance))
+			args = append(args, arg)
 		}
 
-		return v, nil
+		instance, err := def.Create(args)
+		if err != nil {
+			return v, errors.Wrapf(err, "%s", def.Key)
+		}
+
+		v.Set(reflect.Append(v, instance))
 	}
 
-	return v, errors.Errorf("type %s not provided", k)
+	return v, nil
+	// }
+
+	// return v, errors.Errorf("type %s not provided", k)
 }
 
 // All.
@@ -156,21 +156,21 @@ func (s *storage) visit(d *definition) (err error) {
 	}
 
 	if d.visited == visitMarkTemporary {
-		return fmt.Errorf("%s", d.key)
+		return fmt.Errorf("%s", d.Key)
 	}
 
 	d.visited = visitMarkTemporary
 
-	for _, out := range d.out {
-		defs, err := s.Get(out)
-		if err != nil {
-			return errors.WithStack(err)
-		}
+	for _, out := range d.Out {
+		defs, _ := s.Get(out)
+		// if err != nil {
+		// 	return errors.WithStack(err)
+		// }
 
 		// visit arguments
 		for _, def := range defs {
 			if err = s.visit(def); err != nil {
-				return errors.Wrapf(err, "%s", d.key)
+				return errors.Wrapf(err, "%s", d.Key)
 			}
 		}
 	}

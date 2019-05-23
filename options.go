@@ -37,24 +37,10 @@ func Package(options ...Option) Option {
 	})
 }
 
-// SetLogger.
-func SetLogger(logger Logger) Option {
-	return option(func(container *Container) {
-		container.logger = logger
-	})
-}
-
-// NopLogger.
-func NopLogger() Option {
-	return option(func(container *Container) {
-		container.logger = &nopLogger{}
-	})
-}
-
 // PROVIDE OPTIONS.
 
-// Name
-func Name(name string) ProvideOption {
+// WithName
+func WithName(name string) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.name = name
 	})
@@ -77,8 +63,8 @@ func Exported() ProvideOption {
 
 // POPULATE OPTIONS.
 
-// PopulateName
-func PopulateName(name string) PopulateOption {
+// Name
+func Name(name string) PopulateOption {
 	return populateOption(func(populate *populateOptions) {
 		populate.name = name
 	})

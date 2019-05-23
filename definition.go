@@ -3,7 +3,6 @@ package inject
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -64,46 +63,25 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 	}
 
 	return &definition{
-		key: key{
+		Key: key{
 			typ:  wrapper.rtype(),
 			name: po.name,
 		},
-		provider:   wrapper,
-		implements: implements,
+		Provider:   wrapper,
+		Implements: implements,
 	}, nil
 }
 
 // definition.
 type definition struct {
-	key        key
-	provider   providerWrapper
-	implements []reflect.Type
-
-	in  []key
-	out []key
+	Key        key
+	Provider   providerWrapper
+	Implements []reflect.Type
+	In         []key
+	Out        []key
 
 	instance reflect.Value
 	visited  int
-}
-
-// String.
-func (d *definition) String() string {
-	var builder strings.Builder
-
-	builder.WriteString(fmt.Sprintf("%s", d.key))
-
-	if len(d.implements) > 0 {
-		builder.WriteString(" as ")
-		for i, k := range d.implements {
-			builder.WriteString(fmt.Sprintf("%s", k))
-
-			if i != len(d.implements)-1 {
-				builder.WriteString(", ")
-			}
-		}
-	}
-
-	return builder.String()
 }
 
 // value.
@@ -112,7 +90,7 @@ func (d *definition) Create(args []reflect.Value) (instance reflect.Value, err e
 		return d.instance, nil
 	}
 
-	instance, err = d.provider.create(args)
+	instance, err = d.Provider.create(args)
 	if err != nil {
 		return instance, errors.WithStack(err)
 	}

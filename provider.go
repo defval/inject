@@ -11,7 +11,8 @@ func wrapProvider(po *providerOptions) (wrapper providerWrapper, err error) {
 	pv := reflect.ValueOf(po.provider)
 	pt := pv.Type()
 
-	if pt.Kind() == reflect.Func {
+	switch true {
+	case pt.Kind() == reflect.Func:
 		if err = checkFunctionProvider(pt); err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -19,23 +20,16 @@ func wrapProvider(po *providerOptions) (wrapper providerWrapper, err error) {
 		return &funcProviderWrapper{
 			value: pv,
 		}, nil
-	}
-
-	if pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct {
+	case pt.Kind() == reflect.Ptr && pt.Elem().Kind() == reflect.Struct:
 		return &structPointerProviderWrapper{
 			value:                pv,
 			injectExportedFields: po.injectExportedFields,
 		}, nil
-	}
-
-	if pt.Kind() == reflect.Struct {
-		return &structProviderWrapper{
-			value:                pv,
-			injectExportedFields: po.injectExportedFields,
+	default:
+		return &defaultProviderWrapper{
+			value: pv,
 		}, nil
 	}
-
-	return nil, errors.WithStack(errIncorrectFunctionProviderSignature)
 }
 
 // check function provider
@@ -59,50 +53,19 @@ type providerWrapper interface {
 	rtype() reflect.Type
 }
 
-type structProviderWrapper struct {
-	value                reflect.Value
-	injectExportedFields bool
+type defaultProviderWrapper struct {
+	value reflect.Value
 }
 
-func (w *structProviderWrapper) create(arguments []reflect.Value) (_ reflect.Value, err error) {
-	pv := w.value
-
-	skip := 0
-	for i := 0; i < pv.Type().NumField(); i++ {
-		var structField = pv.Type().Field(i)
-		var fieldValue = pv.Field(i)
-
-		_, exists := structField.Tag.Lookup("inject")
-
-		if exists || (w.injectExportedFields && fieldValue.CanSet()) {
-			fieldValue.Set(arguments[i-skip])
-		} else {
-			skip++
-		}
-	}
-
+func (w *defaultProviderWrapper) create(arguments []reflect.Value) (_ reflect.Value, err error) {
 	return w.value, nil
 }
 
-func (w *structProviderWrapper) args() []key {
-	pv := w.value
-
-	var args []key
-	for i := 0; i < pv.Type().NumField(); i++ {
-		structField := pv.Type().Field(i)
-		fieldValue := pv.Field(i)
-
-		name, exists := structField.Tag.Lookup("inject")
-
-		if exists || (w.injectExportedFields && fieldValue.CanSet()) {
-			args = append(args, key{typ: structField.Type, name: name})
-		}
-	}
-
-	return args
+func (w *defaultProviderWrapper) args() []key {
+	return nil
 }
 
-func (w *structProviderWrapper) rtype() reflect.Type {
+func (w *defaultProviderWrapper) rtype() reflect.Type {
 	return w.value.Type()
 }
 
@@ -121,15 +84,11 @@ func (w *structPointerProviderWrapper) create(arguments []reflect.Value) (_ refl
 
 		_, exists := structField.Tag.Lookup("inject")
 
-		if exists || (w.injectExportedFields && fieldValue.CanSet()) {
+		if fieldValue.CanSet() && (exists || w.injectExportedFields) {
 			fieldValue.Set(arguments[i-skip])
 		} else {
 			skip++
 		}
-	}
-
-	if w.value.IsNil() {
-		return w.value, errors.Errorf("nil provided")
 	}
 
 	return w.value, nil
@@ -145,7 +104,7 @@ func (w *structPointerProviderWrapper) args() []key {
 
 		name, exists := structField.Tag.Lookup("inject")
 
-		if exists || (w.injectExportedFields && fieldValue.CanSet()) {
+		if fieldValue.CanSet() && (exists || w.injectExportedFields) {
 			args = append(args, key{typ: structField.Type, name: name})
 		}
 	}
@@ -170,11 +129,7 @@ func (w *funcProviderWrapper) create(arguments []reflect.Value) (_ reflect.Value
 		return result[0], nil
 	}
 
-	if len(result) == 2 {
-		return result[0], errors.WithStack(result[1].Interface().(error))
-	}
-
-	panic("incorrect constructor function")
+	return result[0], errors.WithStack(result[1].Interface().(error))
 }
 
 func (w *funcProviderWrapper) args() []key {

@@ -22,10 +22,6 @@ func New(options ...Option) (_ *Container, err error) {
 		opt.apply(c)
 	}
 
-	if c.logger == nil {
-		c.logger = &defaultLogger{}
-	}
-
 	if err = c.compile(); err != nil {
 		return nil, errors.Wrapf(err, "could not compile container")
 	}
@@ -35,7 +31,6 @@ func New(options ...Option) (_ *Container, err error) {
 
 // Container.
 type Container struct {
-	logger    Logger
 	providers []*providerOptions
 	storage   *storage
 }
@@ -87,15 +82,15 @@ func (c *Container) compile() (err error) {
 		}
 
 		if err = c.storage.Add(def); err != nil {
-			return errors.Wrap(err, "could not add definition")
+			return errors.WithStack(err)
 		}
 	}
 
 	// connect storage
 	for _, def := range c.storage.All() {
 		// value arguments
-		for _, argKey := range def.provider.args() {
-			def.in = append(def.in, argKey)
+		for _, argKey := range def.Provider.args() {
+			def.In = append(def.In, argKey)
 
 			args, err := c.storage.Get(argKey)
 
@@ -104,7 +99,7 @@ func (c *Container) compile() (err error) {
 			}
 
 			for _, argDef := range args {
-				argDef.out = append(argDef.out, def.key)
+				argDef.Out = append(argDef.Out, def.Key)
 			}
 		}
 	}
