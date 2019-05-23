@@ -22,6 +22,16 @@ func (k key) String() string {
 	return fmt.Sprintf("%s", k.typ) // todo: add name
 }
 
+// Value creates value of key type
+func (k key) Value() reflect.Value {
+	return reflect.New(k.typ).Elem()
+}
+
+// IsGroup checks that key may be a group
+func (k key) IsGroup() bool {
+	return k.typ.Kind() == reflect.Slice && k.typ.Elem().Kind() == reflect.Interface
+}
+
 // createDefinition.
 func createDefinition(po *providerOptions) (def *definition, err error) {
 	wrapper, err := wrapProvider(po)
@@ -30,7 +40,7 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 		return nil, errors.WithStack(err)
 	}
 
-	var implements []key
+	var implements []reflect.Type
 	for _, iface := range po.implements {
 		ifaceType := reflect.TypeOf(iface)
 
@@ -44,7 +54,7 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 			return nil, errors.Errorf("%s not implement %s interface", wrapper.rtype(), ifaceTypeElem)
 		}
 
-		implements = append(implements, key{typ: ifaceTypeElem, name: po.name})
+		implements = append(implements, ifaceTypeElem)
 	}
 
 	return &definition{
@@ -61,10 +71,10 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 type definition struct {
 	key        key
 	provider   providerWrapper
-	implements []key
+	implements []reflect.Type
 
-	in  []*definition
-	out []*definition
+	in  []key
+	out []key
 
 	instance reflect.Value
 	visited  int
@@ -90,54 +100,23 @@ func (d *definition) String() string {
 	return builder.String()
 }
 
-// load.
-func (d *definition) load() (instance reflect.Value, err error) {
+// value.
+func (d *definition) Create(args []reflect.Value) (instance reflect.Value, err error) {
 	if d.instance.IsValid() {
+
 		return d.instance, nil
 	}
 
-	var arguments []reflect.Value
-	for _, arg := range d.in {
-		instance, err := arg.load()
-
-		if err != nil {
-			return reflect.Value{}, errors.Wrapf(err, "%s", arg)
-		}
-		arguments = append(arguments, instance)
-	}
-
-	if instance, err = d.provider.create(arguments); err != nil {
-		return reflect.Value{}, errors.WithStack(err)
+	instance, err = d.provider.create(args)
+	if err != nil {
+		return instance, errors.WithStack(err)
 	}
 
 	if instance.Kind() == reflect.Ptr && instance.IsNil() {
-		return reflect.Value{}, errors.New("nil provided")
+		return instance, errors.New("nil provided")
 	}
 
 	d.instance = instance
 
-	return instance, nil
-}
-
-// visit.
-func (d *definition) visit() (err error) {
-	if d.visited == visitMarkPermanent {
-		return
-	}
-
-	if d.visited == visitMarkTemporary {
-		return fmt.Errorf("%s", d.key)
-	}
-
-	d.visited = visitMarkTemporary
-
-	for _, out := range d.out {
-		if err = out.visit(); err != nil {
-			return errors.Wrapf(err, "%s", d.key)
-		}
-	}
-
-	d.visited = visitMarkPermanent
-
-	return nil
+	return d.instance, nil
 }

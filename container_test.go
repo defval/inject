@@ -62,7 +62,7 @@ func TestContainer_Provide(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr net.Addr
-		require.EqualError(t, container.Populate(&addr), "net.Addr: *net.TCPAddr: build error")
+		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
 	})
 
 	t.Run("constructor struct pointer", func(t *testing.T) {
@@ -415,6 +415,32 @@ func TestContainer_Populate(t *testing.T) {
 }
 
 func TestContainer_Group(t *testing.T) {
+	t.Run("inject group", func(t *testing.T) {
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{
+					Zone: "tcp",
+				}
+			}, As(new(net.Addr))),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{
+					Zone: "udp",
+				}
+			}, As(new(net.Addr))),
+			Provide(func(addrs []net.Addr) bool {
+				require.Equal(t, "tcp", addrs[0].(*net.TCPAddr).Zone)
+				require.Equal(t, "udp", addrs[1].(*net.UDPAddr).Zone)
+				return len(addrs) == 2
+			}),
+		)
+
+		require.NoError(t, err)
+		var result bool
+		require.NoError(t, container.Populate(&result))
+		require.True(t, result)
+
+	})
+
 	t.Run("different types", func(t *testing.T) {
 		container, err := New(
 			Provide(func() *net.TCPAddr {
