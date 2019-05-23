@@ -7,14 +7,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// storage
+// storage.
 type storage struct {
 	keys        []key
-	definitions map[key]*definition            // key - type with name
-	ifaces      map[reflect.Type][]*definition // key - interface
+	definitions map[key]*definition
+	ifaces      map[reflect.Type][]*definition
 }
 
-// Add
+// Add.
 func (s *storage) Add(def *definition) (err error) {
 	if _, ok := s.definitions[def.key]; ok {
 		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.key) // todo: value.String()
@@ -30,11 +30,8 @@ func (s *storage) Add(def *definition) (err error) {
 	return nil
 }
 
-// Definition
-// first: find in definitions
-// second: find in interfaces with name
-// third: find in group with elem of slice
-func (s *storage) Definition(k key) (_ []*definition, err error) {
+// Get.
+func (s *storage) Get(k key) (_ []*definition, err error) {
 	if def, ok := s.definitions[k]; ok {
 		return []*definition{def}, nil
 	}
@@ -49,16 +46,26 @@ func (s *storage) Definition(k key) (_ []*definition, err error) {
 	}
 
 	// definition group
-	if defs, ok := s.group(k); ok {
+	if defs, ok := s.Group(k); ok {
 		return defs, nil
 	}
 
 	return nil, errors.Errorf("type %s not provided", k)
 }
 
-// Value
+// Group.
+func (s *storage) Group(k key) (_ []*definition, exists bool) {
+	if k.IsGroup() {
+		_, ok := s.ifaces[k.typ.Elem()]
+		return s.ifaces[k.typ.Elem()], ok
+	}
+
+	return nil, false
+}
+
+// Value.
 func (s *storage) Value(k key) (v reflect.Value, err error) {
-	defs, err := s.Definition(k)
+	defs, err := s.Get(k)
 
 	if err != nil {
 		return v, errors.WithStack(err)
@@ -119,17 +126,7 @@ func (s *storage) Value(k key) (v reflect.Value, err error) {
 	return v, errors.Errorf("type %s not provided", k)
 }
 
-// groupExists
-func (s *storage) group(k key) (_ []*definition, exists bool) {
-	if k.IsGroup() {
-		_, ok := s.ifaces[k.typ.Elem()]
-		return s.ifaces[k.typ.Elem()], ok
-	}
-
-	return nil, false
-}
-
-// All
+// All.
 func (s *storage) All() (defs []*definition) {
 	for _, k := range s.keys {
 		defs = append(defs, s.definitions[k])
@@ -138,12 +135,12 @@ func (s *storage) All() (defs []*definition) {
 	return defs
 }
 
-// checkCycles
-func (s *storage) checkCycles() (err error) {
+// CheckCycles.
+func (s *storage) CheckCycles() (err error) {
 	// verify cycles
 	for _, n := range s.All() {
 		if n.visited == visitMarkUnmarked {
-			if err = s.Visit(n); err != nil {
+			if err = s.visit(n); err != nil {
 				return errors.Wrap(err, "detect cycle")
 			}
 		}
@@ -152,8 +149,8 @@ func (s *storage) checkCycles() (err error) {
 	return nil
 }
 
-// Visit.
-func (s *storage) Visit(d *definition) (err error) {
+// visit.
+func (s *storage) visit(d *definition) (err error) {
 	if d.visited == visitMarkPermanent {
 		return
 	}
@@ -165,14 +162,14 @@ func (s *storage) Visit(d *definition) (err error) {
 	d.visited = visitMarkTemporary
 
 	for _, out := range d.out {
-		defs, err := s.Definition(out)
+		defs, err := s.Get(out)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		// visit arguments
 		for _, def := range defs {
-			if err = s.Visit(def); err != nil {
+			if err = s.visit(def); err != nil {
 				return errors.Wrapf(err, "%s", d.key)
 			}
 		}

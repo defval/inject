@@ -8,9 +8,6 @@ type Option interface{ apply(*Container) }
 // ProvideOption
 type ProvideOption interface{ apply(*providerOptions) }
 
-// ApplyOption.
-// type ApplyOption interface{ apply(*modifierOptions) }
-
 // PopulateOption.
 type PopulateOption interface{ apply(*populateOptions) }
 
@@ -30,21 +27,6 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 		container.providers = append(container.providers, po)
 	})
 }
-
-// Apply.
-// func Apply(modifier interface{}, options ...ApplyOption) Option {
-// 	return option(func(container *Container) {
-// 		var mo = &modifierOptions{
-// 			modifier: modifier,
-// 		}
-//
-// 		for _, opt := range options {
-// 			opt.apply(mo)
-// 		}
-//
-// 		container.modifiers = append(container.modifiers, mo)
-// 	})
-// }
 
 // Package
 func Package(options ...Option) Option {
@@ -89,7 +71,7 @@ func As(ifaces ...interface{}) ProvideOption {
 // Exported
 func Exported() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
-		provider.injectPublicFields = true
+		provider.injectExportedFields = true
 	})
 }
 
@@ -111,11 +93,6 @@ func (o option) apply(container *Container) { o(container) }
 type provideOption func(provider *providerOptions)
 
 func (o provideOption) apply(provider *providerOptions) { o(provider) }
-
-// apply option internal
-// type applyOption func(modifier *modifierOptions)
-//
-// func (o applyOption) apply(modifier *modifierOptions) { o(modifier) }
 
 // populate option internal
 type populateOption func(populate *populateOptions)

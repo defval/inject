@@ -8,6 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	visitMarkUnmarked = iota
+	visitMarkTemporary
+	visitMarkPermanent
+)
+
 // key.
 type key struct {
 	// type of provided value
@@ -103,7 +109,6 @@ func (d *definition) String() string {
 // value.
 func (d *definition) Create(args []reflect.Value) (instance reflect.Value, err error) {
 	if d.instance.IsValid() {
-
 		return d.instance, nil
 	}
 

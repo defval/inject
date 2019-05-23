@@ -1,6 +1,7 @@
 package inject
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"testing"
@@ -9,145 +10,98 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestContainer_Provide(t *testing.T) {
-	t.Run("constructor", func(t *testing.T) {
+func eqPtr(t *testing.T, expected interface{}, actual interface{}) {
+	require.Equal(t, fmt.Sprintf("%p", expected), fmt.Sprintf("%p", actual))
+}
+
+func TestContainer_ProvideConstructor(t *testing.T) {
+	t.Run("constructors with dependency without errors", func(t *testing.T) {
+		var server = &http.Server{}
+		var mux = &http.ServeMux{}
+
 		container, err := New(
-			Provide(func() *http.Server {
-				return &http.Server{}
+			Provide(func() *http.ServeMux {
+				return mux
 			}),
-			Provide(func(server *http.Server) *net.TCPAddr {
-				return &net.TCPAddr{
-					Zone: "test",
-				}
+			Provide(func(mux *http.ServeMux) *http.Server {
+				server.Handler = mux
+				return server
+			}),
+			Provide(func(s *http.Server) bool {
+				eqPtr(t, server, s)
+				return true
 			}),
 		)
 
 		require.NoError(t, err)
 
-		var addr *net.TCPAddr
-		require.NoError(t, container.Populate(&addr))
-		require.NotNil(t, addr)
-		require.Equal(t, "test", addr.Zone)
+		// check populate
+		var populatedServer *http.Server
+		require.NoError(t, container.Populate(&populatedServer))
+		require.NotNil(t, server)
+
+		eqPtr(t, populatedServer, server)
+		eqPtr(t, mux, server.Handler)
+
+		var r bool
+		require.NoError(t, container.Populate(&r))
 	})
 
-	t.Run("constructor with nil error", func(t *testing.T) {
+	t.Run("constructors with dependency with nil errors", func(t *testing.T) {
+		var server = &http.Server{}
+		var mux = &http.ServeMux{}
+
 		container, err := New(
-			Provide(func() (*net.TCPAddr, error) {
-				return &net.TCPAddr{
-					Zone: "test",
-				}, nil
+			Provide(func() (*http.ServeMux, error) {
+				return mux, nil
+			}),
+			Provide(func(mux *http.ServeMux) (*http.Server, error) {
+				server.Handler = mux
+				return server, nil
+			}),
+			Provide(func(s *http.Server) bool {
+				eqPtr(t, server, s)
+				return true
 			}),
 		)
 
 		require.NoError(t, err)
 
-		var addr *net.TCPAddr
-		require.NoError(t, container.Populate(&addr))
-		require.NotNil(t, addr)
-		require.Equal(t, "test", addr.Zone)
+		// check populate
+		var populatedServer *http.Server
+		require.NoError(t, container.Populate(&populatedServer))
+		require.NotNil(t, server)
+
+		eqPtr(t, populatedServer, server)
+		eqPtr(t, mux, server.Handler)
+
+		var r bool
+		require.NoError(t, container.Populate(&r))
 	})
 
-	t.Run("constructor with error", func(t *testing.T) {
+	t.Run("constructors with dependency with build error", func(t *testing.T) {
+		var server = &http.Server{}
+		var mux = &http.ServeMux{}
+
 		container, err := New(
-			Provide(func() (*net.TCPAddr, error) {
-				return &net.TCPAddr{
-					Zone: "test",
-				}, errors.New("build error")
+			Provide(func() (*http.ServeMux, error) {
+				return mux, errors.New("build error")
 			}),
-			Provide(func(addr *net.TCPAddr) net.Addr {
-				return addr
+			Provide(func(mux *http.ServeMux) (*http.Server, error) {
+				server.Handler = mux
+				return server, nil
+			}),
+			Provide(func(s *http.Server) bool {
+				require.Equal(t, server, s)
+				return true
 			}),
 		)
 
 		require.NoError(t, err)
 
-		var addr net.Addr
-		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: build error")
-	})
-
-	t.Run("constructor struct pointer", func(t *testing.T) {
-		type StructProvider struct {
-			TCPAddr *net.TCPAddr `inject:""`
-			Public  string
-			private string
-			UDPAddr *net.UDPAddr `inject:""`
-		}
-
-		container, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{Zone: "tcp"}
-			}),
-			Provide(func() *net.UDPAddr {
-				return &net.UDPAddr{Zone: "udp"}
-			}),
-			Provide(&StructProvider{}),
-		)
-
-		require.NoError(t, err)
-
-		var sp *StructProvider
-		require.NoError(t, container.Populate(&sp))
-		require.Equal(t, "tcp", sp.TCPAddr.Zone)
-		require.Equal(t, "udp", sp.UDPAddr.Zone)
-	})
-
-	t.Run("constructor struct pointer with inject public fields", func(t *testing.T) {
-		type StructProvider struct {
-			TCPAddr *net.TCPAddr
-			UDPAddr *net.UDPAddr
-		}
-
-		container, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{Zone: "tcp"}
-			}),
-			Provide(func() *net.UDPAddr {
-				return &net.UDPAddr{Zone: "udp"}
-			}),
-			Provide(&StructProvider{}, Exported()),
-		)
-
-		require.NoError(t, err)
-
-		var sp *StructProvider
-		require.NoError(t, container.Populate(&sp))
-		require.Equal(t, "tcp", sp.TCPAddr.Zone)
-		require.Equal(t, "udp", sp.UDPAddr.Zone)
-	})
-
-	t.Run("struct", func(t *testing.T) {
-		container, err := New(
-			Provide(net.TCPAddr{
-				Zone: "tcp",
-			}),
-		)
-
-		require.NoError(t, err)
-
-		var addr net.TCPAddr
-		require.NoError(t, container.Populate(&addr))
-		require.Equal(t, "tcp", addr.Zone)
-	})
-
-	t.Run("struct with not provided field", func(t *testing.T) {
-		type StructProvider struct {
-			TCPAddr *net.TCPAddr
-			UDPAddr *net.UDPAddr
-			String  string
-		}
-
-		container, err := New(
-			Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{Zone: "tcp"}
-			}),
-			Provide(func() *net.UDPAddr {
-				return &net.UDPAddr{Zone: "udp"}
-			}),
-			Provide(&StructProvider{}, Exported()),
-		)
-
-		require.Nil(t, container)
-		require.EqualError(t, err, "could not compile container: type string not provided") // todo: improve message
+		// check populate
+		var populatedServer *http.Server
+		require.EqualError(t, container.Populate(&populatedServer), "*http.ServeMux: build error")
 	})
 
 	t.Run("two instance of one type with names", func(t *testing.T) {
@@ -238,24 +192,156 @@ func TestContainer_Provide(t *testing.T) {
 
 		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
 	})
+}
 
-	t.Run("cycle", func(t *testing.T) {
-		_, err := New(
-			Provide(func(string) bool {
-				return true
+func TestContainer_ProvideStructPointer(t *testing.T) {
+	t.Run("with tags", func(t *testing.T) {
+		var defaultMux = &http.ServeMux{}
+		var anotherMux = &http.ServeMux{}
+
+		var defaultServer = &http.Server{}
+		var anotherServer = &http.Server{}
+
+		type Server struct {
+			private  string
+			private2 string
+
+			DefaultServer *http.Server `inject:""`        // default server
+			AnotherServer *http.Server `inject:"another"` // another server
+
+			Public  string
+			Public2 string
+		}
+
+		type Muxes struct {
+			DefaultMux *http.ServeMux `inject:""`
+			private    string
+			private2   string
+			Public     string
+			Public2    string
+			AnotherMux *http.ServeMux `inject:"another"`
+		}
+
+		container, err := New(
+			Provide(func() *http.ServeMux {
+				return defaultMux
 			}),
-			Provide(func(bool) int64 {
-				return 64
+			Provide(func() *http.ServeMux {
+				return anotherMux
+			}, Name("another")),
+			Provide(&Muxes{}),
+			Provide(func(muxes *Muxes) *http.Server {
+				defaultServer.Handler = muxes.DefaultMux
+				return defaultServer
 			}),
-			Provide(func(int64) int32 {
-				return 32
-			}),
-			Provide(func(int32) string {
-				return "string"
-			}),
+			Provide(func(muxes *Muxes) *http.Server {
+				anotherServer.Handler = muxes.AnotherMux
+				return anotherServer
+			}, Name("another")),
+			Provide(&Server{}),
 		)
 
-		require.EqualError(t, err, "could not compile container: detect cycle: bool: int64: int32: string: bool")
+		require.NoError(t, err)
+
+		var server *Server
+		require.NoError(t, container.Populate(&server))
+
+		eqPtr(t, defaultServer, server.DefaultServer)
+		eqPtr(t, defaultServer.Handler, defaultMux)
+
+		eqPtr(t, anotherServer, server.AnotherServer)
+		eqPtr(t, anotherServer.Handler, anotherMux)
+	})
+
+	t.Run("with exported option", func(t *testing.T) {
+		var defaultMux = &http.ServeMux{}
+		var anotherMux = &http.ServeMux{}
+
+		var defaultServer = &http.Server{}
+		var anotherServer = &http.Server{}
+
+		type Server struct {
+			private  string
+			private2 string
+
+			DefaultServer *http.Server
+			AnotherServer *http.Server `inject:"another"` // another server
+		}
+
+		type Muxes struct {
+			DefaultMux *http.ServeMux
+			private    string
+			private2   string
+			AnotherMux *http.ServeMux `inject:"another"`
+		}
+
+		container, err := New(
+			Provide(func() *http.ServeMux {
+				return defaultMux
+			}),
+			Provide(func() *http.ServeMux {
+				return anotherMux
+			}, Name("another")),
+			Provide(&Muxes{}, Exported()),
+			Provide(func(muxes *Muxes) *http.Server {
+				defaultServer.Handler = muxes.DefaultMux
+				return defaultServer
+			}),
+			Provide(func(muxes *Muxes) *http.Server {
+				anotherServer.Handler = muxes.AnotherMux
+				return anotherServer
+			}, Name("another")),
+			Provide(&Server{}, Exported()),
+		)
+
+		require.NoError(t, err)
+
+		var server *Server
+		require.NoError(t, container.Populate(&server))
+
+		eqPtr(t, defaultServer, server.DefaultServer)
+		eqPtr(t, defaultServer.Handler, defaultMux)
+
+		eqPtr(t, anotherServer, server.AnotherServer)
+		eqPtr(t, anotherServer.Handler, anotherMux)
+	})
+}
+
+func TestContainer_ProvideStructValue(t *testing.T) {
+	t.Run("struct", func(t *testing.T) {
+		var addr = net.TCPAddr{}
+
+		container, err := New(
+			Provide(addr),
+		)
+
+		require.NoError(t, err)
+
+		var populatedAddr net.TCPAddr
+		require.NoError(t, container.Populate(&populatedAddr))
+		require.Equal(t, addr, populatedAddr)
+		require.NotEqual(t, fmt.Sprintf("%p", &addr), fmt.Sprintf("%p", &populatedAddr))
+	})
+
+	t.Run("struct with not provided field", func(t *testing.T) {
+		type StructProvider struct {
+			TCPAddr *net.TCPAddr
+			UDPAddr *net.UDPAddr
+			String  string
+		}
+
+		container, err := New(
+			Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{Zone: "tcp"}
+			}),
+			Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{Zone: "udp"}
+			}),
+			Provide(&StructProvider{}, Exported()),
+		)
+
+		require.Nil(t, container)
+		require.EqualError(t, err, "could not compile container: type string not provided") // todo: improve message
 	})
 }
 
@@ -510,134 +596,23 @@ func TestContainer_Group(t *testing.T) {
 	})
 }
 
-//
-// func TestApply(t *testing.T) {
-// 	t.Run("apply function", func(t *testing.T) {
-// 		container, err := New(
-// 			Provide(func() *net.TCPAddr {
-// 				return &net.TCPAddr{
-// 					Zone: "one",
-// 				}
-// 			}),
-// 			Apply(func(addr *net.TCPAddr) {
-// 				addr.Zone = "two"
-// 			}),
-// 		)
-//
-// 		require.NoError(t, err)
-//
-// 		var addr *net.TCPAddr
-// 		require.NoError(t, container.Populate(&addr))
-// 		require.Equal(t, "two", addr.Zone)
-// 	})
-//
-// 	t.Run("apply without result", func(t *testing.T) {
-// 		container, err := New(
-// 			Provide(func() *net.TCPAddr {
-// 				return &net.TCPAddr{
-// 					Zone: "one",
-// 				}
-// 			}),
-// 			Apply(func(addr *net.TCPAddr) {
-// 				addr.Zone = "two"
-// 			}),
-// 		)
-//
-// 		require.NoError(t, err)
-//
-// 		var addr *net.TCPAddr
-// 		require.NoError(t, container.Populate(&addr))
-// 		require.Equal(t, "two", addr.Zone)
-// 	})
-//
-// 	t.Run("apply error", func(t *testing.T) {
-// 		_, err := New(
-// 			Provide(func() *net.TCPAddr {
-// 				return &net.TCPAddr{
-// 					Zone: "one",
-// 				}
-// 			}),
-// 			Apply(func(addr *net.TCPAddr) (err error) {
-// 				return errors.New("boom")
-// 			}),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: apply error: boom")
-// 	})
-//
-// 	t.Run("apply incorrect function", func(t *testing.T) {
-// 		_, err := New(
-// 			Provide(func() *net.TCPAddr {
-// 				return &net.TCPAddr{
-// 					Zone: "one",
-// 				}
-// 			}),
-// 			Apply(func(addr *net.TCPAddr) (s string) {
-// 				return "string"
-// 			}),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
-// 	})
-//
-// 	t.Run("nil", func(t *testing.T) {
-// 		_, err := New(
-// 			Apply(nil),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: nil modifier")
-// 	})
-//
-// 	t.Run("apply ptr", func(t *testing.T) {
-// 		_, err := New(
-// 			Apply(&net.TCPAddr{}),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
-// 	})
-//
-// 	t.Run("more than one result", func(t *testing.T) {
-// 		_, err := New(
-// 			Apply(func() (string, error) {
-// 				return "string", nil
-// 			}),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: modifier must be a function with optional error as result")
-// 	})
-//
-// 	t.Run("use unknown type", func(t *testing.T) {
-// 		_, err := New(
-// 			Apply(func(*net.TCPAddr) {}),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: type *net.TCPAddr not provided")
-// 	})
-//
-// 	t.Run("apply argument instantiate error", func(t *testing.T) {
-// 		_, err := New(
-// 			Provide(func() (*net.TCPAddr, error) {
-// 				return nil, errors.New("wow")
-// 			}),
-// 			Apply(func(*net.TCPAddr) {}),
-// 		)
-//
-// 		require.EqualError(t, err, "could not compile container: *net.TCPAddr: wow")
-// 	})
-//
-// 	t.Run("group", func(t *testing.T) {
-// 		_, err := New(
-// 			Provide(func() *net.TCPAddr {
-// 				return &net.TCPAddr{}
-// 			}, As(new(net.Addr))),
-// 			Provide(func() *net.UDPAddr {
-// 				return &net.UDPAddr{}
-// 			}, As(new(net.Addr))),
-// 			Apply(func(addrs []net.Addr) {
-// 				require.Len(t, addrs, 2)
-// 			}),
-// 		)
-//
-// 		require.NoError(t, err)
-// 	})
-// }
+func TestContainer_Cycle(t *testing.T) {
+	t.Run("simple cycle", func(t *testing.T) {
+		_, err := New(
+			Provide(func(string) bool {
+				return true
+			}),
+			Provide(func(bool) int64 {
+				return 64
+			}),
+			Provide(func(int64) int32 {
+				return 32
+			}),
+			Provide(func(int32) string {
+				return "string"
+			}),
+		)
+
+		require.EqualError(t, err, "could not compile container: detect cycle: bool: int64: int32: string: bool")
+	})
+}

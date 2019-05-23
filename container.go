@@ -6,23 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	visitMarkUnmarked = iota
-	visitMarkTemporary
-	visitMarkPermanent
-)
-
-var (
-	// errIncorrectFunctionProviderSignature.
-	errIncorrectFunctionProviderSignature = errors.New("constructor must be a function with value and optional error as result")
-
-	// errIncorrectModifierSignature.
-	errIncorrectModifierSignature = errors.New("modifier must be a function with optional error as result")
-)
-
-// errorInterface type for error interface implementation checking
-var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
-
 // New creates new container with provided options.
 // Fore more information about container options see `Option` type.
 func New(options ...Option) (_ *Container, err error) {
@@ -52,12 +35,9 @@ func New(options ...Option) (_ *Container, err error) {
 
 // Container.
 type Container struct {
-	logger Logger
-
+	logger    Logger
 	providers []*providerOptions
-	// modifiers []*modifierOptions
-
-	storage *storage
+	storage   *storage
 }
 
 // Populate populates given target pointer with type instance provided in container.
@@ -117,7 +97,7 @@ func (c *Container) compile() (err error) {
 		for _, argKey := range def.provider.args() {
 			def.in = append(def.in, argKey)
 
-			args, err := c.storage.Definition(argKey)
+			args, err := c.storage.Get(argKey)
 
 			if err != nil {
 				return errors.WithStack(err)
@@ -129,86 +109,27 @@ func (c *Container) compile() (err error) {
 		}
 	}
 
-	if err = c.storage.checkCycles(); err != nil {
+	if err = c.storage.CheckCycles(); err != nil {
 		return errors.WithStack(err)
 	}
 
 	return nil
 }
 
-//
-// // apply.
-// func (c *Container) apply(mo *modifierOptions) (err error) {
-// 	if mo.modifier == nil {
-// 		return errors.New("nil modifier")
-// 	}
-//
-// 	// todo: validation
-// 	mv := reflect.ValueOf(mo.modifier)
-// 	mt := mv.Type()
-//
-// 	if err = checkModifier(mv); err != nil {
-// 		return errors.WithStack(err)
-// 	}
-//
-// 	var args []reflect.Value
-// 	for i := 0; i < mt.NumIn(); i++ {
-// 		rv := reflect.New(mt.In(i)).Elem()
-//
-// 		if rv.Kind() == reflect.Slice {
-// 			if err = c.populateSlice(rv); err != nil {
-// 				return errors.WithStack(err)
-// 			}
-// 		} else {
-// 			if err = c.populate(rv, ""); err != nil {
-// 				return errors.WithStack(err)
-// 			}
-// 		}
-//
-// 		args = append(args, rv)
-// 	}
-//
-// 	var result = mv.Call(args)
-//
-// 	if len(result) == 1 {
-// 		return errors.Wrap(result[0].Interface().(error), "apply error")
-// 	}
-//
-// 	return nil
-// }
-//
-// // checkModifier.
-// func checkModifier(mv reflect.Value) (err error) {
-// 	if mv.Kind() != reflect.Func {
-// 		return errors.WithStack(errIncorrectModifierSignature)
-// 	}
-//
-// 	var modifierType = mv.Type()
-//
-// 	if modifierType.NumOut() > 1 {
-// 		return errors.WithStack(errIncorrectModifierSignature)
-// 	}
-//
-// 	if modifierType.NumOut() == 1 && !modifierType.Out(0).Implements(errorInterface) {
-// 		return errors.WithStack(errIncorrectModifierSignature)
-// 	}
-//
-// 	return nil
-// }
+var (
+	// errIncorrectFunctionProviderSignature.
+	errIncorrectFunctionProviderSignature = errors.New("constructor must be a function with value and optional error as result")
+	// errorInterface type for error interface implementation checking
+	errorInterface = reflect.TypeOf((*error)(nil)).Elem()
+)
 
 // providerOptions.
 type providerOptions struct {
-	provider           interface{}
-	name               string
-	implements         []interface{}
-	injectPublicFields bool
+	provider             interface{}
+	name                 string
+	implements           []interface{}
+	injectExportedFields bool
 }
-
-//
-// // modifierOptions.
-// type modifierOptions struct {
-// 	modifier interface{}
-// }
 
 // populateOptions
 type populateOptions struct {
