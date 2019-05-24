@@ -32,6 +32,7 @@ func New(options ...Option) (_ *Container, err error) {
 // Container.
 type Container struct {
 	providers []*providerOptions
+	replacers []*providerOptions
 	storage   *storage
 }
 
@@ -82,6 +83,21 @@ func (c *Container) compile() (err error) {
 		}
 
 		if err = c.storage.Add(def); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	for _, po := range c.replacers {
+		if po.provider == nil {
+			return errors.New("replace provider could not be nil")
+		}
+
+		var def *definition
+		if def, err = createDefinition(po); err != nil {
+			return errors.Wrapf(err, "provide failed")
+		}
+
+		if err = c.storage.Replace(def); err != nil {
 			return errors.WithStack(err)
 		}
 	}

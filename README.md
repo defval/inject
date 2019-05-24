@@ -12,6 +12,23 @@ each argument manually.
 go get -u github.com/defval/inject
 ```
 
+## Features
+
+- inject constructor arguments
+- inject tagged struct fields
+- inject public struct fields
+- inject as interface
+- inject interface groups
+- inject default value of interface group
+- inject named definition into structures
+- replace interface implementation
+- replace provided type
+
+## WIP
+
+- documentation
+- inject named definition into constructor
+
 ## Usage
 
 ### Provide dependency
@@ -75,24 +92,6 @@ with the tag `inject`.
 #### Provide hints
 - [Inject named definition]()
 - [Inject all exported struct fields]()
-
-
-### Extracting dependencies from a container
-
-## Features
-
-- inject constructor arguments
-- inject tagged struct fields
-- inject public struct fields
-- inject as interface
-- inject interface groups
-- inject default value of interface group
-- inject named definition into structures
-
-## WIP
-
-- documentation
-- inject named definition into constructor
 
 ## Example
 

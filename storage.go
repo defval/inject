@@ -17,7 +17,7 @@ type storage struct {
 // Add.
 func (s *storage) Add(def *definition) (err error) {
 	if _, ok := s.definitions[def.Key]; ok {
-		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.Key) // todo: value.String()
+		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.Key)
 	}
 
 	s.keys = append(s.keys, def.Key)
@@ -25,6 +25,38 @@ func (s *storage) Add(def *definition) (err error) {
 
 	for _, typ := range def.Implements {
 		s.ifaces[typ] = append(s.ifaces[typ], def)
+	}
+
+	return nil
+}
+
+// Replace
+func (s *storage) Replace(def *definition) (err error) {
+	if len(def.Implements) == 0 {
+		return errors.Errorf("%s: no one interface has been replaced, use `inject.As()` for specify it", def.Key)
+	}
+
+	if _, ok := s.definitions[def.Key]; ok {
+		*s.definitions[def.Key] = *def
+		return nil
+	}
+
+	for _, typ := range def.Implements {
+		k := key{
+			typ:  typ,
+			name: def.Key.name,
+		}
+
+		fmt.Println(k)
+
+		defs, err := s.Get(k)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		for i := range defs {
+			*defs[i] = *def
+		}
 	}
 
 	return nil

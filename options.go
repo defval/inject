@@ -28,7 +28,22 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 	})
 }
 
-// Package
+// Replace replaces provided interface by new implementation.
+func Replace(provider interface{}, options ...ProvideOption) Option {
+	return option(func(container *Container) {
+		var po = &providerOptions{
+			provider: provider,
+		}
+
+		for _, opt := range options {
+			opt.apply(po)
+		}
+
+		container.replacers = append(container.replacers, po)
+	})
+}
+
+// Package group together container options.
 func Package(options ...Option) Option {
 	return option(func(container *Container) {
 		for _, opt := range options {

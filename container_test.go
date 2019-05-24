@@ -811,6 +811,139 @@ func TestContainer_Group(t *testing.T) {
 	})
 }
 
+// Stringer
+type Stringer struct {
+	s string
+}
+
+func (s *Stringer) String() string {
+	return s.s
+}
+
+// MockStringer
+type MockStringer struct {
+	s string
+}
+
+func (s *MockStringer) String() string {
+	return s.s
+}
+
+func TestContainer_Replace(t *testing.T) {
+	t.Run("replace by mock", func(t *testing.T) {
+		var stringer = &Stringer{
+			s: "default",
+		}
+		var mockStringer = &MockStringer{
+			s: "mock",
+		}
+
+		container, err := inject.New(
+			inject.Provide(func() *Stringer {
+				return stringer
+			}, inject.As(new(fmt.Stringer))),
+			inject.Replace(func() *MockStringer {
+				return mockStringer
+			}, inject.As(new(fmt.Stringer))),
+		)
+
+		require.NoError(t, err)
+
+		var s fmt.Stringer
+		require.NoError(t, container.Populate(&s))
+		eqPtr(t, s, mockStringer)
+	})
+
+	t.Run("replace named interface by mock", func(t *testing.T) {
+		var stringer = &Stringer{s: "default"}
+		var anotherStringer = &Stringer{s: "another"}
+		var mockStringer = &MockStringer{s: "mock"}
+
+		container, err := inject.New(
+			inject.Provide(func() *Stringer {
+				return stringer
+			}, inject.As(new(fmt.Stringer))),
+			inject.Provide(func() *Stringer {
+				return anotherStringer
+			}, inject.As(new(fmt.Stringer)), inject.WithName("another")),
+			inject.Replace(func() *MockStringer {
+				return mockStringer
+			}, inject.As(new(fmt.Stringer)), inject.WithName("another")),
+		)
+
+		require.NoError(t, err)
+
+		var s fmt.Stringer
+		require.NoError(t, container.Populate(&s))
+		eqPtr(t, s, stringer)
+
+		require.NoError(t, container.Populate(&s, inject.Name("another")))
+		eqPtr(t, s, mockStringer)
+	})
+
+	t.Run("replace nil provider", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Replace(nil),
+		)
+
+		require.EqualError(t, err, "could not compile container: replace provider could not be nil")
+	})
+
+	t.Run("replace without interfaces", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Replace(func() fmt.Stringer {
+				return &Stringer{}
+			}),
+		)
+
+		require.EqualError(t, err, "could not compile container: fmt.Stringer: no one interface has been replaced, use `inject.As()` for specify it")
+	})
+
+	t.Run("replace incorrect constructor signature", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Replace(func() {}),
+		)
+
+		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
+	})
+
+	t.Run("replace already provided type", func(t *testing.T) {
+		var stringer = &Stringer{s: "default"}
+		var anotherStringer = &Stringer{s: "another"}
+
+		container, err := inject.New(
+			inject.Provide(func() *Stringer {
+				return stringer
+			}, inject.As(new(fmt.Stringer))),
+			inject.Replace(func() *Stringer {
+				return anotherStringer
+			}, inject.As(new(fmt.Stringer))),
+		)
+
+		require.NoError(t, err)
+		var s *Stringer
+		require.NoError(t, container.Populate(&s))
+		eqPtr(t, anotherStringer, s)
+
+		var si fmt.Stringer
+		require.NoError(t, container.Populate(&si))
+		eqPtr(t, anotherStringer, si)
+	})
+
+	t.Run("replace unknown type", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(func() *Stringer {
+				return &Stringer{}
+			}),
+			inject.Replace(func() *MockStringer {
+				return &MockStringer{}
+			}, inject.As(new(fmt.Stringer))),
+		)
+
+		require.EqualError(t, err, "could not compile container: type fmt.Stringer not provided")
+	})
+}
+
 func TestContainer_Cycle(t *testing.T) {
 	t.Run("simple cycle", func(t *testing.T) {
 		_, err := inject.New(
