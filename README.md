@@ -114,7 +114,6 @@ func main() {
 		inject.Provide(NewServeMux, inject.As(new(http.Handler))),
 		inject.Provide(&UserController{}, inject.As(new(Controller))),
 		inject.Provide(&AccountController{}, inject.As(new(Controller))),
-		inject.Apply(RegisterRoutes),
 	)
 
 	if err != nil {
@@ -160,15 +159,14 @@ func NewHTTPServer(handler http.Handler) *http.Server {
 }
 
 // NewServeMux
-func NewServeMux() *http.ServeMux {
-	return http.NewServeMux()
-}
+func NewServeMux(controllers []Controller) *http.ServeMux {
+	mux := http.NewServeMux()
 
-// RegisterRoutes
-func RegisterRoutes(mux *http.ServeMux, controllers []Controller) {
 	for _, ctrl := range controllers {
 		ctrl.RegisterRoutes(mux)
 	}
+
+	return mux
 }
 
 // Controller
