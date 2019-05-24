@@ -47,8 +47,6 @@ func (s *storage) Replace(def *definition) (err error) {
 			name: def.Key.name,
 		}
 
-		fmt.Println(k)
-
 		defs, err := s.Get(k)
 		if err != nil {
 			return errors.WithStack(err)

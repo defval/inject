@@ -845,6 +845,10 @@ func TestContainer_Replace(t *testing.T) {
 			inject.Replace(func() *MockStringer {
 				return mockStringer
 			}, inject.As(new(fmt.Stringer))),
+			inject.Provide(func(s fmt.Stringer) bool {
+				eqPtr(t, mockStringer, s)
+				return true
+			}),
 		)
 
 		require.NoError(t, err)
@@ -852,6 +856,9 @@ func TestContainer_Replace(t *testing.T) {
 		var s fmt.Stringer
 		require.NoError(t, container.Populate(&s))
 		eqPtr(t, s, mockStringer)
+
+		var b bool
+		require.NoError(t, container.Populate(&b))
 	})
 
 	t.Run("replace named interface by mock", func(t *testing.T) {
