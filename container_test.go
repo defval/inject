@@ -550,8 +550,8 @@ func TestContainer_ProvideAs(t *testing.T) {
 	})
 }
 
-func TestContainer_Package(t *testing.T) {
-	t.Run("package", func(t *testing.T) {
+func TestContainer_Bundle(t *testing.T) {
+	t.Run("bundle", func(t *testing.T) {
 		container, err := inject.New(
 			inject.Bundle(
 				inject.Provide(func() *net.TCPAddr {
