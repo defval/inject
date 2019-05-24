@@ -553,7 +553,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 func TestContainer_Package(t *testing.T) {
 	t.Run("package", func(t *testing.T) {
 		container, err := inject.New(
-			inject.Package(
+			inject.Bundle(
 				inject.Provide(func() *net.TCPAddr {
 					return &net.TCPAddr{
 						Zone: "zone",
@@ -561,7 +561,7 @@ func TestContainer_Package(t *testing.T) {
 					}
 				}),
 			),
-			inject.Package(
+			inject.Bundle(
 				inject.Provide(func(addr *net.TCPAddr) string {
 					return addr.String()
 				}),

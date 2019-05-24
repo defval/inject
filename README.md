@@ -35,7 +35,7 @@ go get -u github.com/defval/inject
 
 First of all, when creating a new container, you need to describe
 how to create each instance of a dependency. To do this, use the container
-option `inject.Provide()`. The first argument in this function is the `provider`.
+option `inject.Provide()`. The first argument in this function is a `provider`.
 It determines how to create dependency.
 
 Provider can be a constructor function with optional error:
@@ -64,10 +64,10 @@ container, err := New(
 )
 ```
 
-In this case, the container knows what to create `*pkg.Dependency` he
-needs `*pkg.AnotherDependency`, which in turn can return an initialization error.
+In this case, the container knows how to create `*pkg.AnotherDependency`
+and can handle an instance creation error.
 
-Also, a provider can be a structure with public fields:
+Also, a provider can be a structure pointer with public fields:
 
 ```go
 // package pkg

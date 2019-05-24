@@ -43,8 +43,8 @@ func Replace(provider interface{}, options ...ProvideOption) Option {
 	})
 }
 
-// Package group together container options.
-func Package(options ...Option) Option {
+// Bundle group together container options.
+func Bundle(options ...Option) Option {
 	return option(func(container *Container) {
 		for _, opt := range options {
 			opt.apply(container)
