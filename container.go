@@ -71,6 +71,18 @@ func (c *Container) Populate(target interface{}, options ...PopulateOption) (err
 
 // compile.
 func (c *Container) compile() (err error) {
+	if err = c.registerProviders(); err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err = c.applyReplacers(); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return c.storage.Compile()
+}
+
+func (c *Container) registerProviders() (err error) {
 	// register providers
 	for _, po := range c.providers {
 		if po.provider == nil {
@@ -87,6 +99,10 @@ func (c *Container) compile() (err error) {
 		}
 	}
 
+	return nil
+}
+
+func (c *Container) applyReplacers() (err error) {
 	for _, po := range c.replacers {
 		if po.provider == nil {
 			return errors.New("replace provider could not be nil")
@@ -100,28 +116,6 @@ func (c *Container) compile() (err error) {
 		if err = c.storage.Replace(def); err != nil {
 			return errors.WithStack(err)
 		}
-	}
-
-	// connect storage
-	for _, def := range c.storage.All() {
-		// value arguments
-		for _, argKey := range def.Provider.args() {
-			def.In = append(def.In, argKey)
-
-			args, err := c.storage.Get(argKey)
-
-			if err != nil {
-				return errors.WithStack(err)
-			}
-
-			for _, argDef := range args {
-				argDef.Out = append(argDef.Out, def.Key)
-			}
-		}
-	}
-
-	if err = c.storage.CheckCycles(); err != nil {
-		return errors.WithStack(err)
 	}
 
 	return nil

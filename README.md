@@ -33,6 +33,10 @@ go get -u github.com/defval/inject
 - documentation
 - inject named definition into constructor
 
+## TODO
+
+- multiple storage with namespace
+
 ## Usage
 
 ### Provide dependency

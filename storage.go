@@ -165,8 +165,24 @@ func (s *storage) All() (defs []*definition) {
 	return defs
 }
 
-// CheckCycles.
-func (s *storage) CheckCycles() (err error) {
+func (s *storage) Compile() (err error) {
+	for _, def := range s.All() {
+		// value arguments
+		for _, argKey := range def.Provider.args() {
+			def.In = append(def.In, argKey)
+
+			args, err := s.Get(argKey)
+
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			for _, argDef := range args {
+				argDef.Out = append(argDef.Out, def.Key)
+			}
+		}
+	}
+
 	// verify cycles
 	for _, n := range s.All() {
 		if n.visited == visitMarkUnmarked {
