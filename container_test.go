@@ -1,4 +1,4 @@
-package inject
+package inject_test
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+
+	"github.com/defval/inject"
 )
 
 func eqPtr(t *testing.T, expected interface{}, actual interface{}) {
@@ -20,9 +22,9 @@ func notEqPtr(t *testing.T, expected interface{}, actual interface{}) {
 
 func TestContainer_ProvideConstructor(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
-		container, err := New(
-			Provide("string"),
-			Provide(func(s string) bool {
+		container, err := inject.New(
+			inject.Provide("string"),
+			inject.Provide(func(s string) bool {
 				require.Equal(t, "string", s)
 				return true
 			}),
@@ -39,16 +41,16 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	})
 
 	t.Run("struct", func(t *testing.T) {
-		_, err := New(
-			Provide(struct{}{}),
+		_, err := inject.New(
+			inject.Provide(struct{}{}),
 		)
 
 		require.NoError(t, err)
 	})
 
 	t.Run("slice", func(t *testing.T) {
-		container, err := New(
-			Provide([]int64{32, 30, 31}),
+		container, err := inject.New(
+			inject.Provide([]int64{32, 30, 31}),
 		)
 
 		require.NoError(t, err)
@@ -61,9 +63,9 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	t.Run("chan", func(t *testing.T) {
 		var ch = make(chan struct{})
 
-		container, err := New(
-			Provide(ch),
-			Provide(func(ch chan struct{}) bool {
+		container, err := inject.New(
+			inject.Provide(ch),
+			inject.Provide(func(ch chan struct{}) bool {
 				close(ch)
 				return true
 			}),
@@ -80,9 +82,9 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	t.Run("map", func(t *testing.T) {
 		var m = map[string]string{"test": "test"}
 
-		container, err := New(
-			Provide(m),
-			Provide(func(arg map[string]string) bool {
+		container, err := inject.New(
+			inject.Provide(m),
+			inject.Provide(func(arg map[string]string) bool {
 				require.Equal(t, m, arg)
 				return true
 			}),
@@ -99,15 +101,15 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		var server = &http.Server{}
 		var mux = &http.ServeMux{}
 
-		container, err := New(
-			Provide(func() *http.ServeMux {
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
 				return mux
 			}),
-			Provide(func(mux *http.ServeMux) *http.Server {
+			inject.Provide(func(mux *http.ServeMux) *http.Server {
 				server.Handler = mux
 				return server
 			}),
-			Provide(func(s *http.Server) bool {
+			inject.Provide(func(s *http.Server) bool {
 				eqPtr(t, server, s)
 				return true
 			}),
@@ -131,15 +133,15 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		var server = &http.Server{}
 		var mux = &http.ServeMux{}
 
-		container, err := New(
-			Provide(func() (*http.ServeMux, error) {
+		container, err := inject.New(
+			inject.Provide(func() (*http.ServeMux, error) {
 				return mux, nil
 			}),
-			Provide(func(mux *http.ServeMux) (*http.Server, error) {
+			inject.Provide(func(mux *http.ServeMux) (*http.Server, error) {
 				server.Handler = mux
 				return server, nil
 			}),
-			Provide(func(s *http.Server) bool {
+			inject.Provide(func(s *http.Server) bool {
 				eqPtr(t, server, s)
 				return true
 			}),
@@ -163,15 +165,15 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		var server = &http.Server{}
 		var mux = &http.ServeMux{}
 
-		container, err := New(
-			Provide(func() (*http.ServeMux, error) {
+		container, err := inject.New(
+			inject.Provide(func() (*http.ServeMux, error) {
 				return mux, errors.New("build error")
 			}),
-			Provide(func(mux *http.ServeMux) (*http.Server, error) {
+			inject.Provide(func(mux *http.ServeMux) (*http.Server, error) {
 				server.Handler = mux
 				return server, nil
 			}),
-			Provide(func(s *http.Server) bool {
+			inject.Provide(func(s *http.Server) bool {
 				require.Equal(t, server, s)
 				return true
 			}),
@@ -185,34 +187,34 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	})
 
 	t.Run("named interface", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{Zone: "first"}
-			}, WithName("first")),
-			Provide(func() *net.TCPAddr {
+			}, inject.WithName("first")),
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{Zone: "second"}
-			}, WithName("second")),
+			}, inject.WithName("second")),
 		)
 
 		require.NoError(t, err)
 		var addr *net.TCPAddr
-		require.NoError(t, container.Populate(&addr, Name("second")))
+		require.NoError(t, container.Populate(&addr, inject.Name("second")))
 		require.Equal(t, "second", addr.Zone)
-		require.NoError(t, container.Populate(&addr, Name("first")))
+		require.NoError(t, container.Populate(&addr, inject.Name("first")))
 		require.Equal(t, "first", addr.Zone)
 	})
 
 	t.Run("provide nil", func(t *testing.T) {
-		_, err := New(
-			Provide(nil),
+		_, err := inject.New(
+			inject.Provide(nil),
 		)
 
 		require.EqualError(t, err, "could not compile container: could not provide nil")
 	})
 
 	t.Run("constructor provide nil", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return nil
 			}),
 		)
@@ -224,8 +226,8 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	})
 
 	t.Run("constructor without result", func(t *testing.T) {
-		_, err := New(
-			Provide(func() {}),
+		_, err := inject.New(
+			inject.Provide(func() {}),
 		)
 
 		// todo: improve error message
@@ -233,8 +235,8 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	})
 
 	t.Run("constructor with two types", func(t *testing.T) {
-		_, err := New(
-			Provide(func() (*net.TCPAddr, *net.UDPAddr) {
+		_, err := inject.New(
+			inject.Provide(func() (*net.TCPAddr, *net.UDPAddr) {
 				return &net.TCPAddr{}, &net.UDPAddr{}
 			}),
 		)
@@ -243,11 +245,11 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	})
 
 	t.Run("duplicate", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
+		_, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{}
 			}),
-			Provide(func() *net.TCPAddr {
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{}
 			}),
 		)
@@ -256,8 +258,8 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 	})
 
 	t.Run("unknown argument", func(t *testing.T) {
-		_, err := New(
-			Provide(func(addr *net.TCPAddr) net.Addr {
+		_, err := inject.New(
+			inject.Provide(func(addr *net.TCPAddr) net.Addr {
 				return net.Addr(addr)
 			}),
 		)
@@ -294,23 +296,23 @@ func TestContainer_ProvideStructPointer(t *testing.T) {
 			AnotherMux *http.ServeMux `inject:"another"`
 		}
 
-		container, err := New(
-			Provide(func() *http.ServeMux {
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
 				return defaultMux
 			}),
-			Provide(func() *http.ServeMux {
+			inject.Provide(func() *http.ServeMux {
 				return anotherMux
-			}, WithName("another")),
-			Provide(&Muxes{}),
-			Provide(func(muxes *Muxes) *http.Server {
+			}, inject.WithName("another")),
+			inject.Provide(&Muxes{}),
+			inject.Provide(func(muxes *Muxes) *http.Server {
 				defaultServer.Handler = muxes.DefaultMux
 				return defaultServer
 			}),
-			Provide(func(muxes *Muxes) *http.Server {
+			inject.Provide(func(muxes *Muxes) *http.Server {
 				anotherServer.Handler = muxes.AnotherMux
 				return anotherServer
-			}, WithName("another")),
-			Provide(&Server{}),
+			}, inject.WithName("another")),
+			inject.Provide(&Server{}),
 		)
 
 		require.NoError(t, err)
@@ -347,23 +349,23 @@ func TestContainer_ProvideStructPointer(t *testing.T) {
 			AnotherMux *http.ServeMux `inject:"another"`
 		}
 
-		container, err := New(
-			Provide(func() *http.ServeMux {
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
 				return defaultMux
 			}),
-			Provide(func() *http.ServeMux {
+			inject.Provide(func() *http.ServeMux {
 				return anotherMux
-			}, WithName("another")),
-			Provide(&Muxes{}, Exported()),
-			Provide(func(muxes *Muxes) *http.Server {
+			}, inject.WithName("another")),
+			inject.Provide(&Muxes{}, inject.Exported()),
+			inject.Provide(func(muxes *Muxes) *http.Server {
 				defaultServer.Handler = muxes.DefaultMux
 				return defaultServer
 			}),
-			Provide(func(muxes *Muxes) *http.Server {
+			inject.Provide(func(muxes *Muxes) *http.Server {
 				anotherServer.Handler = muxes.AnotherMux
 				return anotherServer
-			}, WithName("another")),
-			Provide(&Server{}, Exported()),
+			}, inject.WithName("another")),
+			inject.Provide(&Server{}, inject.Exported()),
 		)
 
 		require.NoError(t, err)
@@ -385,14 +387,14 @@ func TestContainer_ProvideStructPointer(t *testing.T) {
 			String  string
 		}
 
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{Zone: "tcp"}
 			}),
-			Provide(func() *net.UDPAddr {
+			inject.Provide(func() *net.UDPAddr {
 				return &net.UDPAddr{Zone: "udp"}
 			}),
-			Provide(&StructProvider{}, Exported()),
+			inject.Provide(&StructProvider{}, inject.Exported()),
 		)
 
 		require.Nil(t, container)
@@ -426,19 +428,19 @@ func TestContainer_ProvideStructValue(t *testing.T) {
 		var s = Server{}
 		var m = Muxes{}
 
-		container, err := New(
-			Provide(defaultMux),
-			Provide(anotherMux, WithName("another")),
-			Provide(s, Exported()),
-			Provide(func(muxes Muxes) *http.Server {
+		container, err := inject.New(
+			inject.Provide(defaultMux),
+			inject.Provide(anotherMux, inject.WithName("another")),
+			inject.Provide(s, inject.Exported()),
+			inject.Provide(func(muxes Muxes) *http.Server {
 				defaultServer.Handler = muxes.DefaultMux
 				return defaultServer
 			}),
-			Provide(func(muxes Muxes) *http.Server {
+			inject.Provide(func(muxes Muxes) *http.Server {
 				anotherServer.Handler = muxes.AnotherMux
 				return anotherServer
-			}, WithName("another")),
-			Provide(m, Exported()),
+			}, inject.WithName("another")),
+			inject.Provide(m, inject.Exported()),
 		)
 
 		require.NoError(t, err)
@@ -456,12 +458,12 @@ func TestContainer_ProvideStructValue(t *testing.T) {
 
 func TestContainer_ProvideAs(t *testing.T) {
 	t.Run("provide as interface", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{
 					Zone: "test",
 				}
-			}, As(new(net.Addr))),
+			}, inject.As(new(net.Addr))),
 		)
 
 		require.NoError(t, err)
@@ -475,13 +477,13 @@ func TestContainer_ProvideAs(t *testing.T) {
 		var defaultAddr = &net.TCPAddr{}
 		var anotherAddr = &net.TCPAddr{}
 
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return defaultAddr
-			}, As(new(net.Addr))),
-			Provide(func() *net.TCPAddr {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func() *net.TCPAddr {
 				return anotherAddr
-			}, As(new(net.Addr)), WithName("another")),
+			}, inject.As(new(net.Addr)), inject.WithName("another")),
 		)
 
 		require.NoError(t, err)
@@ -491,35 +493,35 @@ func TestContainer_ProvideAs(t *testing.T) {
 
 		eqPtr(t, defaultAddr, addr)
 
-		require.NoError(t, container.Populate(&addr, Name("another")))
+		require.NoError(t, container.Populate(&addr, inject.Name("another")))
 		eqPtr(t, anotherAddr, addr)
 	})
 
 	t.Run("provide as struct", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
+		_, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{}
-			}, As(http.Server{})),
+			}, inject.As(http.Server{})),
 		)
 
 		require.EqualError(t, err, "could not compile container: provide failed: argument for As() must be pointer to interface type, got http.Server")
 	})
 
 	t.Run("provide as struct pointer", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
+		_, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{}
-			}, As(new(http.Server))),
+			}, inject.As(new(http.Server))),
 		)
 
 		require.EqualError(t, err, "could not compile container: provide failed: argument for As() must be pointer to interface type, got *http.Server")
 	})
 
 	t.Run("provide as not implemented interface", func(t *testing.T) {
-		_, err := New(
-			Provide(func() *net.TCPAddr {
+		_, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{}
-			}, As(new(http.Handler))),
+			}, inject.As(new(http.Handler))),
 		)
 
 		require.EqualError(t, err, "could not compile container: provide failed: *net.TCPAddr not implement http.Handler interface")
@@ -530,13 +532,13 @@ func TestContainer_ProvideAs(t *testing.T) {
 			Addr net.Addr `inject:""`
 		}
 
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{
 					Zone: "zone",
 				}
-			}, As(new(net.Addr))),
-			Provide(&TestStruct{}),
+			}, inject.As(new(net.Addr))),
+			inject.Provide(&TestStruct{}),
 		)
 
 		require.NoError(t, err)
@@ -550,17 +552,17 @@ func TestContainer_ProvideAs(t *testing.T) {
 
 func TestContainer_Package(t *testing.T) {
 	t.Run("package", func(t *testing.T) {
-		container, err := New(
-			Package(
-				Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Package(
+				inject.Provide(func() *net.TCPAddr {
 					return &net.TCPAddr{
 						Zone: "zone",
 						Port: 5432,
 					}
 				}),
 			),
-			Package(
-				Provide(func(addr *net.TCPAddr) string {
+			inject.Package(
+				inject.Provide(func(addr *net.TCPAddr) string {
 					return addr.String()
 				}),
 			),
@@ -575,11 +577,11 @@ func TestContainer_Package(t *testing.T) {
 
 func TestContainer_Populate(t *testing.T) {
 	t.Run("not pointer", func(t *testing.T) {
-		container, err := New(
-			Provide(func() string {
+		container, err := inject.New(
+			inject.Provide(func() string {
 				return "string"
 			}),
-			Provide(func() int32 {
+			inject.Provide(func() int32 {
 				return 32
 			}),
 		)
@@ -596,7 +598,7 @@ func TestContainer_Populate(t *testing.T) {
 	})
 
 	t.Run("not existing type", func(t *testing.T) {
-		container, err := New()
+		container, err := inject.New()
 
 		require.NoError(t, err)
 
@@ -605,8 +607,8 @@ func TestContainer_Populate(t *testing.T) {
 	})
 
 	t.Run("nil", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{}
 			}),
 		)
@@ -617,11 +619,11 @@ func TestContainer_Populate(t *testing.T) {
 	})
 
 	t.Run("not provided named type", func(t *testing.T) {
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{Zone: "first"}
-			}, WithName("first")),
-			Provide(func() *net.TCPAddr {
+			}, inject.WithName("first")),
+			inject.Provide(func() *net.TCPAddr {
 				return &net.TCPAddr{Zone: "second"}
 			}),
 		)
@@ -629,7 +631,7 @@ func TestContainer_Populate(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		require.EqualError(t, container.Populate(&addr, Name("second")), "type *net.TCPAddr not provided")
+		require.EqualError(t, container.Populate(&addr, inject.Name("second")), "type *net.TCPAddr not provided")
 	})
 }
 
@@ -638,14 +640,14 @@ func TestContainer_Group(t *testing.T) {
 		var tcpAddr = &net.TCPAddr{}
 		var udpAddr = &net.UDPAddr{}
 
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return tcpAddr
-			}, As(new(net.Addr))),
-			Provide(func() *net.UDPAddr {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func() *net.UDPAddr {
 				return udpAddr
-			}, As(new(net.Addr))),
-			Provide(func(addrs []net.Addr) bool {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func(addrs []net.Addr) bool {
 				eqPtr(t, tcpAddr, addrs[0])
 				eqPtr(t, udpAddr, addrs[1])
 				return len(addrs) == 2
@@ -671,14 +673,14 @@ func TestContainer_Group(t *testing.T) {
 		var defaultAddr = &net.TCPAddr{}
 		var anotherAddr = &net.TCPAddr{}
 
-		container, err := New(
-			Provide(func() *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
 				return defaultAddr
-			}, As(new(net.Addr))),
-			Provide(func() *net.TCPAddr {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func() *net.TCPAddr {
 				return anotherAddr
-			}, As(new(net.Addr)), WithName("another")),
-			Provide(func(addrs []net.Addr) bool {
+			}, inject.As(new(net.Addr)), inject.WithName("another")),
+			inject.Provide(func(addrs []net.Addr) bool {
 				eqPtr(t, defaultAddr, addrs[0])
 				eqPtr(t, anotherAddr, addrs[1])
 				return len(addrs) == 2
@@ -703,7 +705,7 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, container.Populate(&addr))
 		eqPtr(t, defaultAddr, addr)
 
-		require.NoError(t, container.Populate(&addr, Name("another")))
+		require.NoError(t, container.Populate(&addr, inject.Name("another")))
 		eqPtr(t, anotherAddr, addr)
 	})
 
@@ -711,17 +713,17 @@ func TestContainer_Group(t *testing.T) {
 		var defaultAddr = &net.TCPAddr{}
 		var anotherAddr = &net.TCPAddr{}
 
-		container, err := New(
-			Provide("127.0.0.1"),
-			Provide(func(addr string) *net.TCPAddr {
+		container, err := inject.New(
+			inject.Provide("127.0.0.1"),
+			inject.Provide(func(addr string) *net.TCPAddr {
 				require.Equal(t, "127.0.0.1", addr)
 				return defaultAddr
-			}, As(new(net.Addr))),
-			Provide(func(addr string) *net.TCPAddr {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func(addr string) *net.TCPAddr {
 				require.Equal(t, "127.0.0.1", addr)
 				return anotherAddr
-			}, As(new(net.Addr)), WithName("another")),
-			Provide(func(addrs []net.Addr) bool {
+			}, inject.As(new(net.Addr)), inject.WithName("another")),
+			inject.Provide(func(addrs []net.Addr) bool {
 				eqPtr(t, defaultAddr, addrs[0])
 				eqPtr(t, anotherAddr, addrs[1])
 				return len(addrs) == 2
@@ -746,7 +748,7 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, container.Populate(&addr))
 		eqPtr(t, defaultAddr, addr)
 
-		require.NoError(t, container.Populate(&addr, Name("another")))
+		require.NoError(t, container.Populate(&addr, inject.Name("another")))
 		eqPtr(t, anotherAddr, addr)
 	})
 
@@ -754,19 +756,19 @@ func TestContainer_Group(t *testing.T) {
 		var defaultAddr = &net.TCPAddr{}
 		var anotherAddr = &net.TCPAddr{}
 
-		container, err := New(
-			Provide(func() (string, error) {
+		container, err := inject.New(
+			inject.Provide(func() (string, error) {
 				return "", errors.Errorf("build error")
 			}),
-			Provide(func(addr string) *net.TCPAddr {
+			inject.Provide(func(addr string) *net.TCPAddr {
 				require.Equal(t, "127.0.0.1", addr)
 				return defaultAddr
-			}, As(new(net.Addr))),
-			Provide(func(addr string) *net.TCPAddr {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func(addr string) *net.TCPAddr {
 				require.Equal(t, "127.0.0.1", addr)
 				return anotherAddr
-			}, As(new(net.Addr)), WithName("another")),
-			Provide(func(addrs []net.Addr) bool {
+			}, inject.As(new(net.Addr)), inject.WithName("another")),
+			inject.Provide(func(addrs []net.Addr) bool {
 				eqPtr(t, defaultAddr, addrs[0])
 				eqPtr(t, anotherAddr, addrs[1])
 				return len(addrs) == 2
@@ -783,19 +785,19 @@ func TestContainer_Group(t *testing.T) {
 		var defaultAddr = &net.TCPAddr{}
 		var anotherAddr = &net.TCPAddr{}
 
-		container, err := New(
-			Provide(func() (string, error) {
+		container, err := inject.New(
+			inject.Provide(func() (string, error) {
 				return "127.0.0.1", nil
 			}),
-			Provide(func(addr string) (*net.TCPAddr, error) {
+			inject.Provide(func(addr string) (*net.TCPAddr, error) {
 				require.Equal(t, "127.0.0.1", addr)
 				return defaultAddr, errors.New("build error")
-			}, As(new(net.Addr))),
-			Provide(func(addr string) *net.TCPAddr {
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func(addr string) *net.TCPAddr {
 				require.Equal(t, "127.0.0.1", addr)
 				return anotherAddr
-			}, As(new(net.Addr)), WithName("another")),
-			Provide(func(addrs []net.Addr) bool {
+			}, inject.As(new(net.Addr)), inject.WithName("another")),
+			inject.Provide(func(addrs []net.Addr) bool {
 				eqPtr(t, defaultAddr, addrs[0])
 				eqPtr(t, anotherAddr, addrs[1])
 				return len(addrs) == 2
@@ -811,15 +813,15 @@ func TestContainer_Group(t *testing.T) {
 
 func TestContainer_Cycle(t *testing.T) {
 	t.Run("simple cycle", func(t *testing.T) {
-		_, err := New(
-			Provide("string"),
-			Provide(func(string, int32) bool {
+		_, err := inject.New(
+			inject.Provide("string"),
+			inject.Provide(func(string, int32) bool {
 				return true
 			}),
-			Provide(func(bool) int64 {
+			inject.Provide(func(bool) int64 {
 				return 64
 			}),
-			Provide(func(int64) int32 {
+			inject.Provide(func(int64) int32 {
 				return 32
 			}),
 		)
