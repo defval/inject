@@ -29,7 +29,7 @@ func New(options ...Option) (_ *Container, err error) {
 	return c, nil
 }
 
-// Container.
+// Container is a dependency injection container.
 type Container struct {
 	providers []*providerOptions
 	replacers []*providerOptions

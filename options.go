@@ -2,13 +2,13 @@ package inject
 
 // OPTIONS
 
-// Option modifies container.
+// Option configures container.
 type Option interface{ apply(*Container) }
 
-// ProvideOption
+// ProvideOption modifies default provide behavior.
 type ProvideOption interface{ apply(*providerOptions) }
 
-// PopulateOption.
+// PopulateOption modifies default populate behavior.
 type PopulateOption interface{ apply(*populateOptions) }
 
 // CONTAINER OPTIONS.
@@ -54,14 +54,14 @@ func Bundle(options ...Option) Option {
 
 // PROVIDE OPTIONS.
 
-// WithName
+// WithName sets string identifier for provided value.
 func WithName(name string) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.name = name
 	})
 }
 
-// As
+// As specifies interface.
 func As(ifaces ...interface{}) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.implements = append(provider.implements, ifaces...)
@@ -69,7 +69,7 @@ func As(ifaces ...interface{}) ProvideOption {
 	})
 }
 
-// Exported
+// Exported option.
 func Exported() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.injectExportedFields = true
@@ -78,7 +78,7 @@ func Exported() ProvideOption {
 
 // POPULATE OPTIONS.
 
-// Name
+// Name ...
 func Name(name string) PopulateOption {
 	return populateOption(func(populate *populateOptions) {
 		populate.name = name
