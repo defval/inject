@@ -137,7 +137,7 @@ func (c *Container) applyReplacers() (err error) {
 	return nil
 }
 
-var defaultNamespace = "default"
+var defaultNamespace = ""
 
 var (
 	// errIncorrectFunctionProviderSignature.
