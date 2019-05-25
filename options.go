@@ -59,13 +59,17 @@ func Replace(provider interface{}, options ...ProvideOption) Option {
 
 // Bundle group together container options.
 func Bundle(options ...Option) Option {
-	return option{
-		fn: func(container *Container) {
-			for _, opt := range options {
-				opt.apply(container)
-			}
-		},
+	var opt = &option{
+		ns: &defaultNamespace,
 	}
+
+	opt.fn = func(container *Container) {
+		for _, opt := range options {
+			opt.apply(container)
+		}
+	}
+
+	return opt
 }
 
 // PROVIDE OPTIONS.
@@ -115,7 +119,7 @@ type option struct {
 }
 
 func (o option) Namespace(name string) Option {
-	o.ns = &name
+	*o.ns = name
 	return o
 }
 
