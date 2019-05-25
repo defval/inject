@@ -10,11 +10,7 @@ import (
 // Fore more information about container options see `Option` type.
 func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
-		storage: &storage{
-			keys:        make([]key, 0, 8),
-			definitions: make(map[key]*definition, 8),
-			ifaces:      make(map[reflect.Type][]*definition, 8),
-		},
+		storage: make(map[string]*storage),
 	}
 
 	// apply options.
@@ -33,7 +29,7 @@ func New(options ...Option) (_ *Container, err error) {
 type Container struct {
 	providers []*providerOptions
 	replacers []*providerOptions
-	storage   *storage
+	storage   map[string]*storage
 }
 
 // Populate populates given target pointer with type instance provided in container.
@@ -59,7 +55,7 @@ func (c *Container) Populate(target interface{}, options ...PopulateOption) (err
 		name: po.name,
 	}
 
-	newValue, err := c.storage.Value(k)
+	newValue, err := c.getStorage(po.namespace).Value(k)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -67,6 +63,20 @@ func (c *Container) Populate(target interface{}, options ...PopulateOption) (err
 	rv.Set(newValue)
 
 	return nil
+}
+
+func (c *Container) getStorage(namespace string) *storage {
+	if _, ok := c.storage[namespace]; ok {
+		return c.storage[namespace]
+	}
+
+	c.storage[namespace] = &storage{
+		keys:        []key{},
+		definitions: map[key]*definition{},
+		ifaces:      map[reflect.Type][]*definition{},
+	}
+
+	return c.storage[namespace]
 }
 
 // compile.
@@ -79,7 +89,13 @@ func (c *Container) compile() (err error) {
 		return errors.WithStack(err)
 	}
 
-	return c.storage.Compile()
+	for _, storage := range c.storage {
+		if err = storage.Compile(); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
 }
 
 func (c *Container) registerProviders() (err error) {
@@ -94,7 +110,7 @@ func (c *Container) registerProviders() (err error) {
 			return errors.Wrapf(err, "provide failed")
 		}
 
-		if err = c.storage.Add(def); err != nil {
+		if err = c.getStorage(po.namespace).Add(def); err != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -113,13 +129,15 @@ func (c *Container) applyReplacers() (err error) {
 			return errors.Wrapf(err, "provide failed")
 		}
 
-		if err = c.storage.Replace(def); err != nil {
+		if err = c.getStorage(po.namespace).Replace(def); err != nil {
 			return errors.WithStack(err)
 		}
 	}
 
 	return nil
 }
+
+var defaultNamespace = "default"
 
 var (
 	// errIncorrectFunctionProviderSignature.
@@ -130,14 +148,16 @@ var (
 
 // providerOptions.
 type providerOptions struct {
-	provider             interface{}
 	name                 string
+	provider             interface{}
+	namespace            string
 	implements           []interface{}
 	injectExportedFields bool
 }
 
 // populateOptions
 type populateOptions struct {
-	target reflect.Value
-	name   string
+	name      string
+	namespace string
+	target    reflect.Value
 }

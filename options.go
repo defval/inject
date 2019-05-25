@@ -3,7 +3,12 @@ package inject
 // OPTIONS
 
 // Option configures container.
-type Option interface{ apply(*Container) }
+type Option interface {
+	Namespace(name string) Option
+
+	namespace() string
+	apply(*Container)
+}
 
 // ProvideOption modifies default provide behavior.
 type ProvideOption interface{ apply(*providerOptions) }
@@ -15,9 +20,14 @@ type PopulateOption interface{ apply(*populateOptions) }
 
 // Provide provide dependency with options.
 func Provide(provider interface{}, options ...ProvideOption) Option {
-	return option(func(container *Container) {
+	var opt = &option{
+		ns: &defaultNamespace,
+	}
+
+	opt.fn = func(container *Container) {
 		var po = &providerOptions{
-			provider: provider,
+			namespace: *opt.ns,
+			provider:  provider,
 		}
 
 		for _, opt := range options {
@@ -25,31 +35,37 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 		}
 
 		container.providers = append(container.providers, po)
-	})
+	}
+
+	return opt
 }
 
 // Replace replaces provided interface by new implementation.
 func Replace(provider interface{}, options ...ProvideOption) Option {
-	return option(func(container *Container) {
-		var po = &providerOptions{
-			provider: provider,
-		}
+	return option{
+		fn: func(container *Container) {
+			var po = &providerOptions{
+				provider: provider,
+			}
 
-		for _, opt := range options {
-			opt.apply(po)
-		}
+			for _, opt := range options {
+				opt.apply(po)
+			}
 
-		container.replacers = append(container.replacers, po)
-	})
+			container.replacers = append(container.replacers, po)
+		},
+	}
 }
 
 // Bundle group together container options.
 func Bundle(options ...Option) Option {
-	return option(func(container *Container) {
-		for _, opt := range options {
-			opt.apply(container)
-		}
-	})
+	return option{
+		fn: func(container *Container) {
+			for _, opt := range options {
+				opt.apply(container)
+			}
+		},
+	}
 }
 
 // PROVIDE OPTIONS.
@@ -85,10 +101,29 @@ func Name(name string) PopulateOption {
 	})
 }
 
-// option internal
-type option func(container *Container)
+// Namespace
+func Namespace(name string) PopulateOption {
+	return populateOption(func(populate *populateOptions) {
+		populate.namespace = name
+	})
+}
 
-func (o option) apply(container *Container) { o(container) }
+// option internal
+type option struct {
+	ns *string
+	fn func(c *Container)
+}
+
+func (o option) Namespace(name string) Option {
+	o.ns = &name
+	return o
+}
+
+func (o option) namespace() string {
+	return *o.ns
+}
+
+func (o option) apply(container *Container) { o.fn(container) }
 
 // provide option internal
 type provideOption func(provider *providerOptions)
