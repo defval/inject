@@ -137,8 +137,6 @@ func (c *Container) applyReplacers() (err error) {
 	return nil
 }
 
-var defaultNamespace = ""
-
 var (
 	// errIncorrectFunctionProviderSignature.
 	errIncorrectFunctionProviderSignature = errors.New("constructor must be a function with value and optional error as result")
