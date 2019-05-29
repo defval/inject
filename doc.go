@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 /*
-Dependency injection container allows you to inject dependencies
+Package inject make your dependency injection easy. Container allows you to inject dependencies
 into constructors or structures without the need to have specified
 each argument manually.
 
