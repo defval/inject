@@ -1,4 +1,8 @@
-# Inject ![Release](https://img.shields.io/github/tag/defval/inject.svg?label=release&logo=github&style=flat-square) [![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square&logo=go&logoColor=ffffff)](https://godoc.org/github.com/defval/inject) [![Build Status](https://img.shields.io/travis/defval/inject.svg?style=flat-square&logo=travis)](https://travis-ci.org/defval/inject) [![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=flat-square&logo=codecov)](https://codecov.io/gh/defval/inject)
+# Inject
+![Release](https://img.shields.io/github/tag/defval/inject.svg?label=release&logo=github&style=for-the-badge)
+[![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge&logo=go&logoColor=ffffff)](https://godoc.org/github.com/defval/inject)
+[![Build Status](https://img.shields.io/travis/defval/inject.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/inject)
+[![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/inject)
 
 
 Dependency injection container allows you to inject dependencies
