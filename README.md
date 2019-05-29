@@ -1,4 +1,6 @@
 # Inject
+![Release](https://img.shields.io/github/tag/defval/inject.svg?label=release&logo=github&style=for-the-badge)
+[![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge&logo=go&logoColor=ffffff)](https://godoc.org/github.com/defval/inject)
 [![Build Status](https://img.shields.io/travis/defval/inject.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/inject)
 [![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/inject)
 
@@ -18,19 +20,8 @@ go get -u github.com/defval/inject
 
 ## Features
 
-- inject constructor arguments
-- inject tagged struct fields
-- inject public struct fields
-- inject as interface
-- inject interface groups
-- inject default value of interface group
-- inject named definition into structures
-- replace interface implementation
-- replace provided type
-- isolated namespaces
-
-## WIP
-
-- documentation
-- inject named definition into constructor
-- rework namespaces
+- Construct arguments injection
+- Tagged and public struct fields injection
+- Set interface for implementations
+- Named definitions
+- Replacing

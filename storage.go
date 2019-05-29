@@ -7,14 +7,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// storage.
 type storage struct {
 	keys        []key
 	definitions map[key]*definition
 	ifaces      map[reflect.Type][]*definition
 }
 
-// Add.
 func (s *storage) Add(def *definition) (err error) {
 	if _, ok := s.definitions[def.Key]; ok {
 		return errors.Errorf("%s: use named definition if you have several instances of the same type", def.Key)
@@ -30,7 +28,6 @@ func (s *storage) Add(def *definition) (err error) {
 	return nil
 }
 
-// Replace
 func (s *storage) Replace(def *definition) (err error) {
 	if len(def.Implements) == 0 {
 		return errors.Errorf("%s: no one interface has been replaced, use `inject.As()` for specify it", def.Key)
@@ -60,7 +57,6 @@ func (s *storage) Replace(def *definition) (err error) {
 	return nil
 }
 
-// Get.
 func (s *storage) Get(k key) (_ []*definition, err error) {
 	if def, ok := s.definitions[k]; ok {
 		return []*definition{def}, nil
@@ -83,7 +79,6 @@ func (s *storage) Get(k key) (_ []*definition, err error) {
 	return nil, errors.Errorf("type %s not provided", k)
 }
 
-// Group.
 func (s *storage) Group(k key) (_ []*definition, exists bool) {
 	if k.IsGroup() {
 		_, ok := s.ifaces[k.typ.Elem()]
@@ -93,7 +88,6 @@ func (s *storage) Group(k key) (_ []*definition, exists bool) {
 	return nil, false
 }
 
-// Value.
 func (s *storage) Value(k key) (v reflect.Value, err error) {
 	defs, err := s.Get(k)
 
@@ -156,7 +150,6 @@ func (s *storage) Value(k key) (v reflect.Value, err error) {
 	// return v, errors.Errorf("type %s not provided", k)
 }
 
-// All.
 func (s *storage) All() (defs []*definition) {
 	for _, k := range s.keys {
 		defs = append(defs, s.definitions[k])
@@ -195,7 +188,6 @@ func (s *storage) Compile() (err error) {
 	return nil
 }
 
-// visit.
 func (s *storage) visit(d *definition) (err error) {
 	if d.visited == visitMarkPermanent {
 		return

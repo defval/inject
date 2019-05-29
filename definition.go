@@ -22,22 +22,18 @@ type key struct {
 	name string
 }
 
-// String.
 func (k key) String() string {
 	return fmt.Sprintf("%s", k.typ) // todo: add name
 }
 
-// Value creates value of key type
 func (k key) Value() reflect.Value {
 	return reflect.New(k.typ).Elem()
 }
 
-// IsGroup checks that key may be a group
 func (k key) IsGroup() bool {
 	return k.typ.Kind() == reflect.Slice && k.typ.Elem().Kind() == reflect.Interface
 }
 
-// createDefinition.
 func createDefinition(po *providerOptions) (def *definition, err error) {
 	wrapper, err := wrapProvider(po)
 
@@ -72,7 +68,6 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 	}, nil
 }
 
-// definition.
 type definition struct {
 	Key        key
 	Provider   providerWrapper
@@ -84,7 +79,6 @@ type definition struct {
 	visited  int
 }
 
-// value.
 func (d *definition) Create(args []reflect.Value) (instance reflect.Value, err error) {
 	if d.instance.IsValid() {
 		return d.instance, nil

@@ -7,7 +7,6 @@ import (
 )
 
 // New creates new container with provided options.
-// Fore more information about container options see `Option` type.
 func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
 		storage: make(map[string]*storage),
@@ -33,23 +32,36 @@ type Container struct {
 }
 
 // Populate populates given target pointer with type instance provided in container.
+//
+//   var server *http.Server
+//   if err = container.Populate(&server); err != nil {
+//     // populate failed
+//   }
+//
+//   server.ListenAndServer()
+//
+// If a target type does not exist in a container or instance type building failed, Populate() returns an error.
+// With the help of PopulateOption, you can modify the behavior of this function.
 func (c *Container) Populate(target interface{}, options ...PopulateOption) (err error) {
-	rv := reflect.ValueOf(target)
+	targetValue := reflect.ValueOf(target)
 
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	// target value type needs to be a pointer
+	if targetValue.Kind() != reflect.Ptr || targetValue.IsNil() {
 		return errors.New("populate target must be a not nil pointer")
 	}
 
-	rv = rv.Elem()
+	targetValue = targetValue.Elem()
 
 	var po = &populateOptions{
-		target: rv,
+		target: targetValue,
 	}
 
+	// apply populate options
 	for _, opt := range options {
 		opt.apply(po)
 	}
 
+	// create a key to find in a storage
 	k := key{
 		typ:  po.target.Type(),
 		name: po.name,
@@ -60,7 +72,7 @@ func (c *Container) Populate(target interface{}, options ...PopulateOption) (err
 		return errors.WithStack(err)
 	}
 
-	rv.Set(newValue)
+	targetValue.Set(newValue)
 
 	return nil
 }
@@ -79,7 +91,6 @@ func (c *Container) getStorage(namespace string) *storage {
 	return c.storage[namespace]
 }
 
-// compile.
 func (c *Container) compile() (err error) {
 	if err = c.registerProviders(); err != nil {
 		return errors.WithStack(err)
@@ -138,13 +149,10 @@ func (c *Container) applyReplacers() (err error) {
 }
 
 var (
-	// errIncorrectFunctionProviderSignature.
 	errIncorrectFunctionProviderSignature = errors.New("constructor must be a function with value and optional error as result")
-	// errorInterface type for error interface implementation checking
-	errorInterface = reflect.TypeOf((*error)(nil)).Elem()
+	errorInterface                        = reflect.TypeOf((*error)(nil)).Elem()
 )
 
-// providerOptions.
 type providerOptions struct {
 	name                 string
 	provider             interface{}
@@ -153,7 +161,6 @@ type providerOptions struct {
 	injectExportedFields bool
 }
 
-// populateOptions
 type populateOptions struct {
 	name      string
 	namespace string
