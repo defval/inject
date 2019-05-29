@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// wrapProvider
 func wrapProvider(po *providerOptions) (wrapper providerWrapper, err error) {
 	pv := reflect.ValueOf(po.provider)
 	pt := pv.Type()
@@ -32,7 +31,6 @@ func wrapProvider(po *providerOptions) (wrapper providerWrapper, err error) {
 	}
 }
 
-// check function provider
 func checkFunctionProvider(pt reflect.Type) (err error) {
 	// check function result types
 	if pt.NumOut() <= 0 || pt.NumOut() > 2 {
@@ -46,7 +44,6 @@ func checkFunctionProvider(pt reflect.Type) (err error) {
 	return nil
 }
 
-// providerWrapper encapsulates creating an instance
 type providerWrapper interface {
 	create(arguments []reflect.Value) (_ reflect.Value, err error)
 	args() []key

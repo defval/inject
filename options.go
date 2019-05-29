@@ -2,7 +2,8 @@ package inject
 
 // OPTIONS
 
-// Option configures container.
+// Option configures container. See inject.Provide(), inject.Bundle(), inject.Replace().
+// todo: Namespace
 type Option interface {
 	Namespace(name string) Option
 
@@ -10,15 +11,37 @@ type Option interface {
 	apply(*Container)
 }
 
-// ProvideOption modifies default provide behavior.
+// ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Exported().
 type ProvideOption interface{ apply(*providerOptions) }
 
-// PopulateOption modifies default populate behavior.
+// PopulateOption modifies default populate behavior. See inject.Name(), inject.Namespace().
 type PopulateOption interface{ apply(*populateOptions) }
 
-// CONTAINER OPTIONS.
-
-// Provide provide dependency with options.
+// Provide returns container option that explains to it how to create an instance of a type inside a container.
+//
+// The first argument is the provider. A provider can be a constructor function, a pointer to a structure
+// (or just a structure) and everything else. There are some differences between these providers.
+//
+// A constructor function is a function that creates an instance of the required type. It can take an unlimited
+// number of arguments needed to create an instance - the first returned value.
+//
+//   func NewServer(mux *http.ServeMux) *http.Server {
+//     return &http.Server{
+//       Handle: mux,
+//     }
+//   }
+//
+// Optionally, you can return an error to create an instance.
+//
+//   func NewServer(mux *http.ServeMux) (*http.Server, err error) {
+// 	   if time.Now().Day = 1 {
+// 			return nil, errors.New("the server is down on the first day of a month")
+// 	   }
+//     return &http.Server{
+//       Handler: mux,
+//     }
+//   }
+//
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	var opt = &option{}
 
@@ -132,12 +155,10 @@ func (o *option) namespace() string {
 
 func (o *option) apply(container *Container) { o.fn(container) }
 
-// provide option internal
 type provideOption func(provider *providerOptions)
 
 func (o provideOption) apply(provider *providerOptions) { o(provider) }
 
-// populate option internal
 type populateOption func(populate *populateOptions)
 
 func (o populateOption) apply(populate *populateOptions) { o(populate) }
