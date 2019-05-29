@@ -23,4 +23,57 @@
 // Dependency injection container allows you to inject dependencies
 // into constructors or structures without the need to have specified
 // each argument manually.
+
+// Provide dependency
+//
+// First of all, when creating a new container, you need to describe
+// how to create each instance of a dependency.To do this, use the container
+// option inject.Provide(). The first argument in this function is a `provider`.
+// It determines how to create dependency.
+//
+// Provider can be a constructor function with optional error:
+//
+//   // dependency constructor function
+//   func NewDependency(dependency *pkg.AnotherDependency) *pkg.Dependency {
+// 	   return &pkg.Dependency{
+// 	     dependency: dependency,
+// 	   }
+//   }
+//
+//   // and with possible initialization error
+//   func NewAnotherDependency() (*pkg.AnotherDependency, error) {
+// 	   if dependency, err = initAnotherDependency(); err != nil {
+//        return nil, err
+// 	 }
+//
+// 	 return dependency, nil
+//  }
+//
+//   // container initialization codeы
+//   container, err := New(
+//     Provide(NewDependency),
+// 	   Provide(NewAnotherDependency)
+//   )
+//
+// In this case, the container knows how to create `*pkg.AnotherDependency`
+// and can handle an instance creation error.
+//
+// Also, a provider can be a structure pointer with public fields:
+//
+//   // package pkg
+//   type Dependency struct {
+// 	   AnotherDependency *pkg.AnotherDependency `inject:""`
+//   }
+//
+//   // container initialization code
+//   container, err := New(
+// 	   // another providing code..
+// 	   // pointer to structure
+//     Provide(&pkg.Dependency{}),
+//     // or structure value
+//     Provide(pkg.Dependency{})
+//   )
+//
+// In this case, the necessity of implementing specific fields are defined
+// with the tag `inject`.
 package inject // import "github.com/defval/inject"
