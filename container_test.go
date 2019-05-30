@@ -969,39 +969,3 @@ func TestContainer_Cycle(t *testing.T) {
 		require.EqualError(t, err, "could not compile container: detect cycle: string: bool: int64: int32: bool")
 	})
 }
-
-func TestContainer_Namespace(t *testing.T) {
-	t.Run("namespace", func(t *testing.T) {
-		var defaultServer = &http.Server{}
-		var firstServer = &http.Server{}
-		var secondServer = &http.Server{}
-
-		container, err := inject.New(
-			inject.Provide(func() *http.Server {
-				return defaultServer
-			}),
-			inject.Bundle(
-				inject.Provide(func() *http.Server {
-					return firstServer
-				}),
-			).Namespace("first-ns"),
-			inject.Bundle(
-				inject.Provide(func() *http.Server {
-					return secondServer
-				}),
-			).Namespace("second-ns"),
-		)
-
-		require.NoError(t, err)
-
-		var result *http.Server
-		require.NoError(t, container.Populate(&result, inject.Namespace("second-ns")))
-		eqPtr(t, secondServer, result)
-
-		require.NoError(t, container.Populate(&result))
-		eqPtr(t, defaultServer, result)
-
-		require.NoError(t, container.Populate(&result, inject.Namespace("first-ns")))
-		eqPtr(t, firstServer, result)
-	})
-}
