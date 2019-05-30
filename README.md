@@ -11,6 +11,7 @@ each argument manually.
 
 This container implementation inspired by [google/wire](https://github.com/google/wire),
 [uber-go/fx](https://github.com/uber-go/fx) and [uber-go/dig](https://github.com/uber-go/dig).
+See [godoc](https://godoc.org/github.com/defval/inject) and use for feel the difference =)
 
 ## Installing
 
@@ -18,122 +19,71 @@ This container implementation inspired by [google/wire](https://github.com/googl
 go get -u github.com/defval/inject
 ```
 
-## Features
-
-- Arguments injection
-- Tagged and public struct fields injection
-- Inject struct as interfaces
-- Named definitions
-- Replacing
-
-## Example
+## Quick start
 
 ```go
 package main
 
 import (
 	"io"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/defval/inject"
 )
 
 func main() {
-	// build container
 	container, err := inject.New(
-		// inject constructor
-		inject.Provide(NewLogger),
+		inject.Provide(NewMux, inject.As(new(http.Handler))),
 		inject.Provide(NewServer),
-
-		// inject as interface
-		inject.Provide(NewRouter,
-			inject.As(new(http.Handler)), // *http.Server mux implements http.Handler interface
-		),
-
-		// controller interface group
-		inject.Provide(&AccountController{},
-			inject.As(new(Controller)), // add AccountController to controller group
-			inject.Exported(),          // inject all exported fields
-		),
-		inject.Provide(&AuthController{},
-			inject.As(new(Controller)), // add AuthController to controller group
-			inject.Exported(),          // inject all exported fields
-		),
+		inject.Provide(&AccountController{}, inject.As(new(Controller))),
 	)
 
-	// build error
 	if err != nil {
 		panic(err)
 	}
 
-	// extract server from container
 	var server *http.Server
 	if err = container.Extract(&server); err != nil {
 		panic(err)
 	}
 
 	// start server
-	if err = server.ListenAndServe(); err != nil {
-		panic(err)
+}
+
+// NewMux creates a new http mux.
+func NewMux(controllers []Controller) *http.ServeMux {
+	mux := &http.ServeMux{}
+
+	for _, ctrl := range controllers {
+		ctrl.Register(mux)
 	}
+
+	return mux
 }
 
-// NewLogger
-func NewLogger() *log.Logger {
-	return log.New(os.Stderr, "", 0)
-}
-
-// NewServer
+// NewServer creates a new http server.
 func NewServer(handler http.Handler) *http.Server {
 	return &http.Server{
 		Handler: handler,
 	}
 }
 
-// NewRouter
-func NewRouter(controllers []Controller) *http.ServeMux {
-	mux := &http.ServeMux{}
-
-	for _, ctrl := range controllers {
-		ctrl.RegisterRoutes(mux)
-	}
-
-	return mux
-}
-
-// Controller
+// Controller interface.
 type Controller interface {
-	RegisterRoutes(mux *http.ServeMux)
+	Register(mux *http.ServeMux)
 }
 
-// AccountController
+// AccountController contains account related http methods.
 type AccountController struct {
-	Logger *log.Logger
 }
 
-// RegisterRoutes
-func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/account", func(writer http.ResponseWriter, request *http.Request) {
-		c.Logger.Println("Got account request!")
-
-		_, _ = io.WriteString(writer, "account")
-	})
+// Register add routes to mux.
+func (c *AccountController) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/account", c.Index)
 }
 
-// AuthController
-type AuthController struct {
-	Logger *log.Logger
-}
-
-// RegisterRoutes
-func (c *AuthController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/auth", func(writer http.ResponseWriter, request *http.Request) {
-		c.Logger.Println("Got auth request!")
-
-		_, _ = io.WriteString(writer, "auth")
-	})
+func (c *AccountController) Index(writer http.ResponseWriter, request *http.Request) {
+	_, _ = io.WriteString(writer, "account")
 }
 
 ```
