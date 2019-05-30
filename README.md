@@ -11,7 +11,8 @@ each argument manually.
 
 This container implementation inspired by [google/wire](https://github.com/google/wire),
 [uber-go/fx](https://github.com/uber-go/fx) and [uber-go/dig](https://github.com/uber-go/dig).
-See [godoc](https://godoc.org/github.com/defval/inject) and use for feel the difference =)
+
+See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 
 ## Installing
 
