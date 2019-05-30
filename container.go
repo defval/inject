@@ -35,32 +35,32 @@ type Container struct {
 	storage   *storage
 }
 
-// Populate populates given target pointer with type instance provided in container.
+// Extract populates given target pointer with type instance provided in container.
 //
 //   var server *http.Server
-//   if err = container.Populate(&server); err != nil {
-//     // populate failed
+//   if err = container.Extract(&server); err != nil {
+//     // extract failed
 //   }
 //
 //   server.ListenAndServer()
 //
-// If a target type does not exist in a container or instance type building failed, Populate() returns an error.
-// With the help of PopulateOption, you can modify the behavior of this function.
-func (c *Container) Populate(target interface{}, options ...PopulateOption) (err error) {
+// If a target type does not exist in a container or instance type building failed, Extract() returns an error.
+// With the help of ExtractOption, you can modify the behavior of this function.
+func (c *Container) Extract(target interface{}, options ...ExtractOption) (err error) {
 	targetValue := reflect.ValueOf(target)
 
 	// target value type needs to be a pointer
 	if targetValue.Kind() != reflect.Ptr || targetValue.IsNil() {
-		return errors.New("populate target must be a not nil pointer")
+		return errors.New("extract target must be a not nil pointer")
 	}
 
 	targetValue = targetValue.Elem()
 
-	var po = &populateOptions{
+	var po = &extractOptions{
 		target: targetValue,
 	}
 
-	// apply populate options
+	// apply extract options
 	for _, opt := range options {
 		opt.apply(po)
 	}
@@ -148,7 +148,7 @@ type providerOptions struct {
 	injectExportedFields bool
 }
 
-type populateOptions struct {
+type extractOptions struct {
 	name   string
 	target reflect.Value
 }

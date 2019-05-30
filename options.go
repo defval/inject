@@ -8,8 +8,8 @@ type Option interface{ apply(*Container) }
 // ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Exported().
 type ProvideOption interface{ apply(*providerOptions) }
 
-// PopulateOption modifies default populate behavior. See inject.Name().
-type PopulateOption interface{ apply(*populateOptions) }
+// ExtractOption modifies default extract behavior. See inject.Name().
+type ExtractOption interface{ apply(*extractOptions) }
 
 // Provide returns container option that explains to it how to create an instance of a type inside a container.
 //
@@ -98,12 +98,12 @@ func Exported() ProvideOption {
 	})
 }
 
-// POPULATE OPTIONS.
+// EXTRACT OPTIONS.
 
 // Name ...
-func Name(name string) PopulateOption {
-	return populateOption(func(populate *populateOptions) {
-		populate.name = name
+func Name(name string) ExtractOption {
+	return extractOption(func(eo *extractOptions) {
+		eo.name = name
 	})
 }
 
@@ -115,6 +115,6 @@ type provideOption func(provider *providerOptions)
 
 func (o provideOption) apply(provider *providerOptions) { o(provider) }
 
-type populateOption func(populate *populateOptions)
+type extractOption func(eo *extractOptions)
 
-func (o populateOption) apply(populate *populateOptions) { o(populate) }
+func (o extractOption) apply(eo *extractOptions) { o(eo) }

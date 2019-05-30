@@ -33,11 +33,11 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		require.NoError(t, err)
 
 		var result string
-		require.NoError(t, container.Populate(&result))
+		require.NoError(t, container.Extract(&result))
 		require.Equal(t, "string", result)
 
 		var b bool
-		require.NoError(t, container.Populate(&b))
+		require.NoError(t, container.Extract(&b))
 	})
 
 	t.Run("struct", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		require.NoError(t, err)
 
 		var result []int64
-		require.NoError(t, container.Populate(&result))
+		require.NoError(t, container.Extract(&result))
 		require.Len(t, result, 3)
 	})
 
@@ -74,7 +74,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		require.NoError(t, err)
 
 		var b bool
-		require.NoError(t, container.Populate(&b))
+		require.NoError(t, container.Extract(&b))
 		_, more := <-ch
 		require.False(t, more)
 	})
@@ -93,7 +93,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		require.NoError(t, err)
 
 		var b bool
-		require.NoError(t, container.Populate(&b))
+		require.NoError(t, container.Extract(&b))
 		require.True(t, b)
 	})
 
@@ -117,16 +117,15 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 
 		require.NoError(t, err)
 
-		// check populate
-		var populatedServer *http.Server
-		require.NoError(t, container.Populate(&populatedServer))
+		var extractedServer *http.Server
+		require.NoError(t, container.Extract(&extractedServer))
 		require.NotNil(t, server)
 
-		eqPtr(t, populatedServer, server)
+		eqPtr(t, extractedServer, server)
 		eqPtr(t, mux, server.Handler)
 
 		var r bool
-		require.NoError(t, container.Populate(&r))
+		require.NoError(t, container.Extract(&r))
 	})
 
 	t.Run("constructors with dependency with nil errors", func(t *testing.T) {
@@ -149,16 +148,15 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 
 		require.NoError(t, err)
 
-		// check populate
-		var populatedServer *http.Server
-		require.NoError(t, container.Populate(&populatedServer))
+		var extractedServer *http.Server
+		require.NoError(t, container.Extract(&extractedServer))
 		require.NotNil(t, server)
 
-		eqPtr(t, populatedServer, server)
+		eqPtr(t, extractedServer, server)
 		eqPtr(t, mux, server.Handler)
 
 		var r bool
-		require.NoError(t, container.Populate(&r))
+		require.NoError(t, container.Extract(&r))
 	})
 
 	t.Run("constructors with dependency and build error", func(t *testing.T) {
@@ -181,9 +179,8 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 
 		require.NoError(t, err)
 
-		// check populate
-		var populatedServer *http.Server
-		require.EqualError(t, container.Populate(&populatedServer), "*http.ServeMux: build error")
+		var extractedServer *http.Server
+		require.EqualError(t, container.Extract(&extractedServer), "*http.ServeMux: build error")
 	})
 
 	t.Run("named interface", func(t *testing.T) {
@@ -198,9 +195,9 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 
 		require.NoError(t, err)
 		var addr *net.TCPAddr
-		require.NoError(t, container.Populate(&addr, inject.Name("second")))
+		require.NoError(t, container.Extract(&addr, inject.Name("second")))
 		require.Equal(t, "second", addr.Zone)
-		require.NoError(t, container.Populate(&addr, inject.Name("first")))
+		require.NoError(t, container.Extract(&addr, inject.Name("first")))
 		require.Equal(t, "first", addr.Zone)
 	})
 
@@ -222,7 +219,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		require.EqualError(t, container.Populate(&addr), "*net.TCPAddr: nil provided")
+		require.EqualError(t, container.Extract(&addr), "*net.TCPAddr: nil provided")
 	})
 
 	t.Run("constructor without result", func(t *testing.T) {
@@ -318,7 +315,7 @@ func TestContainer_ProvideStructPointer(t *testing.T) {
 		require.NoError(t, err)
 
 		var server *Server
-		require.NoError(t, container.Populate(&server))
+		require.NoError(t, container.Extract(&server))
 
 		eqPtr(t, defaultServer, server.DefaultServer)
 		eqPtr(t, defaultServer.Handler, defaultMux)
@@ -371,7 +368,7 @@ func TestContainer_ProvideStructPointer(t *testing.T) {
 		require.NoError(t, err)
 
 		var server *Server
-		require.NoError(t, container.Populate(&server))
+		require.NoError(t, container.Extract(&server))
 
 		eqPtr(t, defaultServer, server.DefaultServer)
 		eqPtr(t, defaultServer.Handler, defaultMux)
@@ -446,7 +443,7 @@ func TestContainer_ProvideStructValue(t *testing.T) {
 		require.NoError(t, err)
 
 		var server Server
-		require.NoError(t, container.Populate(&server))
+		require.NoError(t, container.Extract(&server))
 
 		notEqPtr(t, &defaultServer, &server.DefaultServer)
 		notEqPtr(t, &defaultServer.Handler, &defaultMux)
@@ -469,7 +466,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr net.Addr
-		require.NoError(t, container.Populate(&addr))
+		require.NoError(t, container.Extract(&addr))
 		require.Equal(t, "test", addr.(*net.TCPAddr).Zone)
 	})
 
@@ -489,11 +486,11 @@ func TestContainer_ProvideAs(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr net.Addr
-		require.NoError(t, container.Populate(&addr))
+		require.NoError(t, container.Extract(&addr))
 
 		eqPtr(t, defaultAddr, addr)
 
-		require.NoError(t, container.Populate(&addr, inject.Name("another")))
+		require.NoError(t, container.Extract(&addr, inject.Name("another")))
 		eqPtr(t, anotherAddr, addr)
 	})
 
@@ -544,7 +541,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 		require.NoError(t, err)
 
 		var s *TestStruct
-		require.NoError(t, container.Populate(&s))
+		require.NoError(t, container.Extract(&s))
 		require.NotNil(t, s.Addr)
 		require.Equal(t, "zone", s.Addr.(*net.TCPAddr).Zone)
 	})
@@ -570,12 +567,12 @@ func TestContainer_Bundle(t *testing.T) {
 
 		require.NoError(t, err)
 		var s string
-		require.NoError(t, container.Populate(&s))
+		require.NoError(t, container.Extract(&s))
 		require.Equal(t, s, "%zone:5432")
 	})
 }
 
-func TestContainer_Populate(t *testing.T) {
+func TestContainer_Extract(t *testing.T) {
 	t.Run("not pointer", func(t *testing.T) {
 		container, err := inject.New(
 			inject.Provide(func() string {
@@ -589,11 +586,11 @@ func TestContainer_Populate(t *testing.T) {
 		require.NoError(t, err)
 
 		var s string
-		require.NoError(t, container.Populate(&s))
+		require.NoError(t, container.Extract(&s))
 		require.Equal(t, s, "string")
 
 		var i32 int32
-		require.NoError(t, container.Populate(&i32))
+		require.NoError(t, container.Extract(&i32))
 		require.Equal(t, i32, int32(32))
 	})
 
@@ -603,7 +600,7 @@ func TestContainer_Populate(t *testing.T) {
 		require.NoError(t, err)
 
 		var s string
-		require.EqualError(t, container.Populate(&s), "type string not provided")
+		require.EqualError(t, container.Extract(&s), "type string not provided")
 	})
 
 	t.Run("nil", func(t *testing.T) {
@@ -615,7 +612,7 @@ func TestContainer_Populate(t *testing.T) {
 
 		require.NoError(t, err)
 
-		require.EqualError(t, container.Populate(nil), "populate target must be a not nil pointer")
+		require.EqualError(t, container.Extract(nil), "extract target must be a not nil pointer")
 	})
 
 	t.Run("not provided named type", func(t *testing.T) {
@@ -631,7 +628,7 @@ func TestContainer_Populate(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		require.EqualError(t, container.Populate(&addr, inject.Name("second")), "type *net.TCPAddr not provided")
+		require.EqualError(t, container.Extract(&addr, inject.Name("second")), "type *net.TCPAddr not provided")
 	})
 }
 
@@ -657,14 +654,14 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, err)
 
 		var addrs []net.Addr
-		require.NoError(t, container.Populate(&addrs))
+		require.NoError(t, container.Extract(&addrs))
 		require.Len(t, addrs, 2)
 
 		eqPtr(t, tcpAddr, addrs[0])
 		eqPtr(t, udpAddr, addrs[1])
 
 		var result bool
-		require.NoError(t, container.Populate(&result))
+		require.NoError(t, container.Extract(&result))
 		require.True(t, result)
 
 	})
@@ -690,22 +687,22 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, err)
 
 		var addrs []net.Addr
-		require.NoError(t, container.Populate(&addrs))
+		require.NoError(t, container.Extract(&addrs))
 		require.Len(t, addrs, 2)
 
 		eqPtr(t, defaultAddr, addrs[0])
 		eqPtr(t, anotherAddr, addrs[1])
 
 		var result bool
-		require.NoError(t, container.Populate(&result))
+		require.NoError(t, container.Extract(&result))
 		require.True(t, result)
 
 		var addr net.Addr
 
-		require.NoError(t, container.Populate(&addr))
+		require.NoError(t, container.Extract(&addr))
 		eqPtr(t, defaultAddr, addr)
 
-		require.NoError(t, container.Populate(&addr, inject.Name("another")))
+		require.NoError(t, container.Extract(&addr, inject.Name("another")))
 		eqPtr(t, anotherAddr, addr)
 	})
 
@@ -733,22 +730,22 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, err)
 
 		var addrs []net.Addr
-		require.NoError(t, container.Populate(&addrs))
+		require.NoError(t, container.Extract(&addrs))
 		require.Len(t, addrs, 2)
 
 		eqPtr(t, defaultAddr, addrs[0])
 		eqPtr(t, anotherAddr, addrs[1])
 
 		var result bool
-		require.NoError(t, container.Populate(&result))
+		require.NoError(t, container.Extract(&result))
 		require.True(t, result)
 
 		var addr net.Addr
 
-		require.NoError(t, container.Populate(&addr))
+		require.NoError(t, container.Extract(&addr))
 		eqPtr(t, defaultAddr, addr)
 
-		require.NoError(t, container.Populate(&addr, inject.Name("another")))
+		require.NoError(t, container.Extract(&addr, inject.Name("another")))
 		eqPtr(t, anotherAddr, addr)
 	})
 
@@ -778,7 +775,7 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, err)
 
 		var addrs []net.Addr
-		require.EqualError(t, container.Populate(&addrs), "string: build error")
+		require.EqualError(t, container.Extract(&addrs), "string: build error")
 	})
 
 	t.Run("complex group with dependency error", func(t *testing.T) {
@@ -807,7 +804,7 @@ func TestContainer_Group(t *testing.T) {
 		require.NoError(t, err)
 
 		var addrs []net.Addr
-		require.EqualError(t, container.Populate(&addrs), "*net.TCPAddr: build error")
+		require.EqualError(t, container.Extract(&addrs), "*net.TCPAddr: build error")
 	})
 }
 
@@ -854,11 +851,11 @@ func TestContainer_Replace(t *testing.T) {
 		require.NoError(t, err)
 
 		var s fmt.Stringer
-		require.NoError(t, container.Populate(&s))
+		require.NoError(t, container.Extract(&s))
 		eqPtr(t, s, mockStringer)
 
 		var b bool
-		require.NoError(t, container.Populate(&b))
+		require.NoError(t, container.Extract(&b))
 	})
 
 	t.Run("replace named interface by mock", func(t *testing.T) {
@@ -881,10 +878,10 @@ func TestContainer_Replace(t *testing.T) {
 		require.NoError(t, err)
 
 		var s fmt.Stringer
-		require.NoError(t, container.Populate(&s))
+		require.NoError(t, container.Extract(&s))
 		eqPtr(t, s, stringer)
 
-		require.NoError(t, container.Populate(&s, inject.Name("another")))
+		require.NoError(t, container.Extract(&s, inject.Name("another")))
 		eqPtr(t, s, mockStringer)
 	})
 
@@ -929,11 +926,11 @@ func TestContainer_Replace(t *testing.T) {
 
 		require.NoError(t, err)
 		var s *Stringer
-		require.NoError(t, container.Populate(&s))
+		require.NoError(t, container.Extract(&s))
 		eqPtr(t, anotherStringer, s)
 
 		var si fmt.Stringer
-		require.NoError(t, container.Populate(&si))
+		require.NoError(t, container.Extract(&si))
 		eqPtr(t, anotherStringer, si)
 	})
 

@@ -25,55 +25,46 @@ Package inject make your dependency injection easy. Container allows you to inje
 into constructors or structures without the need to have specified
 each argument manually.
 
-Provide dependency
+Provide
 
 First of all, when creating a new container, you need to describe
-how to create each instance of a dependency.To do this, use the container
-option inject.Provide(). The first argument in this function is a `provider`.
-It determines how to create dependency.
+how to create each instance of a dependency. To do this, use the container
+option inject.Provide().
 
-Provider can be a constructor function with optional error:
+	container, err := New(
+		Provide(NewDependency),
+		Provide(NewAnotherDependency)
+	)
 
-	// dependency constructor function
 	func NewDependency(dependency *pkg.AnotherDependency) *pkg.Dependency {
 		return &pkg.Dependency{
 			dependency: dependency,
 		}
 	}
 
-	// and with possible initialization error
 	func NewAnotherDependency() (*pkg.AnotherDependency, error) {
 		if dependency, err = initAnotherDependency(); err != nil {
 			return nil, err
 		}
+
 		return dependency, nil
 	}
 
-	// container initialization codeы
-	container, err := New(
-		Provide(NewDependency),
-		Provide(NewAnotherDependency)
-	)
+Now, container knows how to create *pkg.Dependency and *pkg.AnotherDependency.
+For advanced providing see inject.Provide() and inject.ProvideOption documentation.
 
-In this case, the container knows how to create `*pkg.AnotherDependency`
-and can handle an instance creation error.
+Extract
 
-Also, a provider can be a structure pointer with public fields:
+After building a container, it is easy to get any previously provided type.
+To do this, use the container's Extract() method.
 
-	// package pkg
-	type Dependency struct {
-		AnotherDependency *pkg.AnotherDependency `inject:""`
+	var anotherDependency *pkg.AnotherDependency
+	if err = container.Extract(&anotherDependency); err != nil {
+		// handle error
 	}
 
-	// container initialization code
-	container, err := New(
-		// pointer to structure
-		Provide(&pkg.Dependency{}),
-		// or structure value
-		Provide(pkg.Dependency{})
-	)
-
-In this case, the necessity of implementing specific fields are defined
-with the tag `inject`.
+The container collects a dependencies of *pkg.AnotherDependency, creates its instance and
+places it in a target pointer.
+For advanced extraction see Extract() and inject.ExtractOption documentation.
 */
 package inject // import "github.com/defval/inject"
