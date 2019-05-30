@@ -1,7 +1,6 @@
 package inject_test
 
 import (
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -9,7 +8,6 @@ import (
 	"github.com/defval/inject"
 )
 
-// Example
 func Example_Usage() {
 	// build container
 	container, err := inject.New(
@@ -44,26 +42,36 @@ func Example_Usage() {
 		panic(err)
 	}
 
-	// start server
-	if err = server.ListenAndServe(); err != nil {
-		panic(err)
-	}
+	// Output:
+	// Logger loaded
+	// Create router
+	// AccountController registered!
+	// AuthController registered!
+	// Router created!
+	// Server created!
 }
 
 // NewLogger
 func NewLogger() *log.Logger {
-	return log.New(os.Stderr, "", 0)
+	logger := log.New(os.Stdout, "", 0)
+	defer logger.Println("Logger loaded")
+
+	return logger
 }
 
 // NewServer
-func NewServer(handler http.Handler) *http.Server {
+func NewServer(logger *log.Logger, handler http.Handler) *http.Server {
+	defer logger.Println("Server created!")
 	return &http.Server{
 		Handler: handler,
 	}
 }
 
 // NewRouter
-func NewRouter(controllers []Controller) *http.ServeMux {
+func NewRouter(logger *log.Logger, controllers []Controller) *http.ServeMux {
+	logger.Println("Create router")
+	defer logger.Println("Router created!")
+
 	mux := &http.ServeMux{}
 
 	for _, ctrl := range controllers {
@@ -85,11 +93,9 @@ type AccountController struct {
 
 // RegisterRoutes
 func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/account", func(writer http.ResponseWriter, request *http.Request) {
-		c.Logger.Println("Got account request!")
+	c.Logger.Println("AccountController registered!")
 
-		_, _ = io.WriteString(writer, "account")
-	})
+	// register your routes
 }
 
 // AuthController
@@ -99,9 +105,7 @@ type AuthController struct {
 
 // RegisterRoutes
 func (c *AuthController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/auth", func(writer http.ResponseWriter, request *http.Request) {
-		c.Logger.Println("Got auth request!")
+	c.Logger.Println("AuthController registered!")
 
-		_, _ = io.WriteString(writer, "auth")
-	})
+	// register your routes
 }
