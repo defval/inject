@@ -633,6 +633,22 @@ func TestContainer_Extract(t *testing.T) {
 }
 
 func TestContainer_Group(t *testing.T) {
+	t.Run("group with one implementation", func(t *testing.T) {
+		handler := &http.ServeMux{}
+
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
+				return handler
+			}, inject.As(new(http.Handler))),
+		)
+
+		require.NoError(t, err)
+
+		var handlers []http.Handler
+		require.NoError(t, container.Extract(&handlers))
+		eqPtr(t, handler, handlers[0])
+	})
+
 	t.Run("group with different implementation types", func(t *testing.T) {
 		var tcpAddr = &net.TCPAddr{}
 		var udpAddr = &net.UDPAddr{}

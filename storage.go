@@ -97,7 +97,7 @@ func (s *storage) Value(k key) (v reflect.Value, err error) {
 
 	v = k.Value()
 
-	if len(defs) == 1 {
+	if !k.IsGroup() {
 		var args []reflect.Value
 
 		def := defs[0]
