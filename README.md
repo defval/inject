@@ -19,7 +19,7 @@ See [godoc](https://godoc.org/github.com/defval/inject) and use for feel the dif
 go get -u github.com/defval/inject
 ```
 
-## Quick start
+## Quickstart
 
 ```go
 package main
