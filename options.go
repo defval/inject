@@ -30,7 +30,7 @@ type ExtractOption interface{ apply(*extractOptions) }
 //   func NewServer(mux *http.ServeMux) (*http.Server, err error) {
 //     if time.Now().Day = 1 {
 //       return nil, errors.New("the server is down on the first day of a month")
-// 	   }
+//     }
 //     return &http.Server{
 //       Handler: mux,
 //     }
