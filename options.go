@@ -50,7 +50,21 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 	})
 }
 
-// Replace replaces provided interface by new implementation.
+// Replace replaces a already provided definition to another one.
+//
+// You may replace definition with one result type.
+//
+//   inject.New(
+//     inject.Provide(&http.Server{Addr: ":80"}),
+//     inject.Replace(&http.Server{Addr: ":8080"}),
+//   )
+//
+// Or with one implemented interface.
+//
+//   inject.New(
+//     inject.Provide(&http.ServeMux{}, inject.As(new(http.Handler))),
+//     inject.Replace(&mux.AnotherMux{}, inject.As(new(http.Handler))),
+//   )
 func Replace(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
 		var po = &providerOptions{
@@ -66,6 +80,18 @@ func Replace(provider interface{}, options ...ProvideOption) Option {
 }
 
 // Bundle group together container options.
+//
+//   accountBundle := inject.Bundle(
+//     inject.Provide(NewAccountController),
+//     inject.Provide(NewAccountRepository),
+//   )
+//
+//   authBundle := inject.Bundle(
+//     inject.Provide(NewAuthController),
+//     inject.Provide(NewAuthRepository),
+//   )
+//
+//   container, _ := New(accountBundle, authBundle)
 func Bundle(options ...Option) Option {
 	return option(func(container *Container) {
 		for _, opt := range options {
@@ -77,13 +103,18 @@ func Bundle(options ...Option) Option {
 // PROVIDE OPTIONS.
 
 // WithName sets string identifier for provided value.
+//
+//   inject.Provide(&http.Server{}, inject.WithName("first"))
+//   inject.Provide(&http.Server{}, inject.WithName("second"))
+//
+//   container.Extract(&server, inject.Name("second"))
 func WithName(name string) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.name = name
 	})
 }
 
-// As specifies interface.
+// As specifies interface that implement provider instance.
 func As(ifaces ...interface{}) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.implements = append(provider.implements, ifaces...)
@@ -91,7 +122,14 @@ func As(ifaces ...interface{}) ProvideOption {
 	})
 }
 
-// Exported option.
+// Exported indicates that all public fields of the structure should be injected.
+//
+//   type AccountController struct {
+//     Accounts AccountRepository // will be injected without tag 'inject'
+//   }
+//
+//   inject.Provide(NewAccountRepository, inject.As(new(AccountRepository)))
+//   inject.Provide(&AccountController{}, inject.Exported())
 func Exported() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.injectExportedFields = true
@@ -100,7 +138,7 @@ func Exported() ProvideOption {
 
 // EXTRACT OPTIONS.
 
-// Name ...
+// Name specify definition name.
 func Name(name string) ExtractOption {
 	return extractOption(func(eo *extractOptions) {
 		eo.name = name
