@@ -10,7 +10,7 @@ import (
 )
 
 // Example
-func ExampleUsage() {
+func Example_Usage() {
 	// build container
 	container, err := inject.New(
 		// inject constructor
