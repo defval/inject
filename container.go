@@ -98,7 +98,6 @@ func (c *Container) compile() (err error) {
 }
 
 func (c *Container) registerProviders() (err error) {
-	// register providers
 	for _, po := range c.providers {
 		if po.provider == nil {
 			return errors.New("could not provide nil")
