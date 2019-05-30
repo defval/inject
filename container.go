@@ -42,10 +42,10 @@ type Container struct {
 //     // extract failed
 //   }
 //
-//   server.ListenAndServer()
+//   server.ListenAndServe()
 //
 // If a target type does not exist in a container or instance type building failed, Extract() returns an error.
-// With the help of ExtractOption, you can modify the behavior of this function.
+// Use ExtractOption for modifying the behavior of this function.
 func (c *Container) Extract(target interface{}, options ...ExtractOption) (err error) {
 	targetValue := reflect.ValueOf(target)
 
