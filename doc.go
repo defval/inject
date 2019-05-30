@@ -34,20 +34,20 @@ It determines how to create dependency.
 
 Provider can be a constructor function with optional error:
 
-  	// dependency constructor function
-  	func NewDependency(dependency *pkg.AnotherDependency) *pkg.Dependency {
+	// dependency constructor function
+	func NewDependency(dependency *pkg.AnotherDependency) *pkg.Dependency {
 		return &pkg.Dependency{
 			dependency: dependency,
 		}
 	}
 
-  	// and with possible initialization error
-  	func NewAnotherDependency() (*pkg.AnotherDependency, error) {
+	// and with possible initialization error
+	func NewAnotherDependency() (*pkg.AnotherDependency, error) {
 		if dependency, err = initAnotherDependency(); err != nil {
 			return nil, err
 		}
 		return dependency, nil
- 	}
+	}
 
 	// container initialization codeы
 	container, err := New(
