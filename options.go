@@ -5,16 +5,10 @@ package inject
 // Option configures container. See inject.Provide(), inject.Bundle(), inject.Replace().
 type Option interface{ apply(*Container) }
 
-// ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Exported().
-type ProvideOption interface{ apply(*providerOptions) }
-
-// ExtractOption modifies default extract behavior. See inject.Name().
-type ExtractOption interface{ apply(*extractOptions) }
-
-// Provide returns container option that explains to it how to create an instance of a type inside a container.
+// Provide returns container option that explains how to create an instance of a type inside a container.
 //
-// The first argument is the provider. A provider can be a constructor function, a pointer to a structure
-// (or just a structure) and everything else. There are some differences between these providers.
+// The first argument is the provider. The provider can be constructor function, a pointer to a structure (or just
+// structure) or everything else. There are some differences between these providers.
 //
 // A constructor function is a function that creates an instance of the required type. It can take an unlimited
 // number of arguments needed to create an instance - the first returned value.
@@ -25,7 +19,7 @@ type ExtractOption interface{ apply(*extractOptions) }
 //     }
 //   }
 //
-// Optionally, you can return an error to create an instance.
+// Optionally, you can return a initializing error.
 //
 //   func NewServer(mux *http.ServeMux) (*http.Server, err error) {
 //     if time.Now().Day = 1 {
@@ -35,6 +29,8 @@ type ExtractOption interface{ apply(*extractOptions) }
 //       Handler: mux,
 //     }
 //   }
+//
+// Other function signatures will cause error.
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
 		var po = &providerOptions{
@@ -50,20 +46,23 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 }
 
 // Replace replaces a already provided definition to another one.
+// This method also works like Provide(). The difference is that Replace() replaces already provided definition.
+// The method returns an error when the container does not provide a replaceable definition.
 //
-// You may replace definition with one result type.
+// You may replace concrete provided type to another one.
 //
 //   inject.New(
 //     inject.Provide(&http.Server{Addr: ":80"}),
 //     inject.Replace(&http.Server{Addr: ":8080"}),
 //   )
 //
-// Or with one implemented interface.
+// Alternatively, it may replace one interface implementation to another one.
 //
 //   inject.New(
 //     inject.Provide(&http.ServeMux{}, inject.As(new(http.Handler))),
 //     inject.Replace(&mux.AnotherMux{}, inject.As(new(http.Handler))),
 //   )
+//
 func Replace(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
 		var po = &providerOptions{
@@ -90,7 +89,10 @@ func Replace(provider interface{}, options ...ProvideOption) Option {
 //     inject.Provide(NewAuthRepository),
 //   )
 //
-//   container, _ := New(accountBundle, authBundle)
+//   container, _ := New(
+//     accountBundle,
+//     authBundle,
+//   )
 func Bundle(options ...Option) Option {
 	return option(func(container *Container) {
 		for _, opt := range options {
@@ -99,7 +101,8 @@ func Bundle(options ...Option) Option {
 	})
 }
 
-// PROVIDE OPTIONS.
+// ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Exported().
+type ProvideOption interface{ apply(*providerOptions) }
 
 // WithName sets string identifier for provided value.
 //
@@ -113,7 +116,7 @@ func WithName(name string) ProvideOption {
 	})
 }
 
-// As specifies interface that implement provider instance.
+// As specifies interfaces that implement provider instance.
 func As(ifaces ...interface{}) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.implements = append(provider.implements, ifaces...)
@@ -134,6 +137,9 @@ func Exported() ProvideOption {
 		provider.injectExportedFields = true
 	})
 }
+
+// ExtractOption modifies default extract behavior. See inject.Name().
+type ExtractOption interface{ apply(*extractOptions) }
 
 // EXTRACT OPTIONS.
 

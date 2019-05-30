@@ -8,7 +8,7 @@ import (
 	"github.com/defval/inject"
 )
 
-func Example_Usage() {
+func Example() {
 	// build container
 	container, err := inject.New(
 		// inject constructor

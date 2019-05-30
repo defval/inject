@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// New creates new container with provided options.
+// New creates a new container with provided options.
 func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
 		storage: &storage{
@@ -35,16 +35,14 @@ type Container struct {
 	storage   *storage
 }
 
-// Extract populates given target pointer with type instance provided in container.
+// Extract populates given target pointer with type instance provided in the container.
 //
 //   var server *http.Server
 //   if err = container.Extract(&server); err != nil {
 //     // extract failed
 //   }
 //
-//   server.ListenAndServe()
-//
-// If a target type does not exist in a container or instance type building failed, Extract() returns an error.
+// If the target type does not exist in a container or instance type building failed, Extract() returns an error.
 // Use ExtractOption for modifying the behavior of this function.
 func (c *Container) Extract(target interface{}, options ...ExtractOption) (err error) {
 	targetValue := reflect.ValueOf(target)

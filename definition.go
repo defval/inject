@@ -13,13 +13,10 @@ const (
 	visitMarkPermanent
 )
 
-// key.
+// key is a unique identifier for an object in a container
 type key struct {
-	// type of provided value
-	typ reflect.Type
-
-	// optional name
-	name string
+	typ  reflect.Type // object type
+	name string       // name
 }
 
 func (k key) String() string {
