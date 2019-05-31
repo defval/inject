@@ -32,7 +32,7 @@ func (k key) IsGroup() bool {
 }
 
 func createDefinition(po *providerOptions) (def *definition, err error) {
-	wrapper, err := wrapProvider(po)
+	wrapper, err := createProvider(po)
 
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -81,7 +81,7 @@ func (d *definition) Create(args []reflect.Value) (instance reflect.Value, err e
 		return d.instance, nil
 	}
 
-	instance, err = d.Provider.create(args)
+	instance, err = d.Provider.build(args)
 	if err != nil {
 		return instance, errors.WithStack(err)
 	}

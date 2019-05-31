@@ -16,10 +16,6 @@ func eqPtr(t *testing.T, expected interface{}, actual interface{}) {
 	require.Equal(t, fmt.Sprintf("%p", expected), fmt.Sprintf("%p", actual))
 }
 
-func notEqPtr(t *testing.T, expected interface{}, actual interface{}) {
-	require.NotEqual(t, fmt.Sprintf("%p", expected), fmt.Sprintf("%p", actual))
-}
-
 func TestContainer_ProvideConstructor(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		container, err := inject.New(
@@ -227,8 +223,17 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			inject.Provide(func() {}),
 		)
 
-		// todo: improve error message
-		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_ProvideConstructor.func12.1 must have at least one return value")
+	})
+
+	t.Run("constructor more than two return values", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(func() (*net.TCPAddr, *net.UDPAddr, *http.Server) {
+				return nil, nil, nil
+			}),
+		)
+
+		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_ProvideConstructor.func13.1: constructor may have maximum two return values")
 	})
 
 	t.Run("constructor with two types", func(t *testing.T) {
@@ -238,7 +243,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_ProvideConstructor.func14.1: second argument of constructor must be error, got *net.UDPAddr")
 	})
 
 	t.Run("duplicate", func(t *testing.T) {
@@ -401,43 +406,20 @@ func TestContainer_ProvideStructPointer(t *testing.T) {
 
 func TestContainer_ProvideStructValue(t *testing.T) {
 	t.Run("struct with exported option", func(t *testing.T) {
-		var defaultMux = &http.ServeMux{}
-		var anotherMux = &http.ServeMux{}
-
 		var defaultServer = &http.Server{}
 		var anotherServer = &http.Server{}
 
 		type Server struct {
-			private  string
-			private2 string
-
 			DefaultServer *http.Server
 			AnotherServer *http.Server `inject:"another"` // another server
 		}
 
-		type Muxes struct {
-			DefaultMux *http.ServeMux
-			private    string
-			private2   string
-			AnotherMux *http.ServeMux `inject:"another"`
-		}
-
-		var s = Server{}
-		var m = Muxes{}
+		var servers = Server{}
 
 		container, err := inject.New(
-			inject.Provide(defaultMux),
-			inject.Provide(anotherMux, inject.WithName("another")),
-			inject.Provide(s, inject.Exported()),
-			inject.Provide(func(muxes Muxes) *http.Server {
-				defaultServer.Handler = muxes.DefaultMux
-				return defaultServer
-			}),
-			inject.Provide(func(muxes Muxes) *http.Server {
-				anotherServer.Handler = muxes.AnotherMux
-				return anotherServer
-			}, inject.WithName("another")),
-			inject.Provide(m, inject.Exported()),
+			inject.Provide(defaultServer),
+			inject.Provide(anotherServer, inject.WithName("another")),
+			inject.Provide(servers, inject.Exported()),
 		)
 
 		require.NoError(t, err)
@@ -445,11 +427,8 @@ func TestContainer_ProvideStructValue(t *testing.T) {
 		var server Server
 		require.NoError(t, container.Extract(&server))
 
-		notEqPtr(t, &defaultServer, &server.DefaultServer)
-		notEqPtr(t, &defaultServer.Handler, &defaultMux)
-
-		notEqPtr(t, &anotherServer, &server.AnotherServer)
-		notEqPtr(t, &anotherServer.Handler, &anotherMux)
+		eqPtr(t, defaultServer, server.DefaultServer)
+		eqPtr(t, anotherServer, server.AnotherServer)
 	})
 }
 
@@ -612,7 +591,7 @@ func TestContainer_Extract(t *testing.T) {
 
 		require.NoError(t, err)
 
-		require.EqualError(t, container.Extract(nil), "extract target must be a not nil pointer")
+		require.EqualError(t, container.Extract(nil), "extract target must be a pointer")
 	})
 
 	t.Run("not provided named type", func(t *testing.T) {
@@ -924,7 +903,7 @@ func TestContainer_Replace(t *testing.T) {
 			inject.Replace(func() {}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: constructor must be a function with value and optional error as result")
+		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_Replace.func5.1 must have at least one return value")
 	})
 
 	t.Run("replace already provided type", func(t *testing.T) {
