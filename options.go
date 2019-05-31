@@ -134,7 +134,7 @@ func As(ifaces ...interface{}) ProvideOption {
 //   inject.Provide(&AccountController{}, inject.Exported())
 func Exported() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
-		provider.injectExportedFields = true
+		provider.includeExported = true
 	})
 }
 

@@ -48,8 +48,8 @@ func (c *Container) Extract(target interface{}, options ...ExtractOption) (err e
 	targetValue := reflect.ValueOf(target)
 
 	// target value type needs to be a pointer
-	if targetValue.Kind() != reflect.Ptr || targetValue.IsNil() {
-		return errors.New("extract target must be a not nil pointer")
+	if targetValue.Kind() != reflect.Ptr {
+		return errors.New("extract target must be a pointer")
 	}
 
 	targetValue = targetValue.Elem()
@@ -133,16 +133,13 @@ func (c *Container) applyReplacers() (err error) {
 	return nil
 }
 
-var (
-	errIncorrectFunctionProviderSignature = errors.New("constructor must be a function with value and optional error as result")
-	errorInterface                        = reflect.TypeOf((*error)(nil)).Elem()
-)
+var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
 
 type providerOptions struct {
-	name                 string
-	provider             interface{}
-	implements           []interface{}
-	injectExportedFields bool
+	name            string
+	provider        interface{}
+	implements      []interface{}
+	includeExported bool
 }
 
 type extractOptions struct {
