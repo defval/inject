@@ -2,6 +2,7 @@ package inject
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -133,13 +134,25 @@ func (c *Container) applyReplacers() (err error) {
 	return nil
 }
 
-var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
+var errorInterface = reflect.TypeOf(new(error)).Elem()
 
 type providerOptions struct {
 	name            string
 	provider        interface{}
 	implements      []interface{}
 	includeExported bool
+}
+
+func (o *providerOptions) isProvider() bool {
+	var typ = reflect.TypeOf(o.provider)
+
+	if !strings.HasSuffix(typ.String(), "Provider") {
+		return false
+	}
+
+	_, exists := typ.MethodByName("Provide")
+
+	return exists
 }
 
 type extractOptions struct {

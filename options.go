@@ -42,6 +42,7 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 		}
 
 		container.providers = append(container.providers, po)
+
 	})
 }
 

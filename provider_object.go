@@ -42,7 +42,7 @@ func (w *objectProvider) build(arguments []reflect.Value) (_ reflect.Value, err 
 
 	skip := 0
 	for i := 0; i < value.NumField(); i++ {
-		_, _, injectable := isFieldInjectable(value, i, w.includeExported)
+		_, _, injectable := w.isFieldInjectable(i)
 		if injectable {
 			value.Field(i).Set(arguments[i-skip])
 		} else {
@@ -62,7 +62,7 @@ func (w *objectProvider) args() []key {
 
 	var args []key
 	for i := 0; i < value.NumField(); i++ {
-		typ, name, injectable := isFieldInjectable(value, i, w.includeExported)
+		typ, name, injectable := w.isFieldInjectable(i)
 		if !injectable {
 			continue
 		}
@@ -81,8 +81,9 @@ func (w *objectProvider) rtype() reflect.Type {
 	return w.value.Type()
 }
 
-// isFieldInjectable
-func isFieldInjectable(v reflect.Value, i int, includeExported bool) (typ reflect.Type, name string, injectable bool) {
-	name, exists := v.Type().Field(i).Tag.Lookup("inject")
-	return v.Type().Field(i).Type, name, v.Field(i).CanSet() && (exists || includeExported)
+func (w *objectProvider) isFieldInjectable(fieldNum int) (typ reflect.Type, name string, injectable bool) {
+	value := w.value.Elem()
+
+	name, exists := value.Type().Field(fieldNum).Tag.Lookup("inject")
+	return value.Type().Field(fieldNum).Type, name, value.Field(fieldNum).CanSet() && (exists || w.includeExported)
 }
