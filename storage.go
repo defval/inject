@@ -161,7 +161,7 @@ func (s *storage) All() (defs []*definition) {
 func (s *storage) Compile() (err error) {
 	for _, def := range s.All() {
 		// value arguments
-		for _, argKey := range def.Provider.args() {
+		for _, argKey := range def.Provider.args() { // todo: добавить ключи при создании definition
 			def.In = append(def.In, argKey)
 
 			args, err := s.Get(argKey)

@@ -19,7 +19,11 @@ func createProvider(po *providerOptions) (wrapper providerWrapper, err error) {
 		return createConstructorProvider(value)
 	}
 
-	if isStructPtr(value) || isStruct(value) {
+	if po.isProvider() {
+		return createCombinedProvider(value)
+	}
+
+	if isStructPtr(value) || isStruct(value) { // todo: попробовать перенести в providerOptions
 		return createObjectProvider(value, po.includeExported)
 	}
 

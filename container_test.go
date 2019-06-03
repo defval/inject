@@ -961,3 +961,67 @@ func TestContainer_Cycle(t *testing.T) {
 		require.EqualError(t, err, "could not compile container: detect cycle: string: bool: int64: int32: bool")
 	})
 }
+
+func TestContainer_CombinedProvider(t *testing.T) {
+	t.Run("simple combined provider", func(t *testing.T) {
+		defaultMux := &http.ServeMux{}
+		adminMux := &http.ServeMux{}
+
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
+				return defaultMux
+			}),
+			inject.Provide(func() *http.ServeMux {
+				return adminMux
+			}, inject.WithName("admin")),
+			inject.Provide(&AdminServerProvider{}),
+		)
+
+		require.NoError(t, err)
+
+		var server *http.Server
+		require.NoError(t, container.Extract(&server))
+		eqPtr(t, adminMux, server.Handler)
+	})
+
+	t.Run("combined provider build error", func(t *testing.T) {
+		container, err := inject.New(
+			inject.Provide(&ServerFailedBuildProvider{}),
+		)
+
+		require.NoError(t, err)
+
+		var server *http.Server
+		require.EqualError(t, container.Extract(&server), "*http.Server: server build error")
+	})
+
+	t.Run("combined provider incorrect constructor signature", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(&IncorrectConstructorSignatureProvider{}),
+		)
+
+		require.EqualError(t, err, "could not compile container: provide failed: reflect.methodValueCall must have at least one return value") // todo: fix error message
+	})
+}
+
+// AdminServerProvider
+type AdminServerProvider struct {
+	Mux *http.ServeMux `inject:"admin"`
+}
+
+func (s *AdminServerProvider) Provide() (*http.Server, error) {
+	return &http.Server{Handler: s.Mux}, nil
+}
+
+// ServerFailedBuildProvider
+type ServerFailedBuildProvider struct{}
+
+func (s *ServerFailedBuildProvider) Provide() (*http.Server, error) {
+	return nil, errors.New("server build error")
+}
+
+// IncorrectConstructorSignatureProvider
+type IncorrectConstructorSignatureProvider struct {
+}
+
+func (p *IncorrectConstructorSignatureProvider) Provide() {}
