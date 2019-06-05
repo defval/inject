@@ -1,50 +1,37 @@
 package inject
 
 import (
-	"reflect"
+	"github.com/defval/inject/internal/provider"
+	"github.com/defval/inject/internal/provider/combined"
+	"github.com/defval/inject/internal/provider/ctor"
+	"github.com/defval/inject/internal/provider/direct"
+	"github.com/defval/inject/internal/provider/object"
 )
 
-// providerWrapper
-type providerWrapper interface {
-	build(arguments []reflect.Value) (_ reflect.Value, err error)
-	args() []key
-	rtype() reflect.Type
-}
-
 // createProvider creates provider
-func createProvider(po *providerOptions) (wrapper providerWrapper, err error) {
-	value := reflect.ValueOf(po.provider)
+func createProvider(po *providerOptions) (_ provider.Provider, err error) {
+	switch provider.DetectType(po.provider) {
+	case provider.Constructor:
+		return ctor.New(po.provider)
+	case provider.Combined:
+		var options []object.Option
 
-	if value.Kind() == reflect.Func {
-		return createConstructorProvider(value)
+		if po.includeExported {
+			options = append(options, object.Exported())
+		}
+
+		return combined.New(po.provider, options...)
+	case provider.Object:
+		var options []object.Option
+
+		if po.includeExported {
+			options = append(options, object.Exported())
+		}
+
+		return object.New(po.provider, options...)
+	case provider.Direct:
+		return direct.New(po.provider), nil
+	default:
+		panic("unknown provider type")
 	}
-
-	if po.isProvider() {
-		return createCombinedProvider(value)
-	}
-
-	if isStructPtr(value) || isStruct(value) { // todo: попробовать перенести в providerOptions
-		return createObjectProvider(value, po.includeExported)
-	}
-
-	return &defaultProviderWrapper{
-		value: value,
-	}, nil
-}
-
-// defaultProviderWrapper
-type defaultProviderWrapper struct {
-	value reflect.Value
-}
-
-func (w *defaultProviderWrapper) build(arguments []reflect.Value) (_ reflect.Value, err error) {
-	return w.value, nil
-}
-
-func (w *defaultProviderWrapper) args() []key {
-	return nil
-}
-
-func (w *defaultProviderWrapper) rtype() reflect.Type {
-	return w.value.Type()
 }

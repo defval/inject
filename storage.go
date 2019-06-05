@@ -5,11 +5,13 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+
+	"github.com/defval/inject/internal/provider"
 )
 
 type storage struct {
-	keys        []key
-	definitions map[key]*definition
+	keys        []provider.Key
+	definitions map[provider.Key]*definition
 	ifaces      map[reflect.Type][]*definition
 }
 
@@ -39,9 +41,9 @@ func (s *storage) Replace(def *definition) (err error) {
 	}
 
 	for _, typ := range def.Implements {
-		k := key{
-			typ:  typ,
-			name: def.Key.name,
+		k := provider.Key{
+			Type: typ,
+			Name: def.Key.Name,
 		}
 
 		defs, err := s.Get(k)
@@ -57,15 +59,15 @@ func (s *storage) Replace(def *definition) (err error) {
 	return nil
 }
 
-func (s *storage) Get(k key) (_ []*definition, err error) {
+func (s *storage) Get(k provider.Key) (_ []*definition, err error) {
 	if def, ok := s.definitions[k]; ok {
 		return []*definition{def}, nil
 	}
 
 	// definition iface
-	if defs, ok := s.ifaces[k.typ]; ok {
+	if defs, ok := s.ifaces[k.Type]; ok {
 		for _, def := range defs {
-			if def.Key.name == k.name {
+			if def.Key.Name == k.Name {
 				return []*definition{def}, nil
 			}
 		}
@@ -79,16 +81,16 @@ func (s *storage) Get(k key) (_ []*definition, err error) {
 	return nil, errors.Errorf("type %s not provided", k)
 }
 
-func (s *storage) Group(k key) (_ []*definition, exists bool) {
+func (s *storage) Group(k provider.Key) (_ []*definition, exists bool) {
 	if k.IsGroup() {
-		_, ok := s.ifaces[k.typ.Elem()]
-		return s.ifaces[k.typ.Elem()], ok
+		_, ok := s.ifaces[k.Type.Elem()]
+		return s.ifaces[k.Type.Elem()], ok
 	}
 
 	return nil, false
 }
 
-func (s *storage) Value(k key) (v reflect.Value, err error) {
+func (s *storage) Value(k provider.Key) (v reflect.Value, err error) {
 	defs, err := s.Get(k)
 
 	if err != nil {
@@ -161,7 +163,7 @@ func (s *storage) All() (defs []*definition) {
 func (s *storage) Compile() (err error) {
 	for _, def := range s.All() {
 		// value arguments
-		for _, argKey := range def.Provider.args() { // todo: добавить ключи при создании definition
+		for _, argKey := range def.Provider.Arguments() { // todo: добавить ключи при создании definition
 			def.In = append(def.In, argKey)
 
 			args, err := s.Get(argKey)
