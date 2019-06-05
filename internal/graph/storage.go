@@ -91,7 +91,6 @@ func (s *Storage) Compile() (err error) {
 
 				provideNode.in = append(provideNode.in, argumentNode)
 			}
-			continue
 		}
 	}
 
