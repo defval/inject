@@ -82,10 +82,6 @@ type Provider struct {
 	isValue bool
 }
 
-func (p *Provider) String() string {
-	return p.value.Type().String()
-}
-
 func (p *Provider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	elem := p.elem()
 

@@ -27,11 +27,6 @@ type StructDependency struct {
 	AnotherServer *http.Server `anotherTag:"another"`
 }
 
-func TestStructPointerProvider_String(t *testing.T) {
-	p, _ := object.New(&StructDependency{})
-	require.Equal(t, "*object_test.StructDependency", p.String())
-}
-
 func TestStructPointerProvider_Arguments(t *testing.T) {
 	t.Run("all fields with tag are arguments", func(t *testing.T) {
 		p, _ := object.New(&StructDependency{})

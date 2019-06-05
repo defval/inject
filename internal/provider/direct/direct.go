@@ -18,10 +18,6 @@ type Provider struct {
 	value reflect.Value
 }
 
-func (p *Provider) String() string {
-	return p.value.Type().String()
-}
-
 func (p *Provider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	return p.value, nil
 }

@@ -63,10 +63,6 @@ type Provider struct {
 	ctor reflect.Value
 }
 
-func (p *Provider) String() string {
-	return runtime.FuncForPC(p.ctor.Pointer()).Name()
-}
-
 func (p *Provider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	result := p.ctor.Call(arguments)
 

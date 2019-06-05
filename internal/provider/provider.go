@@ -42,7 +42,6 @@ func (k Key) String() string {
 
 // Provider
 type Provider interface {
-	fmt.Stringer
 	Provide(arguments []reflect.Value) (reflect.Value, error)
 	ResultType() reflect.Type
 	Arguments() (args []Key)

@@ -67,10 +67,6 @@ type Provider struct {
 	ctor   *ctor.Provider
 }
 
-func (p *Provider) String() string {
-	return p.ctor.String()
-}
-
 func (p *Provider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	_, _ = p.object.Provide(arguments)
 	return p.ctor.Provide([]reflect.Value{})
