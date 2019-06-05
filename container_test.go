@@ -963,7 +963,7 @@ func TestContainer_Cycle(t *testing.T) {
 }
 
 func TestContainer_CombinedProvider(t *testing.T) {
-	t.Run("simple combined provider", func(t *testing.T) {
+	t.Run("combined provider", func(t *testing.T) {
 		defaultMux := &http.ServeMux{}
 		adminMux := &http.ServeMux{}
 
@@ -975,6 +975,23 @@ func TestContainer_CombinedProvider(t *testing.T) {
 				return adminMux
 			}, inject.WithName("admin")),
 			inject.Provide(&AdminServerProvider{}),
+		)
+
+		require.NoError(t, err)
+
+		var server *http.Server
+		require.NoError(t, container.Extract(&server))
+		eqPtr(t, adminMux, server.Handler)
+	})
+
+	t.Run("combined provider with exported option", func(t *testing.T) {
+		adminMux := &http.ServeMux{}
+
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
+				return adminMux
+			}),
+			inject.Provide(&AdminServerExportedProvider{}, inject.Exported()),
 		)
 
 		require.NoError(t, err)
@@ -1010,6 +1027,15 @@ type AdminServerProvider struct {
 }
 
 func (s *AdminServerProvider) Provide() (*http.Server, error) {
+	return &http.Server{Handler: s.Mux}, nil
+}
+
+// AdminServerExportedProvider
+type AdminServerExportedProvider struct {
+	Mux *http.ServeMux
+}
+
+func (s *AdminServerExportedProvider) Provide() (*http.Server, error) {
 	return &http.Server{Handler: s.Mux}, nil
 }
 

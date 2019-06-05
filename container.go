@@ -2,17 +2,18 @@ package inject
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/defval/inject/internal/provider"
 )
 
 // New creates a new container with provided options.
 func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
 		storage: &storage{
-			keys:        []key{},
-			definitions: map[key]*definition{},
+			keys:        []provider.Key{},
+			definitions: map[provider.Key]*definition{},
 			ifaces:      map[reflect.Type][]*definition{},
 		},
 	}
@@ -65,9 +66,9 @@ func (c *Container) Extract(target interface{}, options ...ExtractOption) (err e
 	}
 
 	// create a key to find in a storage
-	k := key{
-		typ:  po.target.Type(),
-		name: po.name,
+	k := provider.Key{
+		Type: po.target.Type(),
+		Name: po.name,
 	}
 
 	newValue, err := c.storage.Value(k)
@@ -134,25 +135,11 @@ func (c *Container) applyReplacers() (err error) {
 	return nil
 }
 
-var errorInterface = reflect.TypeOf(new(error)).Elem()
-
 type providerOptions struct {
 	name            string
 	provider        interface{}
 	implements      []interface{}
 	includeExported bool
-}
-
-func (o *providerOptions) isProvider() bool {
-	var typ = reflect.TypeOf(o.provider)
-
-	if !strings.HasSuffix(typ.String(), "Provider") {
-		return false
-	}
-
-	_, exists := typ.MethodByName("Provide")
-
-	return exists
 }
 
 type extractOptions struct {

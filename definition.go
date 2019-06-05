@@ -1,10 +1,11 @@
 package inject
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
+
+	"github.com/defval/inject/internal/provider"
 )
 
 const (
@@ -12,24 +13,6 @@ const (
 	visitMarkTemporary
 	visitMarkPermanent
 )
-
-// key is a unique identifier for an object in a container
-type key struct {
-	typ  reflect.Type // object type
-	name string       // name
-}
-
-func (k key) String() string {
-	return fmt.Sprintf("%s", k.typ) // todo: add name
-}
-
-func (k key) Value() reflect.Value {
-	return reflect.New(k.typ).Elem()
-}
-
-func (k key) IsGroup() bool {
-	return k.typ.Kind() == reflect.Slice && k.typ.Elem().Kind() == reflect.Interface
-}
 
 func createDefinition(po *providerOptions) (def *definition, err error) {
 	wrapper, err := createProvider(po)
@@ -48,17 +31,17 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 
 		ifaceTypeElem := ifaceType.Elem()
 
-		if !wrapper.rtype().Implements(ifaceTypeElem) {
-			return nil, errors.Errorf("%s not implement %s interface", wrapper.rtype(), ifaceTypeElem)
+		if !wrapper.ResultType().Implements(ifaceTypeElem) {
+			return nil, errors.Errorf("%s not implement %s interface", wrapper.ResultType(), ifaceTypeElem)
 		}
 
 		implements = append(implements, ifaceTypeElem)
 	}
 
 	return &definition{
-		Key: key{
-			typ:  wrapper.rtype(),
-			name: po.name,
+		Key: provider.Key{
+			Type: wrapper.ResultType(),
+			Name: po.name,
 		},
 		Provider:   wrapper,
 		Implements: implements,
@@ -66,11 +49,11 @@ func createDefinition(po *providerOptions) (def *definition, err error) {
 }
 
 type definition struct {
-	Key        key
-	Provider   providerWrapper
+	Key        provider.Key
+	Provider   provider.Provider
 	Implements []reflect.Type
-	In         []key
-	Out        []key
+	In         []provider.Key
+	Out        []provider.Key
 
 	instance reflect.Value
 	visited  int
@@ -81,7 +64,7 @@ func (d *definition) Create(args []reflect.Value) (instance reflect.Value, err e
 		return d.instance, nil
 	}
 
-	instance, err = d.Provider.build(args)
+	instance, err = d.Provider.Provide(args)
 	if err != nil {
 		return instance, errors.WithStack(err)
 	}
