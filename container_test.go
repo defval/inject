@@ -449,6 +449,19 @@ func TestContainer_ProvideAs(t *testing.T) {
 		require.Equal(t, "test", addr.(*net.TCPAddr).Zone)
 	})
 
+	t.Run("provide duplicate interface without name", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{}
+			}, inject.As(new(net.Addr))),
+		)
+
+		require.EqualError(t, err, "could not compile container: net.Addr: use named definition if you have several instances of the same type")
+	})
+
 	t.Run("provide as named interface", func(t *testing.T) {
 		var defaultAddr = &net.TCPAddr{}
 		var anotherAddr = &net.TCPAddr{}
@@ -974,6 +987,17 @@ func TestContainer_Cycle(t *testing.T) {
 
 		require.EqualError(t, err, "could not compile container: cycle detected: *net.TCPAddr[tcp]: *http.Server: []net.Addr: *net.TCPAddr[tcp]")
 	})
+
+	t.Run("interface cycle", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(func(server *http.Server) *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, inject.As(new(net.Addr))),
+			inject.Provide(&InterfaceCycleProvider{}),
+		)
+
+		require.EqualError(t, err, "could not compile container: cycle detected: *net.TCPAddr: *http.Server: net.Addr: *http.Server")
+	})
 }
 
 type GroupCycleServerProvider struct {
@@ -981,6 +1005,14 @@ type GroupCycleServerProvider struct {
 }
 
 func (p *GroupCycleServerProvider) Provide() *http.Server {
+	return &http.Server{}
+}
+
+type InterfaceCycleProvider struct {
+	Addr net.Addr `inject:""`
+}
+
+func (p *InterfaceCycleProvider) Provide() *http.Server {
 	return &http.Server{}
 }
 

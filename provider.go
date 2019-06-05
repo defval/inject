@@ -29,9 +29,7 @@ func createProvider(po *providerOptions) (_ provider.Provider, err error) {
 		}
 
 		return object.New(po.provider, options...)
-	case provider.Direct:
-		return direct.New(po.provider), nil
 	default:
-		panic("unknown provider type")
+		return direct.New(po.provider), nil
 	}
 }
