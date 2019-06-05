@@ -33,7 +33,11 @@ func (k Key) Value() reflect.Value {
 }
 
 func (k Key) String() string {
-	return fmt.Sprintf("%s", k.Type) // todo: add name
+	if k.Name == "" {
+		return fmt.Sprintf("%s", k.Type)
+	}
+
+	return fmt.Sprintf("%s[%s]", k.Type, k.Name)
 }
 
 // Provider

@@ -223,7 +223,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			inject.Provide(func() {}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_ProvideConstructor.func12.1 must have at least one return value")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func12.1 must have at least one return value")
 	})
 
 	t.Run("constructor more than two return values", func(t *testing.T) {
@@ -233,7 +233,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_ProvideConstructor.func13.1: constructor may have maximum two return values")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func13.1: constructor function must have maximum two return values")
 	})
 
 	t.Run("constructor with two types", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_ProvideConstructor.func14.1: second argument of constructor must be error, got *net.UDPAddr")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func14.1: second argument of constructor must be error, got *net.UDPAddr")
 	})
 
 	t.Run("duplicate", func(t *testing.T) {
@@ -480,7 +480,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 			}, inject.As(http.Server{})),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: argument for As() must be pointer to interface type, got http.Server")
+		require.EqualError(t, err, "could not compile container: could not create interface alias: interface type must be a pointer to interface")
 	})
 
 	t.Run("provide as struct pointer", func(t *testing.T) {
@@ -490,7 +490,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 			}, inject.As(new(http.Server))),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: argument for As() must be pointer to interface type, got *http.Server")
+		require.EqualError(t, err, "could not compile container: could not create interface alias: only interface supported")
 	})
 
 	t.Run("provide as not implemented interface", func(t *testing.T) {
@@ -500,7 +500,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 			}, inject.As(new(http.Handler))),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: *net.TCPAddr not implement http.Handler interface")
+		require.EqualError(t, err, "could not compile container: type *net.TCPAddr not implement http.Handler interface")
 	})
 
 	t.Run("provide as interface with struct injection", func(t *testing.T) {
@@ -607,7 +607,7 @@ func TestContainer_Extract(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		require.EqualError(t, container.Extract(&addr, inject.Name("second")), "type *net.TCPAddr not provided")
+		require.EqualError(t, container.Extract(&addr, inject.Name("second")), "type *net.TCPAddr[second] not provided")
 	})
 }
 
@@ -635,10 +635,10 @@ func TestContainer_Group(t *testing.T) {
 		container, err := inject.New(
 			inject.Provide(func() *net.TCPAddr {
 				return tcpAddr
-			}, inject.As(new(net.Addr))),
+			}, inject.As(new(net.Addr)), inject.WithName("tcp")),
 			inject.Provide(func() *net.UDPAddr {
 				return udpAddr
-			}, inject.As(new(net.Addr))),
+			}, inject.As(new(net.Addr)), inject.WithName("udp")),
 			inject.Provide(func(addrs []net.Addr) bool {
 				eqPtr(t, tcpAddr, addrs[0])
 				eqPtr(t, udpAddr, addrs[1])
@@ -885,17 +885,17 @@ func TestContainer_Replace(t *testing.T) {
 			inject.Replace(nil),
 		)
 
-		require.EqualError(t, err, "could not compile container: replace provider could not be nil")
+		require.EqualError(t, err, "could not compile container: could not provide nil")
 	})
 
 	t.Run("replace without interfaces", func(t *testing.T) {
 		_, err := inject.New(
-			inject.Replace(func() fmt.Stringer {
+			inject.Replace(func() *Stringer {
 				return &Stringer{}
-			}),
+			}, inject.As(new(fmt.Stringer))),
 		)
 
-		require.EqualError(t, err, "could not compile container: fmt.Stringer: no one interface has been replaced, use `inject.As()` for specify it")
+		require.EqualError(t, err, "could not compile container: type fmt.Stringer not provided")
 	})
 
 	t.Run("replace incorrect constructor signature", func(t *testing.T) {
@@ -903,7 +903,7 @@ func TestContainer_Replace(t *testing.T) {
 			inject.Replace(func() {}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: github.com/defval/inject_test.TestContainer_Replace.func5.1 must have at least one return value")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_Replace.func5.1 must have at least one return value")
 	})
 
 	t.Run("replace already provided type", func(t *testing.T) {
@@ -958,8 +958,30 @@ func TestContainer_Cycle(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: detect cycle: string: bool: int64: int32: bool")
+		require.EqualError(t, err, "could not compile container: cycle detected: bool: int32: int64: bool")
 	})
+
+	t.Run("group cycle", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(func(server *http.Server) *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, inject.As(new(net.Addr)), inject.WithName("tcp")),
+			inject.Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{}
+			}, inject.As(new(net.Addr)), inject.WithName("udp")),
+			inject.Provide(&GroupCycleServerProvider{}),
+		)
+
+		require.EqualError(t, err, "could not compile container: cycle detected: *net.TCPAddr[tcp]: *http.Server: []net.Addr: *net.TCPAddr[tcp]")
+	})
+}
+
+type GroupCycleServerProvider struct {
+	Addr []net.Addr `inject:""`
+}
+
+func (p *GroupCycleServerProvider) Provide() *http.Server {
+	return &http.Server{}
 }
 
 func TestContainer_CombinedProvider(t *testing.T) {
@@ -1017,7 +1039,7 @@ func TestContainer_CombinedProvider(t *testing.T) {
 			inject.Provide(&IncorrectConstructorSignatureProvider{}),
 		)
 
-		require.EqualError(t, err, "could not compile container: provide failed: reflect.methodValueCall must have at least one return value") // todo: fix error message
+		require.EqualError(t, err, "could not compile container: reflect.methodValueCall must have at least one return value") // todo: fix error message
 	})
 }
 

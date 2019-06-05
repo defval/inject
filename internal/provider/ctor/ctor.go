@@ -28,7 +28,7 @@ func IsValid(provider interface{}) (err error) {
 	}
 
 	if value.Type().NumOut() > 2 {
-		return errors.Errorf("%s: constructor may have maximum two return values", runtime.FuncForPC(value.Pointer()).Name())
+		return errors.Errorf("%s: constructor function must have maximum two return values", runtime.FuncForPC(value.Pointer()).Name())
 	}
 
 	if value.Type().NumOut() == 2 && !value.Type().Out(1).Implements(errorInterface) {

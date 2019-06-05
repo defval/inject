@@ -23,11 +23,13 @@ func Example() {
 		// controller interface group
 		inject.Provide(&AccountController{},
 			inject.As(new(Controller)), // add AccountController to controller group
-			inject.Exported(),          // inject all exported fields
+			inject.WithName("account"),
+			inject.Exported(), // inject all exported fields
 		),
 		inject.Provide(&AuthController{},
 			inject.As(new(Controller)), // add AuthController to controller group
-			inject.Exported(),          // inject all exported fields
+			inject.WithName("auth"),
+			inject.Exported(), // inject all exported fields
 		),
 	)
 

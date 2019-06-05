@@ -5,17 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/defval/inject/internal/provider"
+	"github.com/defval/inject/internal/graph"
 )
 
 // New creates a new container with provided options.
 func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
-		storage: &storage{
-			keys:        []provider.Key{},
-			definitions: map[provider.Key]*definition{},
-			ifaces:      map[reflect.Type][]*definition{},
-		},
+		storage: graph.NewStorage(),
 	}
 
 	// apply options.
@@ -34,7 +30,7 @@ func New(options ...Option) (_ *Container, err error) {
 type Container struct {
 	providers []*providerOptions
 	replacers []*providerOptions
-	storage   *storage
+	storage   *graph.Storage
 }
 
 // Extract populates given target pointer with type instance provided in the container.
@@ -65,18 +61,9 @@ func (c *Container) Extract(target interface{}, options ...ExtractOption) (err e
 		opt.apply(po)
 	}
 
-	// create a key to find in a storage
-	k := provider.Key{
-		Type: po.target.Type(),
-		Name: po.name,
-	}
-
-	newValue, err := c.storage.Value(k)
-	if err != nil {
+	if err = c.storage.Extract(po.name, targetValue); err != nil {
 		return errors.WithStack(err)
 	}
-
-	targetValue.Set(newValue)
 
 	return nil
 }
@@ -103,13 +90,37 @@ func (c *Container) registerProviders() (err error) {
 			return errors.New("could not provide nil")
 		}
 
-		var def *definition
-		if def, err = createDefinition(po); err != nil {
-			return errors.Wrapf(err, "provide failed")
+		prov, err := createProvider(po)
+		if err != nil {
+			return errors.WithStack(err)
 		}
 
-		if err = c.storage.Add(def); err != nil {
+		node := graph.NewProviderNode(po.name, prov)
+
+		if err = c.storage.Add(node); err != nil {
 			return errors.WithStack(err)
+		}
+
+		// create group and interface alias nodes
+		for _, iface := range po.implements {
+			ifaceNode, err := graph.NewInterfaceNode(po.name, node, iface)
+
+			if err != nil {
+				return errors.Wrapf(err, "could not create interface alias")
+			}
+
+			if err = c.storage.Add(ifaceNode); err != nil {
+				return errors.WithStack(err)
+			}
+
+			groupNode, err := c.storage.GroupNode(iface)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			if err = groupNode.Add(node); err != nil {
+				return errors.WithStack(err)
+			}
 		}
 	}
 
@@ -119,16 +130,40 @@ func (c *Container) registerProviders() (err error) {
 func (c *Container) applyReplacers() (err error) {
 	for _, po := range c.replacers {
 		if po.provider == nil {
-			return errors.New("replace provider could not be nil")
+			return errors.New("could not provide nil")
 		}
 
-		var def *definition
-		if def, err = createDefinition(po); err != nil {
-			return errors.Wrapf(err, "provide failed")
-		}
-
-		if err = c.storage.Replace(def); err != nil {
+		prov, err := createProvider(po)
+		if err != nil {
 			return errors.WithStack(err)
+		}
+
+		node := graph.NewProviderNode(po.name, prov)
+
+		if err = c.storage.Replace(node); err != nil {
+			return errors.WithStack(err)
+		}
+
+		// create group and interface alias nodes
+		for _, iface := range po.implements {
+			ifaceNode, err := graph.NewInterfaceNode(po.name, node, iface)
+
+			if err != nil {
+				return errors.Wrapf(err, "could not create interface alias")
+			}
+
+			if err = c.storage.Replace(ifaceNode); err != nil {
+				return errors.WithStack(err)
+			}
+
+			groupNode, err := c.storage.GroupNode(iface)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			if err = groupNode.Replace(node); err != nil {
+				return errors.WithStack(err)
+			}
 		}
 	}
 
