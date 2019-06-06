@@ -40,7 +40,7 @@ func (n *ProviderNode) Extract(target reflect.Value) (err error) {
 
 	var arguments []reflect.Value
 	for _, argumentNode := range n.in {
-		argumentTarget := argumentNode.Key().Value()
+		argumentTarget := reflect.New(argumentNode.Key().Type).Elem()
 
 		if err = argumentNode.Extract(argumentTarget); err != nil {
 			return errors.WithStack(err)

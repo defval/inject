@@ -11,11 +11,6 @@ type Key struct {
 	Name string
 }
 
-// Value creates new value of key type.
-func (k Key) Value() reflect.Value {
-	return reflect.New(k.Type).Elem()
-}
-
 func (k Key) String() string {
 	if k.Name == "" {
 		return fmt.Sprintf("%s", k.Type)
