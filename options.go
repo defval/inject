@@ -7,7 +7,7 @@ type Option interface{ apply(*Container) }
 
 // Provide returns container option that explains how to create an instance of a type inside a container.
 //
-// The first argument is the provider. The provider can be constructor function, a pointer to a structure (or just
+// The first argument is the instanceProvider. The instanceProvider can be constructor function, a pointer to a structure (or just
 // structure) or everything else. There are some differences between these providers.
 //
 // A constructor function is a function that creates an instance of the required type. It can take an unlimited
@@ -117,7 +117,7 @@ func WithName(name string) ProvideOption {
 	})
 }
 
-// As specifies interfaces that implement provider instance.
+// As specifies interfaces that implement instanceProvider instance.
 func As(ifaces ...interface{}) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.implements = append(provider.implements, ifaces...)

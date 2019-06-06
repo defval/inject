@@ -4,8 +4,6 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-
-	"github.com/defval/inject/internal/provider"
 )
 
 // NewGroupNode
@@ -27,7 +25,7 @@ func NewGroupNode(iface interface{}) (_ *GroupNode, err error) {
 	}
 
 	return &GroupNode{
-		key: provider.Key{
+		key: Key{
 			Type: reflect.SliceOf(typ),
 		},
 		in: make([]*ProviderNode, 0),
@@ -36,13 +34,13 @@ func NewGroupNode(iface interface{}) (_ *GroupNode, err error) {
 
 // GroupNode
 type GroupNode struct {
-	key provider.Key
+	key Key
 
 	in []*ProviderNode
 }
 
 // Key
-func (n *GroupNode) Key() provider.Key {
+func (n *GroupNode) Key() Key {
 	return n.key
 }
 

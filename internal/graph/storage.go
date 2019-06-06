@@ -5,22 +5,20 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-
-	"github.com/defval/inject/internal/provider"
 )
 
 // NewStorage
 func NewStorage() *Storage {
 	return &Storage{
-		keys:  make([]provider.Key, 0),
-		nodes: make(map[provider.Key]Node),
+		keys:  make([]Key, 0),
+		nodes: make(map[Key]Node),
 	}
 }
 
 // Storage
 type Storage struct {
-	keys  []provider.Key
-	nodes map[provider.Key]Node
+	keys  []Key
+	nodes map[Key]Node
 }
 
 // Check
@@ -64,7 +62,7 @@ func (s *Storage) GroupNode(iface interface{}) (_ *GroupNode, err error) {
 
 // Get
 func (s *Storage) Extract(name string, value reflect.Value) (err error) {
-	k := provider.Key{
+	k := Key{
 		Type: value.Type(),
 		Name: name,
 	}
@@ -98,7 +96,7 @@ func (s *Storage) Compile() (err error) {
 }
 
 func (s *Storage) detectCycles() (err error) {
-	visited := make(map[provider.Key]visitStatus)
+	visited := make(map[Key]visitStatus)
 
 	for _, k := range s.keys {
 		if err = s.visit(visited, s.nodes[k]); err != nil {
@@ -109,7 +107,7 @@ func (s *Storage) detectCycles() (err error) {
 	return nil
 }
 
-func (s *Storage) visit(visited map[provider.Key]visitStatus, node Node) (err error) {
+func (s *Storage) visit(visited map[Key]visitStatus, node Node) (err error) {
 	if visited[node.Key()] == visitMarkPermanent {
 		return
 	}

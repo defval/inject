@@ -4,18 +4,16 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-
-	"github.com/defval/inject/internal/provider"
 )
 
 // NewProviderNode
-func NewProviderNode(name string, p provider.Provider) (_ *ProviderNode) {
+func NewProviderNode(name string, p InstanceProvider) (_ *ProviderNode) {
 	node := &ProviderNode{
-		key: provider.Key{
+		key: Key{
 			Type: p.ResultType(),
 			Name: name,
 		},
-		Provider: p,
+		InstanceProvider: p,
 	}
 
 	return node
@@ -23,14 +21,14 @@ func NewProviderNode(name string, p provider.Provider) (_ *ProviderNode) {
 
 // ProviderNode
 type ProviderNode struct {
-	provider.Provider
+	InstanceProvider
 
 	in       []Node
-	key      provider.Key
+	key      Key
 	instance reflect.Value
 }
 
-func (n *ProviderNode) Key() provider.Key {
+func (n *ProviderNode) Key() Key {
 	return n.key
 }
 
@@ -51,7 +49,7 @@ func (n *ProviderNode) Extract(target reflect.Value) (err error) {
 		arguments = append(arguments, argumentTarget)
 	}
 
-	value, err := n.Provider.Provide(arguments)
+	value, err := n.Provide(arguments)
 
 	if err != nil {
 		return errors.Wrapf(err, "%s", n.key)

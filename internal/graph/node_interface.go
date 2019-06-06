@@ -4,8 +4,6 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-
-	"github.com/defval/inject/internal/provider"
 )
 
 // NewInterfaceNode
@@ -27,7 +25,7 @@ func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *In
 	}
 
 	return &InterfaceNode{
-		key: provider.Key{
+		key: Key{
 			Type: typ,
 			Name: name,
 		},
@@ -37,11 +35,11 @@ func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *In
 
 // InterfaceNode
 type InterfaceNode struct {
-	key  provider.Key
+	key  Key
 	node *ProviderNode
 }
 
-func (n *InterfaceNode) Key() provider.Key {
+func (n *InterfaceNode) Key() Key {
 	return n.key
 }
 

@@ -90,7 +90,7 @@ func (c *Container) registerProviders() (err error) {
 			return errors.New("could not provide nil")
 		}
 
-		prov, err := createProvider(po)
+		prov, err := determineInstanceProvider(po)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -133,7 +133,7 @@ func (c *Container) applyReplacers() (err error) {
 			return errors.New("could not provide nil")
 		}
 
-		prov, err := createProvider(po)
+		prov, err := determineInstanceProvider(po)
 		if err != nil {
 			return errors.WithStack(err)
 		}

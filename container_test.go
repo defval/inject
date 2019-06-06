@@ -223,7 +223,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			inject.Provide(func() {}),
 		)
 
-		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func12.1 must have at least one return value")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func12.1 constructor function must have at least one return value")
 	})
 
 	t.Run("constructor more than two return values", func(t *testing.T) {
@@ -233,7 +233,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func13.1: constructor function must have maximum two return values")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func13.1 constructor function must have maximum two return values")
 	})
 
 	t.Run("constructor with two types", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 			}),
 		)
 
-		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func14.1: second argument of constructor must be error, got *net.UDPAddr")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_ProvideConstructor.func14.1 second argument of constructor must be error, got *net.UDPAddr")
 	})
 
 	t.Run("duplicate", func(t *testing.T) {
@@ -893,7 +893,7 @@ func TestContainer_Replace(t *testing.T) {
 		eqPtr(t, s, mockStringer)
 	})
 
-	t.Run("replace nil provider", func(t *testing.T) {
+	t.Run("replace nil instanceProvider", func(t *testing.T) {
 		_, err := inject.New(
 			inject.Replace(nil),
 		)
@@ -916,7 +916,7 @@ func TestContainer_Replace(t *testing.T) {
 			inject.Replace(func() {}),
 		)
 
-		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_Replace.func5.1 must have at least one return value")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_Replace.func5.1 constructor function must have at least one return value")
 	})
 
 	t.Run("replace already provided type", func(t *testing.T) {
@@ -1001,6 +1001,8 @@ func TestContainer_Cycle(t *testing.T) {
 }
 
 type GroupCycleServerProvider struct {
+	inject.Provider
+
 	Addr []net.Addr `inject:""`
 }
 
@@ -1009,6 +1011,8 @@ func (p *GroupCycleServerProvider) Provide() *http.Server {
 }
 
 type InterfaceCycleProvider struct {
+	inject.Provider
+
 	Addr net.Addr `inject:""`
 }
 
@@ -1071,21 +1075,31 @@ func TestContainer_CombinedProvider(t *testing.T) {
 			inject.Provide(&IncorrectConstructorSignatureProvider{}),
 		)
 
-		require.EqualError(t, err, "could not compile container: reflect.methodValueCall must have at least one return value") // todo: fix error message
+		require.EqualError(t, err, "could not compile container: reflect.methodValueCall constructor function must have at least one return value") // todo: fix error message
+	})
+
+	t.Run("combined provider incorrect constructor name", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(&IncorrectMethodNameProvider{}),
+		)
+
+		require.EqualError(t, err, "could not compile container: combined provider must have Provide() method")
 	})
 }
 
 // AdminServerProvider
 type AdminServerProvider struct {
+	inject.Provider
 	Mux *http.ServeMux `inject:"admin"`
 }
 
-func (s *AdminServerProvider) Provide() (*http.Server, error) {
+func (s AdminServerProvider) Provide() (*http.Server, error) {
 	return &http.Server{Handler: s.Mux}, nil
 }
 
 // AdminServerExportedProvider
 type AdminServerExportedProvider struct {
+	inject.Provider
 	Mux *http.ServeMux
 }
 
@@ -1094,7 +1108,9 @@ func (s *AdminServerExportedProvider) Provide() (*http.Server, error) {
 }
 
 // ServerFailedBuildProvider
-type ServerFailedBuildProvider struct{}
+type ServerFailedBuildProvider struct {
+	inject.Provider
+}
 
 func (s *ServerFailedBuildProvider) Provide() (*http.Server, error) {
 	return nil, errors.New("server build error")
@@ -1102,6 +1118,14 @@ func (s *ServerFailedBuildProvider) Provide() (*http.Server, error) {
 
 // IncorrectConstructorSignatureProvider
 type IncorrectConstructorSignatureProvider struct {
+	inject.Provider
 }
 
 func (p *IncorrectConstructorSignatureProvider) Provide() {}
+
+// IncorrectConstructorSignatureProvider
+type IncorrectMethodNameProvider struct {
+	inject.Provider
+}
+
+func (p *IncorrectMethodNameProvider) Providing() {}

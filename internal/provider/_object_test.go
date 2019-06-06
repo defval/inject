@@ -1,4 +1,4 @@
-package object_test
+package provider_test
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/defval/inject/internal/provider/object"
+	"github.com/defval/inject/internal/provider"
 )
 
 // StructWithOnlyFields
@@ -27,9 +27,21 @@ type StructDependency struct {
 	AnotherServer *http.Server `anotherTag:"another"`
 }
 
+func TestNew(t *testing.T) {
+	t.Run("nil provider", func(t *testing.T) {
+		_, err := provider.NewObjectProvider(nil, "inject", false)
+		require.EqualError(t, err, "only struct and not nil pointer to struct may be an object provider, got nil")
+	})
+
+	t.Run("not struct pointer cause error", func(t *testing.T) {
+		_, err := provider.NewObjectProvider("string", "inject", false)
+		require.EqualError(t, err, "only struct and not nil pointer to struct may be an object provider, got string")
+	})
+}
+
 func TestStructPointerProvider_Arguments(t *testing.T) {
-	t.Run("all fields with tag are arguments", func(t *testing.T) {
-		p, _ := object.New(&StructDependency{})
+	t.Run("all fields with Tag are arguments", func(t *testing.T) {
+		p, _ := provider.NewObjectProvider(&StructDependency{}, "inject", false)
 
 		args := p.Arguments()
 		require.Len(t, args, 2)
@@ -40,7 +52,7 @@ func TestStructPointerProvider_Arguments(t *testing.T) {
 	})
 
 	t.Run("with provider.Exported() option all public fields are arguments", func(t *testing.T) {
-		p, _ := object.New(&StructDependency{}, object.Exported())
+		p, _ := provider.NewObjectProvider(&StructDependency{}, "inject", true)
 
 		args := p.Arguments()
 		require.Len(t, args, 5)
@@ -56,8 +68,8 @@ func TestStructPointerProvider_Arguments(t *testing.T) {
 		require.Equal(t, "", args[4].Name)
 	})
 
-	t.Run("change tag works correctly", func(t *testing.T) {
-		p, _ := object.New(&StructDependency{}, object.Tag("anotherTag"))
+	t.Run("change Tag works correctly", func(t *testing.T) {
+		p, _ := provider.NewObjectProvider(&StructDependency{}, "anotherTag", false)
 		args := p.Arguments()
 		require.Len(t, args, 1)
 		require.Equal(t, "*http.Server", args[0].Type.String())
@@ -66,7 +78,7 @@ func TestStructPointerProvider_Arguments(t *testing.T) {
 
 func TestStructPointerProvider_Provide(t *testing.T) {
 	t.Run("provide", func(t *testing.T) {
-		p, _ := object.New(&StructDependency{})
+		p, _ := provider.NewObjectProvider(&StructDependency{}, "inject", false)
 
 		server := &http.Server{}
 		addr := &net.TCPAddr{}
