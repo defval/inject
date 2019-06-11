@@ -20,7 +20,7 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 go get -u github.com/defval/inject
 ```
 
-## Quickstart
+## Quickstart example
 
 ### Controller interface
 
@@ -93,7 +93,11 @@ container, err := inject.New(
 if err != nil {
     // handle err
 }
+```
 
+### Extract type
+
+```go
 // extract type
 var server *http.Server
 if err = container.Extract(&server); err != nil {
