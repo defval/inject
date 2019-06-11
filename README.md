@@ -22,58 +22,20 @@ go get -u github.com/defval/inject
 
 ## Quickstart
 
+### Controller interface
+
 ```go
-package main
-
-import (
-	"io"
-	"net/http"
-
-	"github.com/defval/inject"
-)
-
-func main() {
-	container, err := inject.New(
-		inject.Provide(NewMux, inject.As(new(http.Handler))),
-		inject.Provide(NewServer),
-		inject.Provide(&AccountController{}, inject.As(new(Controller))),
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	var server *http.Server
-	if err = container.Extract(&server); err != nil {
-		panic(err)
-	}
-
-	// start server
-}
-
-// NewMux creates a new http mux.
-func NewMux(controllers []Controller) *http.ServeMux {
-	mux := &http.ServeMux{}
-
-	for _, ctrl := range controllers {
-		ctrl.Register(mux)
-	}
-
-	return mux
-}
-
-// NewServer creates a new http server.
-func NewServer(handler http.Handler) *http.Server {
-	return &http.Server{
-		Handler: handler,
-	}
-}
-
 // Controller interface.
 type Controller interface {
 	Register(mux *http.ServeMux)
 }
+```
 
+### Controller
+
+`AccountController` implements `Controller` interface.
+
+```go
 // AccountController contains account related http methods.
 type AccountController struct {
 }
@@ -86,5 +48,57 @@ func (c *AccountController) Register(mux *http.ServeMux) {
 func (c *AccountController) Index(writer http.ResponseWriter, request *http.Request) {
 	_, _ = io.WriteString(writer, "account")
 }
+```
 
+### HTTP Mux
+
+Define `*http.ServeMux` constructor and register all controllers routes.
+For this we use a group of interfaces.
+
+```go
+// NewMux creates a new http mux.
+func NewMux(controllers []Controller) *http.ServeMux {
+	mux := &http.ServeMux{}
+
+	for _, ctrl := range controllers {
+		ctrl.Register(mux)
+	}
+
+	return mux
+}
+```
+
+### Provide server
+
+The server needs a `http.Handler` to work.
+
+```go
+// NewServer creates a new http server.
+func NewServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler: handler,
+	}
+}
+```
+
+### Build container
+
+```go
+container, err := inject.New(
+    inject.Provide(NewMux, inject.As(new(http.Handler))), // provide *http.ServeMux as http.Handler interface
+    inject.Provide(NewServer),
+    inject.Provide(&AccountController{}, inject.As(new(Controller))), // inject.As automatically creates a group []Controller 
+)
+
+if err != nil {
+    // handle err
+}
+
+// extract type
+var server *http.Server
+if err = container.Extract(&server); err != nil {
+    // handle err
+}
+
+server.ListenAndServe()
 ```
