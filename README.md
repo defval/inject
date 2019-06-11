@@ -20,9 +20,11 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 go get -u github.com/defval/inject
 ```
 
-## Quickstart example
+## Quickstart
 
-### Controller interface
+### Describe dependencies
+
+##### Controller interface
 
 ```go
 // Controller interface.
@@ -31,7 +33,7 @@ type Controller interface {
 }
 ```
 
-### Controller
+##### Controller
 
 `AccountController` implements `Controller` interface.
 
@@ -50,7 +52,7 @@ func (c *AccountController) Index(writer http.ResponseWriter, request *http.Requ
 }
 ```
 
-### HTTP Mux
+##### HTTP Mux
 
 Define `*http.ServeMux` constructor and register all controllers routes.
 For this we use a group of interfaces.
@@ -68,7 +70,7 @@ func NewMux(controllers []Controller) *http.ServeMux {
 }
 ```
 
-### Provide server
+##### Server
 
 The server needs a `http.Handler` to work.
 
