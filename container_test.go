@@ -449,17 +449,46 @@ func TestContainer_ProvideAs(t *testing.T) {
 		require.Equal(t, "test", addr.(*net.TCPAddr).Zone)
 	})
 
-	t.Run("provide duplicate interface without name", func(t *testing.T) {
-		_, err := inject.New(
+	t.Run("extract no unique interface instance", func(t *testing.T) {
+		tcpAddr := &net.TCPAddr{}
+		udpAddr := &net.UDPAddr{}
+
+		container, err := inject.New(
 			inject.Provide(func() *net.TCPAddr {
-				return &net.TCPAddr{}
+				return tcpAddr
 			}, inject.As(new(net.Addr))),
 			inject.Provide(func() *net.UDPAddr {
-				return &net.UDPAddr{}
+				return udpAddr
 			}, inject.As(new(net.Addr))),
 		)
 
-		require.EqualError(t, err, "could not compile container: net.Addr: use named definition if you have several instances of the same type")
+		require.NoError(t, err)
+
+		var addr net.Addr
+		require.EqualError(t, container.Extract(&addr), "could not extract net.Addr: you have several instances of this interface type, use WithName() to identify it")
+	})
+
+	t.Run("try provide no unique interface instance", func(t *testing.T) {
+		tcpAddr := &net.TCPAddr{}
+		udpAddr := &net.UDPAddr{}
+
+		container, err := inject.New(
+			inject.Provide(func() *net.TCPAddr {
+				return tcpAddr
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func() *net.UDPAddr {
+				return udpAddr
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func(addr net.Addr) bool {
+				return true
+			}),
+		)
+
+		require.NoError(t, err)
+
+		var b bool
+		require.EqualError(t, container.Extract(&b), "could not extract net.Addr: you have several instances of this interface type, use WithName() to identify it")
+
 	})
 
 	t.Run("provide as named interface", func(t *testing.T) {

@@ -23,7 +23,13 @@ type Storage struct {
 
 // Check
 func (s *Storage) Add(node Node) (err error) {
-	if _, ok := s.nodes[node.Key()]; ok {
+	if n, ok := s.nodes[node.Key()]; ok {
+		if ifaceNode, ok := n.(*InterfaceNode); ok {
+			ifaceNode.multiple = true
+
+			return nil
+		}
+
 		return errors.Errorf("%s: use named definition if you have several instances of the same type", node.Key())
 	}
 
