@@ -3,6 +3,7 @@ package graph
 import (
 	"reflect"
 
+	"github.com/emicklei/dot"
 	"github.com/pkg/errors"
 )
 
@@ -42,6 +43,16 @@ type GroupNode struct {
 // Key
 func (n *GroupNode) Key() Key {
 	return n.key
+}
+
+func (n *GroupNode) DotNode(graph *dot.Graph) dot.Node {
+	node := graph.Node(n.Key().String())
+	node.Attr("shape", "doubleoctagon")
+	node.Attr("fontname", "Helvetica")
+	node.Attr("color", "orange")
+	node.Attr("style", "filled")
+	node.Attr("fontcolor", "white")
+	return node
 }
 
 // Arguments

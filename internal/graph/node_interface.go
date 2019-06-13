@@ -3,6 +3,7 @@ package graph
 import (
 	"reflect"
 
+	"github.com/emicklei/dot"
 	"github.com/pkg/errors"
 )
 
@@ -42,6 +43,15 @@ type InterfaceNode struct {
 
 func (n *InterfaceNode) Key() Key {
 	return n.key
+}
+
+func (n *InterfaceNode) DotNode(graph *dot.Graph) dot.Node {
+	node := graph.Node(n.Key().String())
+	node.Attr("color", "royalblue")
+	node.Attr("fontcolor", "white")
+	node.Attr("fontname", "Helvetica")
+	node.Attr("style", "filled")
+	return node
 }
 
 func (n *InterfaceNode) Arguments() (args []Key) {

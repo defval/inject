@@ -2,6 +2,8 @@ package graph
 
 import (
 	"reflect"
+
+	"github.com/emicklei/dot"
 )
 
 // Arguments
@@ -20,5 +22,6 @@ type InstanceProvider interface {
 type Node interface {
 	Arguments
 	Key() Key
+	DotNode(graph *dot.Graph) dot.Node
 	Extract(target reflect.Value) (err error)
 }

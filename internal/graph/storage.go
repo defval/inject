@@ -86,8 +86,6 @@ func (s *Storage) Extract(name string, value reflect.Value) (err error) {
 
 // Compile
 func (s *Storage) Compile() (err error) {
-	defer s.Graph()
-
 	// link provide nodes
 	for _, node := range s.nodes {
 		if provideNode, ok := node.(*ProviderNode); ok {
@@ -110,16 +108,16 @@ func (s *Storage) Graph() *dot.Graph {
 	graph := dot.NewGraph(dot.Directed)
 
 	for _, node := range s.nodes {
-		graphNode := graph.Node(node.Key().String())
-
-		switch node.(type) {
-		case *ProviderNode:
-			graphNode.Box()
-		}
+		graphNode := node.DotNode(graph)
 
 		for _, in := range node.Arguments() {
-			argGraphNode := graph.Node(in.String())
-			graph.Edge(argGraphNode, graphNode)
+			_, exists := s.nodes[in]
+
+			if !exists {
+				continue
+			}
+
+			graph.Edge(s.nodes[in].DotNode(graph), graphNode)
 		}
 	}
 
