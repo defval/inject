@@ -111,12 +111,6 @@ func (s *Storage) Graph() *dot.Graph {
 		graphNode := s.nodes[k].DotNode(graph)
 
 		for _, in := range s.nodes[k].Arguments() {
-			_, exists := s.nodes[in]
-
-			if !exists {
-				continue
-			}
-
 			graph.Edge(s.nodes[in].DotNode(graph), graphNode)
 		}
 	}
