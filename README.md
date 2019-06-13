@@ -145,4 +145,6 @@ digraph  {
 
 ### Image
 
-<img src="https://github.com/defval/inject/raw/12-visualize-graph/graph.png">
+This is visualization of container example.
+
+<img src="https://github.com/defval/inject/raw/master/graph.png">
