@@ -44,6 +44,15 @@ func (n *GroupNode) Key() Key {
 	return n.key
 }
 
+// Arguments
+func (n *GroupNode) Arguments() (args []Key) {
+	for _, in := range n.in {
+		args = append(args, in.Key())
+	}
+
+	return args
+}
+
 // Check
 func (n *GroupNode) Add(node *ProviderNode) (err error) {
 	if !node.ResultType().Implements(n.key.Type.Elem()) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/emicklei/dot"
 	"github.com/pkg/errors"
 )
 
@@ -60,6 +61,7 @@ func (s *Storage) GroupNode(iface interface{}) (_ *GroupNode, err error) {
 	}
 
 	if _, exists := s.nodes[groupNode.Key()]; !exists {
+		s.keys = append(s.keys, groupNode.Key())
 		s.nodes[groupNode.Key()] = groupNode
 	}
 
@@ -84,6 +86,8 @@ func (s *Storage) Extract(name string, value reflect.Value) (err error) {
 
 // Compile
 func (s *Storage) Compile() (err error) {
+	defer s.Graph()
+
 	// link provide nodes
 	for _, node := range s.nodes {
 		if provideNode, ok := node.(*ProviderNode); ok {
@@ -99,6 +103,29 @@ func (s *Storage) Compile() (err error) {
 	}
 
 	return s.detectCycles()
+}
+
+// Graph
+func (s *Storage) Graph() *dot.Graph {
+	graph := dot.NewGraph(dot.Directed)
+
+	for _, node := range s.nodes {
+		graphNode := graph.Node(node.Key().String())
+
+		switch node.(type) {
+		case *ProviderNode:
+			graphNode.Box()
+		}
+
+		for _, in := range node.Arguments() {
+			argGraphNode := graph.Node(in.String())
+			graph.Edge(argGraphNode, graphNode)
+		}
+	}
+
+	fmt.Println(graph.String())
+
+	return graph
 }
 
 func (s *Storage) detectCycles() (err error) {

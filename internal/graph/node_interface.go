@@ -44,6 +44,10 @@ func (n *InterfaceNode) Key() Key {
 	return n.key
 }
 
+func (n *InterfaceNode) Arguments() (args []Key) {
+	return append(args, n.node.Key())
+}
+
 func (n *InterfaceNode) Extract(target reflect.Value) (err error) {
 	if n.multiple {
 		return errors.Errorf("could not extract %s: you have several instances of this interface type, use WithName() to identify it", n.Key())
