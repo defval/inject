@@ -33,6 +33,11 @@ type Container struct {
 	storage   *graph.Storage
 }
 
+// String
+func (c *Container) String() string {
+	return c.storage.Graph().String()
+}
+
 // Extract populates given target pointer with type instance provided in the container.
 //
 //   var server *http.Server

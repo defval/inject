@@ -123,8 +123,6 @@ func (s *Storage) Graph() *dot.Graph {
 		}
 	}
 
-	fmt.Println(graph.String())
-
 	return graph
 }
 
