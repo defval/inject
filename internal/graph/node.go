@@ -1,33 +1,27 @@
 package graph
 
 import (
-	"fmt"
 	"reflect"
+
+	"github.com/emicklei/dot"
 )
 
-// Key
-type Key struct {
-	Type reflect.Type
-	Name string
+// Arguments
+type Arguments interface {
+	Arguments() (args []Key)
 }
 
-func (k Key) String() string {
-	if k.Name == "" {
-		return fmt.Sprintf("%s", k.Type)
-	}
-
-	return fmt.Sprintf("%s[%s]", k.Type, k.Name)
-}
-
-// ObjectProvider
+// InstanceProvider
 type InstanceProvider interface {
+	Arguments
 	Provide(arguments []reflect.Value) (reflect.Value, error)
 	ResultType() reflect.Type
-	Arguments() (args []Key)
 }
 
 // Node
 type Node interface {
+	Arguments
 	Key() Key
+	DotNode(graph *dot.Graph) dot.Node
 	Extract(target reflect.Value) (err error)
 }

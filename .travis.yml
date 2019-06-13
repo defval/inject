@@ -1,19 +1,11 @@
 go_import_path: github.com/defval/inject
-
 language: go
-
-go:
-  - 1.12.x
-  - 1.11.x
-  - tip
-
-os:
-  - linux
-  - osx
+sudo: false
 
 matrix:
-  allow_failures:
-    - go: tip
+  include:
+    - go: "1.11"
+    - go: "1.12"
   fast_finish: true
 
 env:
@@ -28,4 +20,3 @@ script:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 
-sudo: false

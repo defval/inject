@@ -108,3 +108,43 @@ if err = container.Extract(&server); err != nil {
 
 server.ListenAndServe()
 ```
+
+## Visualize dependency graph
+
+Container supports `fmt.Stringer` interface. The string is a graph
+description via [graphviz dot language](https://www.graphviz.org/).
+
+### Raw output
+
+```
+digraph  {
+	n4[color="limegreen",fontcolor="white",fontname="Helvetica",label="*http.ServeMux",shape="box",style="filled"];
+	n2[color="limegreen",fontcolor="white",fontname="Helvetica",label="*http.Server",shape="box",style="filled"];
+	n7[color="limegreen",fontcolor="white",fontname="Helvetica",label="*inject_test.AccountController[account]",shape="box",style="filled"];
+	n9[color="limegreen",fontcolor="white",fontname="Helvetica",label="*inject_test.AuthController[auth]",shape="box",style="filled"];
+	n1[color="limegreen",fontcolor="white",fontname="Helvetica",label="*log.Logger",shape="box",style="filled"];
+	n6[color="orange",fontcolor="white",fontname="Helvetica",label="[]http.Handler",shape="doubleoctagon",style="filled"];
+	n5[color="orange",fontcolor="white",fontname="Helvetica",label="[]inject_test.Controller",shape="doubleoctagon",style="filled"];
+	n3[color="royalblue",fontcolor="white",fontname="Helvetica",label="http.Handler",style="filled"];
+	n8[color="royalblue",fontcolor="white",fontname="Helvetica",label="inject_test.Controller[account]",style="filled"];
+	n10[color="royalblue",fontcolor="white",fontname="Helvetica",label="inject_test.Controller[auth]",style="filled"];
+	n4->n3;
+	n4->n6;
+	n7->n8;
+	n7->n5;
+	n9->n5;
+	n9->n10;
+	n1->n2;
+	n1->n4;
+	n1->n7;
+	n1->n9;
+	n5->n4;
+	n3->n2;
+}
+```
+
+### Image
+
+This is visualization of container example.
+
+<img src="https://github.com/defval/inject/raw/master/graph.png">

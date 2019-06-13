@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/emicklei/dot"
 	"github.com/pkg/errors"
 )
 
@@ -60,6 +61,7 @@ func (s *Storage) GroupNode(iface interface{}) (_ *GroupNode, err error) {
 	}
 
 	if _, exists := s.nodes[groupNode.Key()]; !exists {
+		s.keys = append(s.keys, groupNode.Key())
 		s.nodes[groupNode.Key()] = groupNode
 	}
 
@@ -101,6 +103,21 @@ func (s *Storage) Compile() (err error) {
 	return s.detectCycles()
 }
 
+// Graph
+func (s *Storage) Graph() *dot.Graph {
+	graph := dot.NewGraph(dot.Directed)
+
+	for _, k := range s.keys {
+		graphNode := s.nodes[k].DotNode(graph)
+
+		for _, in := range s.nodes[k].Arguments() {
+			graph.Edge(s.nodes[in].DotNode(graph), graphNode)
+		}
+	}
+
+	return graph
+}
+
 func (s *Storage) detectCycles() (err error) {
 	visited := make(map[Key]visitStatus)
 
@@ -124,24 +141,9 @@ func (s *Storage) visit(visited map[Key]visitStatus, node Node) (err error) {
 
 	visited[node.Key()] = visitMarkTemporary
 
-	switch concreteNode := node.(type) {
-	case *ProviderNode:
-		for _, in := range concreteNode.in {
-			if err = s.visit(visited, in); err != nil {
-				return errors.Wrapf(err, "%s", concreteNode.Key())
-			}
-		}
-	case *InterfaceNode:
-		for _, in := range concreteNode.node.in {
-			if err = s.visit(visited, in); err != nil {
-				return errors.Wrapf(err, "%s", concreteNode.Key())
-			}
-		}
-	case *GroupNode:
-		for _, in := range concreteNode.in {
-			if err = s.visit(visited, in); err != nil {
-				return errors.Wrapf(err, "%s", concreteNode.Key())
-			}
+	for _, inKey := range node.Arguments() {
+		if err = s.visit(visited, s.nodes[inKey]); err != nil {
+			return errors.Wrapf(err, "%s", node.Key())
 		}
 	}
 

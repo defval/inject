@@ -1025,7 +1025,7 @@ func TestContainer_Cycle(t *testing.T) {
 			inject.Provide(&InterfaceCycleProvider{}),
 		)
 
-		require.EqualError(t, err, "could not compile container: cycle detected: *net.TCPAddr: *http.Server: net.Addr: *http.Server")
+		require.EqualError(t, err, "could not compile container: cycle detected: *net.TCPAddr: *http.Server: net.Addr: *net.TCPAddr")
 	})
 }
 
@@ -1158,3 +1158,24 @@ type IncorrectMethodNameProvider struct {
 }
 
 func (p *IncorrectMethodNameProvider) Providing() {}
+
+func TestContainer_String(t *testing.T) {
+	t.Run("container graph", func(t *testing.T) {
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
+				return &http.ServeMux{}
+			}, inject.As(new(http.Handler))),
+			inject.Provide(func(mux http.Handler) *http.Server {
+				return &http.Server{
+					Handler: mux,
+				}
+			}),
+			inject.Provide(func(s *http.Server) bool {
+				return true
+			}),
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, "digraph  {\n\t\n\tn1[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"*http.ServeMux\",shape=\"box\",style=\"filled\"];\n\tn4[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"*http.Server\",shape=\"box\",style=\"filled\"];\n\tn3[color=\"orange\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"[]http.Handler\",shape=\"doubleoctagon\",style=\"filled\"];\n\tn5[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"bool\",shape=\"box\",style=\"filled\"];\n\tn2[color=\"royalblue\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"http.Handler\",style=\"filled\"];\n\tn1->n2;\n\tn1->n3;\n\tn4->n5;\n\tn2->n4;\n\t\n}", container.String())
+	})
+}
