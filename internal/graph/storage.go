@@ -107,10 +107,10 @@ func (s *Storage) Compile() (err error) {
 func (s *Storage) Graph() *dot.Graph {
 	graph := dot.NewGraph(dot.Directed)
 
-	for _, node := range s.nodes {
-		graphNode := node.DotNode(graph)
+	for _, k := range s.keys {
+		graphNode := s.nodes[k].DotNode(graph)
 
-		for _, in := range node.Arguments() {
+		for _, in := range s.nodes[k].Arguments() {
 			_, exists := s.nodes[in]
 
 			if !exists {
@@ -147,24 +147,9 @@ func (s *Storage) visit(visited map[Key]visitStatus, node Node) (err error) {
 
 	visited[node.Key()] = visitMarkTemporary
 
-	switch concreteNode := node.(type) {
-	case *ProviderNode:
-		for _, in := range concreteNode.in {
-			if err = s.visit(visited, in); err != nil {
-				return errors.Wrapf(err, "%s", concreteNode.Key())
-			}
-		}
-	case *InterfaceNode:
-		for _, in := range concreteNode.node.in {
-			if err = s.visit(visited, in); err != nil {
-				return errors.Wrapf(err, "%s", concreteNode.Key())
-			}
-		}
-	case *GroupNode:
-		for _, in := range concreteNode.in {
-			if err = s.visit(visited, in); err != nil {
-				return errors.Wrapf(err, "%s", concreteNode.Key())
-			}
+	for _, inKey := range node.Arguments() {
+		if err = s.visit(visited, s.nodes[inKey]); err != nil {
+			return errors.Wrapf(err, "%s", node.Key())
 		}
 	}
 
