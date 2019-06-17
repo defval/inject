@@ -204,17 +204,59 @@ if os.Getenv("ENV") == "dev" {
 container, err := inject.New(options...)
 ```
 
-## Use struct providing
-
-TBD
-
 ## Use named definitions
 
-TBD
+```go
+container, err := inject.New{
+	inject.Provide(NewDefaultServer, inject.WithName("default")),
+	inject.Provide(NewAdminServer, inject.WithName("admin")),
+}
+
+var defaultServer *http.Server
+var adminServer *http.Server
+
+container.Extract(&defaultServer, inject.Name("default"))
+container.Extract(&adminServer, inject.Name("admin"))
+```
+
+Or with struct provider:
+
+```go
+// Application
+type Application struct {
+    Server *http.Server `inject:"default"`
+    AdminServer *http.Server `inject:"admin"`
+}
+```
+
+```go
+container, err := inject.New(
+    inject.Provide(NewDefaultServer, inject.WithName("default")), 
+    inject.Provide(NewAdminServer, inject.WithName("admin")),
+    inject.Provide(&Application)
+)
+```
+
+If you don't like tags as much as I do, then look to
+`inject.Exported()` provide option.
 
 ## Use combined provider
 
-TBD
+For advanced providing use combined provider. It's both - struct and constructor providers.
+
+```go
+// ServerProvider
+type ServerProvider struct {
+	Mux *http.Server `inject:"dude_mux"`
+}
+
+// Provide is a container predefined constructor function for *http.Server.
+func (p *ServerProvider) Provide() *http.Server {
+	return &http.Server{
+		Handler: p.Mux,
+	}
+}
+```
 
 ## Visualize dependency graph [unreleased]
 
