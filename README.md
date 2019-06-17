@@ -198,7 +198,7 @@ var BillingBundle = inject.Bundle(
 var options []inject.Options
 
 if os.Getenv("ENV") == "dev" {
-	options = append(options, inject.Replace(billing.NewInvoiceRepositoryMock), inject.As(new(InvoiceRepository)))
+    options = append(options, inject.Replace(billing.NewInvoiceRepositoryMock), inject.As(new(InvoiceRepository)))
 }
 
 container, err := inject.New(options...)
