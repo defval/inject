@@ -5,7 +5,7 @@ import (
 	"github.com/defval/inject/internal/provider"
 )
 
-// Provider ...
+// Provider helper struct that indicates that structure is injection provider.
 type Provider struct {
 }
 

@@ -7,7 +7,7 @@ type Option interface{ apply(*Container) }
 
 // Provide returns container option that explains how to create an instance of a type inside a container.
 //
-// The first argument is the instanceProvider. The instanceProvider can be constructor function, a pointer to a structure (or just
+// The first argument is the provider. The provider can be constructor function, a pointer to a structure (or just
 // structure) or everything else. There are some differences between these providers.
 //
 // A constructor function is a function that creates an instance of the required type. It can take an unlimited
@@ -31,6 +31,20 @@ type Option interface{ apply(*Container) }
 //   }
 //
 // Other function signatures will cause error.
+//
+// For advanced providing use inject.Provider.
+//
+//   type AdminServerProvider struct {
+//     inject.Provider
+//
+//     AdminMux http.Handler `inject:"admin"` // use named definition
+//   }
+//
+//   func (p *AdminServerProvider) Provide() *http.Server {
+//     return &http.Server{
+//       Handler: p.AdminMux,
+//     }
+//   }
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
 		var po = &providerOptions{
@@ -117,7 +131,16 @@ func WithName(name string) ProvideOption {
 	})
 }
 
-// As specifies interfaces that implement instanceProvider instance.
+// As specifies interfaces that implement provider instance. Provide with As() automatically checks that instance implements
+// interface and creates slice group with it.
+//
+//   Provide(&http.ServerMux{}, inject.As(new(http.Handler)))
+//
+//   var handler http.Handler
+//   container.Extract(&handler) // extract as interface
+//
+//   var handlers []http.Handler
+//   container.Extract(&handlers) // extract group
 func As(ifaces ...interface{}) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.implements = append(provider.implements, ifaces...)
@@ -133,6 +156,8 @@ func As(ifaces ...interface{}) ProvideOption {
 //
 //   inject.Provide(NewAccountRepository, inject.As(new(AccountRepository)))
 //   inject.Provide(&AccountController{}, inject.Exported())
+//
+// Also works with inject.Provider structures.
 func Exported() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.includeExported = true

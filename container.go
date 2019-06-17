@@ -33,7 +33,8 @@ type Container struct {
 	storage   *graph.Storage
 }
 
-// String
+// String describes container entities as a graphviz dot nodes, like
+// https://raw.githubusercontent.com/defval/inject/master/graph.png.
 func (c *Container) String() string {
 	return c.storage.Graph().String()
 }
