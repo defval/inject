@@ -9,6 +9,8 @@ Dependency injection container allows you to inject dependencies
 into constructors or structures without the need to have specified
 each argument manually.
 
+Dependencies in our applications is a [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
+
 This container implementation inspired by [google/wire](https://github.com/google/wire),
 [uber-go/fx](https://github.com/uber-go/fx) and [uber-go/dig](https://github.com/uber-go/dig).
 
