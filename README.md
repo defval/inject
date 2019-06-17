@@ -180,8 +180,8 @@ if os.Getenv("ENV") == "dev" {
 ```go
 // ProcessingBundle responsible for processing
 var ProcessingBundle = inject.Bundle(
-	inject.Provide(processing.NewDispatcher), 
-	inject.Provide(processing.NewProvider),
+    inject.Provide(processing.NewDispatcher),
+    inject.Provide(processing.NewProvider),
     inject.Provide(processing.NewProxy),
 )
 
