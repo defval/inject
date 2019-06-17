@@ -20,62 +20,102 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 go get -u github.com/defval/inject
 ```
 
-## Quickstart
+## Make dependency injection easy
 
-### Describe dependencies
-
-##### Controller interface
+Define constructors:
 
 ```go
-// Controller interface.
-type Controller interface {
-	Register(mux *http.ServeMux)
-}
-```
-
-##### Controller
-
-`AccountController` implements `Controller` interface.
-
-```go
-// AccountController contains account related http methods.
-type AccountController struct {
+// NewHTTPHandler is a http mux constructor.
+func NewHTTPServeMux() *http.ServeMux {
+	return &http.ServeMux{}
 }
 
-// Register add routes to mux.
-func (c *AccountController) Register(mux *http.ServeMux) {
-	mux.HandleFunc("/account", c.Index)
-}
-
-func (c *AccountController) Index(writer http.ResponseWriter, request *http.Request) {
-	_, _ = io.WriteString(writer, "account")
-}
-```
-
-##### HTTP Mux
-
-Define `*http.ServeMux` constructor and register all controllers routes.
-For this we use a group of interfaces.
-
-```go
-// NewMux creates a new http mux.
-func NewMux(controllers []Controller) *http.ServeMux {
-	mux := &http.ServeMux{}
-
-	for _, ctrl := range controllers {
-		ctrl.Register(mux)
+// NewHTTPServer is a http server constructor, handler will be injected 
+// by container.
+func NewHTTPServer(handler *net.ServeMux) *http.Server {
+	return &http.Server{
+		Handler: handler,
 	}
-
-	return mux
 }
 ```
 
-##### Server
-
-The server needs a `http.Handler` to work.
+Build container and extract values:
 
 ```go
-// NewServer creates a new http server.
+// build container
+container, err := inject.New(
+    inject.Provide(NewHTTPServeMux), // provide mux
+    inject.Provide(NewHTTPServer), // provide server
+)
+
+// don't forget to handle errors © golang
+
+// define variable for *http.Server
+var server *http.Server
+
+// extract into this variable
+container.Extract(&server)
+
+// use it!
+server.ListenAndServe()
+```
+
+## Group interfaces
+
+When you have two or more implementations of same interface:
+
+```go
+// NewUserController
+func NewUserController() *UserController {
+	return &UserController{}
+}
+
+// NewPostController
+func NewPostController() *PostController {
+	return &PostController()
+}
+
+// Controller
+type Controller interface {
+	RegisterRoutes()
+}
+```
+
+Group it!
+
+```go
+// IController is a java style interface alias =D
+// inject.As(new(Controller)) looks worse in readme.
+var IController = new(Controller)
+
+container, err := inject.New(
+	inject.Provide(NewUserController, inject.As(IController)),
+	inject.Provide(NewPostController, inject.As(IController)),
+)
+
+var controllers []Controller
+// extract all controllers
+container.Extract(&controllers)
+
+// and do something!!!
+for _, ctrl := range controllers {
+	ctrl.RegisterRoutes()
+}
+```
+
+## Return structs, accept interfaces!
+
+Bind implementations as interfaces:
+
+```go
+// NewHandler is a http mux constructor. Returns concrete
+// implementation - *http.ServeMux.
+func NewServeMux() *http.ServeMux {
+	return &http.ServeMux{}
+}
+
+// NewServer is a http server constructor. Needs handler for 
+// working.
 func NewServer(handler http.Handler) *http.Server {
 	return &http.Server{
 		Handler: handler,
@@ -83,33 +123,100 @@ func NewServer(handler http.Handler) *http.Server {
 }
 ```
 
-### Build container
+Provide concrete implementation as interface:
 
 ```go
+var IHandler = new(http.Handler)
+
 container, err := inject.New(
-    inject.Provide(NewMux, inject.As(new(http.Handler))), // provide *http.ServeMux as http.Handler interface
+    inject.Provide(NewServeMux, inject.As(IHandler)),
     inject.Provide(NewServer),
-    inject.Provide(&AccountController{}, inject.As(new(Controller))), // inject.As automatically creates a group []Controller 
 )
 
-if err != nil {
-    // handle err
-}
+var handler http.Handler
+container.Extract(&handler) // *http.ServeMux will be extracted
+
+var server *http.Server
+container.Extract(&server) // server.Handler is *http.ServeMux
 ```
 
-### Extract type
+## Why do you need this?
+### Keep it testable!
+
+Add mocks:
 
 ```go
-// extract type
-var server *http.Server
-if err = container.Extract(&server); err != nil {
-    // handle err
+func NewHandlerMock() *HandlerMock {
+	return &HandlerMock
 }
-
-server.ListenAndServe()
 ```
 
-## Visualize dependency graph
+And save ability for mock interface implementation.
+
+```go
+func TestServer(t *testing.T) {
+	handlerMock := NewHandlerMock()
+	
+	server := NewServer(handlerMock)
+	
+	// test server with mock
+}
+```
+
+### Change you code behaviour in different environments
+
+```go
+var options []inject.Option
+
+if os.Getenv("ENV") == "dev" {
+	options = append(options, inject.Provide(NewHandlerMock, inject.As(IHandler)))
+} else {
+	options = append(options, inject.Provide(NewServeMux, inject.As(IHandler)))
+}
+```
+
+## Group your code in bundles.
+
+```go
+// ProcessingBundle responsible for processing
+var ProcessingBundle = inject.Bundle(
+	inject.Provide(processing.NewDispatcher),
+    inject.Provide(processing.NewProvider),
+    inject.Provide(processing.NewProxy),
+)
+
+// BillingBundle responsible for billing
+var BillingBundle = inject.Bundle(
+    inject.Provide(billing.NewInteractor),
+    inject.Provide(billing.NewInvoiceRepository, inject.As(new(InvoiceRepository)))
+)
+```
+
+## Replace dependencies
+
+```go
+var options []inject.Options
+
+if os.Getenv("ENV") == "dev" {
+	options = append(options, inject.Replace(billing.NewInvoiceRepositoryMock), inject.As(new(InvoiceRepository)))
+}
+
+container, err := inject.New(options...)
+```
+
+## Use struct providing
+
+TBD
+
+## Use named definitions
+
+TBD
+
+## Use combined provider
+
+TBD
+
+## Visualize dependency graph [unreleased]
 
 Container supports `fmt.Stringer` interface. The string is a graph
 description via [graphviz dot language](https://www.graphviz.org/).
