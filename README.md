@@ -140,8 +140,8 @@ var server *http.Server
 container.Extract(&server) // server.Handler is *http.ServeMux
 ```
 
-## Why do you need this?
-### Keep it testable!
+### Why do you need this?
+#### Keep it testable!
 
 Add mocks:
 
@@ -163,7 +163,7 @@ func TestServer(t *testing.T) {
 }
 ```
 
-### Change you code behaviour in different environments
+#### Change you code behaviour in different environments
 
 ```go
 var options []inject.Option
