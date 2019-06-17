@@ -189,7 +189,7 @@ if os.Getenv("ENV") == "dev" {
 var ProcessingBundle = inject.Bundle(
     inject.Provide(processing.NewDispatcher),
     inject.Provide(processing.NewProvider),
-    inject.Provide(processing.NewProxy),
+    inject.Provide(processing.NewProxy, inject.As(IProxy)),
 )
 
 // BillingBundle responsible for billing
@@ -197,6 +197,23 @@ var BillingBundle = inject.Bundle(
     inject.Provide(billing.NewInteractor),
     inject.Provide(billing.NewInvoiceRepository, inject.As(new(InvoiceRepository)))
 )
+```
+
+And test each one separately.
+
+```go
+func TestProcessingBundle(t *testing.T) {
+    bundle, err := inject.New(
+        ProcessingBundle,
+        inject.Replace(processing.NewDevProxy, inject.As(IProxy)),
+        
+	)
+    
+    var dispatcher *processing.Dispatcher
+    container.Extract(&dispatcher)
+    
+    dispatcher.Dispatch(ctx context.Context, thing)
+}
 ```
 
 ## Replace dependencies
