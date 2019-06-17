@@ -206,8 +206,7 @@ func TestProcessingBundle(t *testing.T) {
     bundle, err := inject.New(
         ProcessingBundle,
         inject.Replace(processing.NewDevProxy, inject.As(IProxy)),
-        
-	)
+    )
     
     var dispatcher *processing.Dispatcher
     container.Extract(&dispatcher)
