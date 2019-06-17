@@ -33,11 +33,16 @@ func NewHTTPServeMux() *http.ServeMux {
 }
 
 // NewHTTPServer is a http server constructor, handler will be injected 
-// by container.
-func NewHTTPServer(handler *net.ServeMux) *http.Server {
+// by container. If environment variable `STATUS == "stoped"` extract
+// server cause error.
+func NewHTTPServer(handler *net.ServeMux) (*http.Server, error) {
+	if os.Getenv("STATUS") == "stopped" {
+		return nil, errors.New("server stoped")
+	}
+	
 	return &http.Server{
 		Handler: handler,
-	}
+	}, nil
 }
 ```
 
