@@ -48,7 +48,7 @@ func (n *InterfaceNode) Key() Key {
 
 func (n *InterfaceNode) DotNode(graph *dot.Graph) dot.Node {
 	node := graph.Node(n.Key().String())
-	node.Attr("color", "royalblue")
+	node.Attr("color", "#2589BD")
 	node.Attr("fontcolor", "white")
 	node.Attr("fontname", "Helvetica")
 	node.Attr("style", "filled")

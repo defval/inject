@@ -127,6 +127,7 @@ func (s *Storage) Graph() *dot.Graph {
 
 		subGraph := root.Subgraph(pkg, dot.ClusterOption{})
 		subGraph.Attr("color", "lightgrey")
+		subGraph.Attr("labelfontname", "Helvetica")
 		graphNode := s.nodes[k].DotNode(subGraph)
 
 		for _, in := range s.nodes[k].Arguments() {
@@ -140,6 +141,7 @@ func (s *Storage) Graph() *dot.Graph {
 
 			subGraph := root.Subgraph(argPkg, dot.ClusterOption{})
 			subGraph.Attr("color", "lightgrey")
+			subGraph.Attr("labelfontname", "Helvetica")
 			root.Edge(s.nodes[in].DotNode(subGraph), graphNode)
 		}
 	}
