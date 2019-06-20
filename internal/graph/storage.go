@@ -125,7 +125,9 @@ func (s *Storage) Graph() *dot.Graph {
 			pkg = k.Type.PkgPath()
 		}
 
-		graphNode := s.nodes[k].DotNode(root.Subgraph(pkg, dot.ClusterOption{}))
+		subGraph := root.Subgraph(pkg, dot.ClusterOption{})
+		subGraph.Attr("color", "lightgrey")
+		graphNode := s.nodes[k].DotNode(subGraph)
 
 		for _, in := range s.nodes[k].Arguments() {
 			var argPkg string
@@ -136,7 +138,9 @@ func (s *Storage) Graph() *dot.Graph {
 				argPkg = in.Type.PkgPath()
 			}
 
-			root.Edge(s.nodes[in].DotNode(root.Subgraph(argPkg, dot.ClusterOption{})), graphNode)
+			subGraph := root.Subgraph(argPkg, dot.ClusterOption{})
+			subGraph.Attr("color", "lightgrey")
+			root.Edge(s.nodes[in].DotNode(subGraph), graphNode)
 		}
 	}
 
