@@ -38,7 +38,7 @@ func (n *ProviderNode) DotNode(graph *dot.Graph) dot.Node {
 	node := graph.Node(n.Key().String())
 	node.Label(n.Key().String())
 	node.Attr("color", "#46494C")
-	node.Attr("fontname", "Helvetica")
+	node.Attr("fontname", "COURIER")
 	node.Attr("fontcolor", "white")
 	node.Attr("style", "filled")
 	node.Box()

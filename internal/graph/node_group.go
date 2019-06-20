@@ -51,7 +51,7 @@ func (n *GroupNode) Key() Key {
 func (n *GroupNode) DotNode(graph *dot.Graph) dot.Node {
 	node := graph.Node(n.Key().String())
 	node.Attr("shape", "doubleoctagon")
-	node.Attr("fontname", "Helvetica")
+	node.Attr("fontname", "COURIER")
 	node.Attr("color", "#E54B4B")
 	node.Attr("style", "filled")
 	node.Attr("fontcolor", "white")
