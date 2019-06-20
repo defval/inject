@@ -39,6 +39,8 @@ type GroupNode struct {
 	key Key
 
 	in []*ProviderNode
+
+	node *dot.Node
 }
 
 // Key

@@ -106,7 +106,8 @@ func (s *Storage) Compile() (err error) {
 
 // Graph
 func (s *Storage) Graph() *dot.Graph {
-	graph := dot.NewGraph(dot.Directed)
+
+	root := dot.NewGraph(dot.Directed)
 
 	for _, k := range s.keys {
 		switch s.nodes[k].(type) {
@@ -116,14 +117,30 @@ func (s *Storage) Graph() *dot.Graph {
 			}
 		}
 
-		graphNode := s.nodes[k].DotNode(graph)
+		var pkg string
+		switch k.Type.Kind() {
+		case reflect.Slice, reflect.Ptr:
+			pkg = k.Type.Elem().PkgPath()
+		default:
+			pkg = k.Type.PkgPath()
+		}
+
+		graphNode := s.nodes[k].DotNode(root.Subgraph(pkg, dot.ClusterOption{}))
 
 		for _, in := range s.nodes[k].Arguments() {
-			graph.Edge(s.nodes[in].DotNode(graph), graphNode)
+			var argPkg string
+			switch in.Type.Kind() {
+			case reflect.Slice, reflect.Ptr:
+				argPkg = in.Type.Elem().PkgPath()
+			default:
+				argPkg = in.Type.PkgPath()
+			}
+
+			root.Edge(s.nodes[in].DotNode(root.Subgraph(argPkg, dot.ClusterOption{})), graphNode)
 		}
 	}
 
-	return graph
+	return root
 }
 
 func (s *Storage) detectCycles() (err error) {
