@@ -108,6 +108,7 @@ func (s *Storage) Compile() (err error) {
 func (s *Storage) Graph() *dot.Graph {
 
 	root := dot.NewGraph(dot.Directed)
+	root.Attr("splines", "ortho")
 
 	for _, k := range s.keys {
 		switch s.nodes[k].(type) {
@@ -126,6 +127,7 @@ func (s *Storage) Graph() *dot.Graph {
 		}
 
 		subGraph := root.Subgraph(pkg, dot.ClusterOption{})
+		subGraph.Attr("label", "")
 		subGraph.Attr("style", "rounded")
 		subGraph.Attr("bgcolor", "#E8E8E8")
 		subGraph.Attr("color", "lightgrey")
@@ -143,6 +145,7 @@ func (s *Storage) Graph() *dot.Graph {
 			}
 
 			subGraph := root.Subgraph(argPkg, dot.ClusterOption{})
+			subGraph.Attr("label", "")
 			subGraph.Attr("style", "rounded")
 			subGraph.Attr("color", "lightgrey")
 			subGraph.Attr("bgcolor", "#E8E8E8")
