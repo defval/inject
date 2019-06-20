@@ -1,4 +1,5 @@
-# Inject
+<img src="https://github.com/defval/inject/raw/master/logo.png">
+
 [![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge&logo=go&logoColor=ffffff)](https://godoc.org/github.com/defval/inject)
 ![Release](https://img.shields.io/github/tag/defval/inject.svg?label=release&logo=github&style=for-the-badge)
 [![Build Status](https://img.shields.io/travis/defval/inject.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/inject)
@@ -27,7 +28,7 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 - [Visualize graph](#visualize-graph)
 
 ## Installing
-
+e
 ```shell
 go get -u github.com/defval/inject
 ```
