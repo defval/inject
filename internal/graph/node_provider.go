@@ -22,6 +22,7 @@ func NewProviderNode(name string, p InstanceProvider) (_ *ProviderNode) {
 
 // ProviderNode
 type ProviderNode struct {
+	WithOut
 	InstanceProvider
 
 	in       []Node

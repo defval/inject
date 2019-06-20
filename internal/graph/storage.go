@@ -95,6 +95,7 @@ func (s *Storage) Compile() (err error) {
 					return errors.Errorf("type %s not provided", k)
 				}
 
+				argumentNode.Of(provideNode.Key())
 				provideNode.in = append(provideNode.in, argumentNode)
 			}
 		}
@@ -108,6 +109,13 @@ func (s *Storage) Graph() *dot.Graph {
 	graph := dot.NewGraph(dot.Directed)
 
 	for _, k := range s.keys {
+		switch s.nodes[k].(type) {
+		case *GroupNode, *InterfaceNode:
+			if len(s.nodes[k].Out()) == 0 {
+				continue
+			}
+		}
+
 		graphNode := s.nodes[k].DotNode(graph)
 
 		for _, in := range s.nodes[k].Arguments() {

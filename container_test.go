@@ -1176,6 +1176,6 @@ func TestContainer_String(t *testing.T) {
 		)
 
 		require.NoError(t, err)
-		require.Equal(t, "digraph  {\n\t\n\tn1[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"*http.ServeMux\",shape=\"box\",style=\"filled\"];\n\tn4[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"*http.Server\",shape=\"box\",style=\"filled\"];\n\tn3[color=\"orange\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"[]http.Handler\",shape=\"doubleoctagon\",style=\"filled\"];\n\tn5[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"bool\",shape=\"box\",style=\"filled\"];\n\tn2[color=\"royalblue\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"http.Handler\",style=\"filled\"];\n\tn1->n2;\n\tn1->n3;\n\tn4->n5;\n\tn2->n4;\n\t\n}", container.String())
+		require.Equal(t, "digraph  {\n\t\n\tn1[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"*http.ServeMux\",shape=\"box\",style=\"filled\"];\n\tn3[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"*http.Server\",shape=\"box\",style=\"filled\"];\n\tn4[color=\"limegreen\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"bool\",shape=\"box\",style=\"filled\"];\n\tn2[color=\"royalblue\",fontcolor=\"white\",fontname=\"Helvetica\",label=\"http.Handler\",style=\"filled\"];\n\tn1->n2;\n\tn3->n4;\n\tn2->n3;\n\t\n}", container.String())
 	})
 }

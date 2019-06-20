@@ -36,6 +36,7 @@ func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *In
 
 // InterfaceNode
 type InterfaceNode struct {
+	WithOut
 	key      Key
 	node     *ProviderNode
 	multiple bool

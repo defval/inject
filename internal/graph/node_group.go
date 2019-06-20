@@ -35,6 +35,7 @@ func NewGroupNode(iface interface{}) (_ *GroupNode, err error) {
 
 // GroupNode
 type GroupNode struct {
+	WithOut
 	key Key
 
 	in []*ProviderNode
