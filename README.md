@@ -19,12 +19,12 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 ## Contents
 
 - [Installing](#installing)
-- [Type injection](#make-dependency-injection-easy)
-- [Groups](#group-interfaces)
-- [Bundles](#group-your-code-in-bundles)
-- [Replace](#replace-dependencies)
-- [Named definitions](#use-named-definitions)
-- [Visualize graph](#visualize-dependency-graph)
+- [Type injection](#type-injection)
+- [Groups](#groups)
+- [Bundles](#bundles)
+- [Replace](#replace)
+- [Named definitions](#named-definitions)
+- [Visualize graph](#visualize-graph)
 
 ## Installing
 
@@ -32,7 +32,7 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 go get -u github.com/defval/inject
 ```
 
-## Make dependency injection easy
+## Type injection
 
 Define constructors:
 
@@ -77,7 +77,7 @@ container.Extract(&server)
 server.ListenAndServe()
 ```
 
-## Group interfaces
+## Groups
 
 When you have two or more implementations of same interface:
 
@@ -157,7 +157,7 @@ var server *http.Server
 container.Extract(&server) // server.Handler is *http.ServeMux
 ```
 
-## Group your code in bundles.
+## Bundles
 
 ```go
 // ProcessingBundle responsible for processing
@@ -190,7 +190,7 @@ func TestProcessingBundle(t *testing.T) {
 }
 ```
 
-## Replace dependencies
+## Replace
 
 ```go
 var options []inject.Options
@@ -202,7 +202,7 @@ if os.Getenv("ENV") == "dev" {
 container, err := inject.New(options...)
 ```
 
-## Use named definitions
+## Named definitions
 
 ```go
 container, err := inject.New{
@@ -256,9 +256,9 @@ func (p *ServerProvider) Provide() *http.Server {
 }
 ```
 
-## Visualize dependency graph
+## Visualize graph
 
-*only master*
+*not released*
 
 Container supports `fmt.Stringer` interface. The string is a graph
 description via [graphviz dot language](https://www.graphviz.org/).
