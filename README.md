@@ -22,6 +22,15 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 go get -u github.com/defval/inject
 ```
 
+## Visualize dependency graph [unreleased]
+
+Container supports `fmt.Stringer` interface. The string is a graph
+description via [graphviz dot language](https://www.graphviz.org/).
+
+This is visualization of container example.
+
+<img src="https://github.com/defval/inject/raw/master/graph.png">
+
 ## Make dependency injection easy
 
 Define constructors:
@@ -280,12 +289,3 @@ func (p *ServerProvider) Provide() *http.Server {
 	}
 }
 ```
-
-## Visualize dependency graph [unreleased]
-
-Container supports `fmt.Stringer` interface. The string is a graph
-description via [graphviz dot language](https://www.graphviz.org/).
-
-This is visualization of container example.
-
-<img src="https://github.com/defval/inject/raw/master/graph.png">
