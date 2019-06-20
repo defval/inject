@@ -16,20 +16,21 @@ This container implementation inspired by [google/wire](https://github.com/googl
 
 See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 
+## Contents
+
+- [Installing](#installing)
+- [Type injection](#make-dependency-injection-easy)
+- [Groups](#group-interfaces)
+- [Bundles](#group-your-code-in-bundles)
+- [Replace](#replace-dependencies)
+- [Named definitions](#use-named-definitions)
+- [Visualize graph](#visualize-dependency-graph)
+
 ## Installing
 
 ```shell
 go get -u github.com/defval/inject
 ```
-
-## Visualize dependency graph [unreleased]
-
-Container supports `fmt.Stringer` interface. The string is a graph
-description via [graphviz dot language](https://www.graphviz.org/).
-
-This is visualization of container example.
-
-<img src="https://github.com/defval/inject/raw/master/graph.png">
 
 ## Make dependency injection easy
 
@@ -156,41 +157,6 @@ var server *http.Server
 container.Extract(&server) // server.Handler is *http.ServeMux
 ```
 
-### Why do you need this?
-#### Keep it testable!
-
-Add mocks:
-
-```go
-func NewHandlerMock() *HandlerMock {
-	return &HandlerMock
-}
-```
-
-And save ability for mock interface implementation.
-
-```go
-func TestServer(t *testing.T) {
-	handlerMock := NewHandlerMock()
-	
-	server := NewServer(handlerMock)
-	
-	// test server with mock
-}
-```
-
-#### Change you code behaviour in different environments
-
-```go
-var options []inject.Option
-
-if os.Getenv("ENV") == "dev" {
-	options = append(options, inject.Provide(NewHandlerMock, inject.As(IHandler)))
-} else {
-	options = append(options, inject.Provide(NewServeMux, inject.As(IHandler)))
-}
-```
-
 ## Group your code in bundles.
 
 ```go
@@ -289,3 +255,14 @@ func (p *ServerProvider) Provide() *http.Server {
 	}
 }
 ```
+
+## Visualize dependency graph
+
+*only master*
+
+Container supports `fmt.Stringer` interface. The string is a graph
+description via [graphviz dot language](https://www.graphviz.org/).
+
+This is visualization of container example.
+
+<img src="https://github.com/defval/inject/raw/master/graph.png">
