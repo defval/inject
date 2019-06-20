@@ -1,4 +1,4 @@
-<img src="https://github.com/defval/inject/raw/master/logo.png">
+<img width="312" src="https://github.com/defval/inject/raw/master/logo.png">
 
 [![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge&logo=go&logoColor=ffffff)](https://godoc.org/github.com/defval/inject)
 ![Release](https://img.shields.io/github/tag/defval/inject.svg?label=release&logo=github&style=for-the-badge)
