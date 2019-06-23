@@ -25,7 +25,7 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 - [Bundles](#bundles)
 - [Replace](#replace)
 - [Named definitions](#named-definitions)
-- [Visualize graph](#visualize-graph)
+- [Visualize](#visualize-graphviz)
 
 ## Installing
 
@@ -257,10 +257,19 @@ func (p *ServerProvider) Provide() *http.Server {
 }
 ```
 
-## Visualize graph
+## Visualize ([Graphviz](https://www.graphviz.org/))
 
-[Graphviz dot language](https://www.graphviz.org/).
+Write visualization into `io.Writer`. Check out result on [graphviz online tool](https://dreampuf.github.io/GraphvizOnline)
+
+```go
+    // visualization data target
+    buffer := &bytes.Buffer{}
+    
+    // write container visualization
+    container.WriteTo(buffer)
+```
 
 This is visualization of container example.
 
 <img src="https://github.com/defval/inject/raw/master/graph.png">
+
