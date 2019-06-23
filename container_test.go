@@ -1,6 +1,7 @@
 package inject_test
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"net/http"
@@ -1159,23 +1160,33 @@ type IncorrectMethodNameProvider struct {
 
 func (p *IncorrectMethodNameProvider) Providing() {}
 
-func TestContainer_String(t *testing.T) {
-	t.Run("container graph", func(t *testing.T) {
+func TestContainer_WriteTo(t *testing.T) {
+	t.Run("graph", func(t *testing.T) {
 		container, err := inject.New(
 			inject.Provide(func() *http.ServeMux {
 				return &http.ServeMux{}
 			}, inject.As(new(http.Handler))),
-			inject.Provide(func(mux http.Handler) *http.Server {
+			inject.Provide(func(addr []net.Addr, mux http.Handler) *http.Server {
 				return &http.Server{
 					Handler: mux,
 				}
 			}),
+			inject.Provide(func() *net.TCPAddr {
+				return &net.TCPAddr{}
+			}, inject.As(new(net.Addr))),
+			inject.Provide(func() *net.UDPAddr {
+				return &net.UDPAddr{}
+			}, inject.As(new(net.Addr))),
 			inject.Provide(func(s *http.Server) bool {
 				return true
 			}),
 		)
 
 		require.NoError(t, err)
-		require.Equal(t, "digraph  {\n\tsubgraph cluster_s1 {\n\t\tID = \"cluster_s1\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn4[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"bool\",shape=\"box\",style=\"filled\"];\n\t\t\n\t}subgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn1[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*http.ServeMux\",shape=\"box\",style=\"filled\"];\n\t\tn3[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*http.Server\",shape=\"box\",style=\"filled\"];\n\t\tn2[color=\"#2589BD\",fontcolor=\"white\",fontname=\"COURIER\",label=\"http.Handler\",style=\"filled\"];\n\t\t\n\t}splines=\"ortho\";\n\tn1->n2[color=\"#949494\"];\n\tn3->n4[color=\"#949494\"];\n\tn2->n3[color=\"#949494\"];\n\t\n}", container.String())
+
+		buffer := bytes.NewBuffer(nil)
+		container.WriteTo(buffer)
+
+		require.Equal(t, "digraph  {\n\tsubgraph cluster_s2 {\n\t\tID = \"cluster_s2\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn7[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"bool\",shape=\"box\",style=\"filled\"];\n\t\t\n\t}subgraph cluster_s1 {\n\t\tID = \"cluster_s1\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn5[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*net.TCPAddr\",shape=\"box\",style=\"filled\"];\n\t\tn6[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*net.UDPAddr\",shape=\"box\",style=\"filled\"];\n\t\tn4[color=\"#E54B4B\",fontcolor=\"white\",fontname=\"COURIER\",label=\"[]net.Addr\",shape=\"doubleoctagon\",style=\"filled\"];\n\t\t\n\t}subgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn1[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*http.ServeMux\",shape=\"box\",style=\"filled\"];\n\t\tn3[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*http.Server\",shape=\"box\",style=\"filled\"];\n\t\tn2[color=\"#2589BD\",fontcolor=\"white\",fontname=\"COURIER\",label=\"http.Handler\",style=\"filled\"];\n\t\t\n\t}splines=\"ortho\";\n\tn1->n2[color=\"#949494\"];\n\tn3->n7[color=\"#949494\"];\n\tn5->n4[color=\"#949494\"];\n\tn6->n4[color=\"#949494\"];\n\tn4->n3[color=\"#949494\"];\n\tn2->n3[color=\"#949494\"];\n\t\n}", buffer.String())
 	})
 }

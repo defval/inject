@@ -1,11 +1,13 @@
 package inject
 
 import (
+	"io"
 	"reflect"
 
 	"github.com/pkg/errors"
 
 	"github.com/defval/inject/internal/graph"
+	"github.com/defval/inject/internal/graph/dot"
 )
 
 // New creates a new container with provided options.
@@ -33,10 +35,10 @@ type Container struct {
 	storage   *graph.Storage
 }
 
-// String describes container entities as a graphviz dot nodes, like
+// WriteTo writes container entities as a graphviz dot nodes to writer, like
 // https://raw.githubusercontent.com/defval/inject/master/graph.png.
-func (c *Container) String() string {
-	return c.storage.Graph().String()
+func (c *Container) WriteTo(w io.Writer) {
+	dot.NewGraphFromStorage(c.storage).Write(w)
 }
 
 // Extract populates given target pointer with type instance provided in the container.

@@ -3,7 +3,6 @@ package graph
 import (
 	"reflect"
 
-	"github.com/emicklei/dot"
 	"github.com/pkg/errors"
 )
 
@@ -34,15 +33,13 @@ func (n *ProviderNode) Key() Key {
 	return n.key
 }
 
-func (n *ProviderNode) DotNode(graph *dot.Graph) dot.Node {
-	node := graph.Node(n.Key().String())
-	node.Label(n.Key().String())
-	node.Attr("color", "#46494C")
-	node.Attr("fontname", "COURIER")
-	node.Attr("fontcolor", "white")
-	node.Attr("style", "filled")
-	node.Box()
-	return node
+// ArgumentNodes
+func (n *ProviderNode) ArgumentNodes() (args []Node) {
+	for _, in := range n.in {
+		args = append(args, in)
+	}
+
+	return args
 }
 
 func (n *ProviderNode) Extract(target reflect.Value) (err error) {

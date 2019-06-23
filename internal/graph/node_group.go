@@ -48,20 +48,18 @@ func (n *GroupNode) Key() Key {
 	return n.key
 }
 
-func (n *GroupNode) DotNode(graph *dot.Graph) dot.Node {
-	node := graph.Node(n.Key().String())
-	node.Attr("shape", "doubleoctagon")
-	node.Attr("fontname", "COURIER")
-	node.Attr("color", "#E54B4B")
-	node.Attr("style", "filled")
-	node.Attr("fontcolor", "white")
-	return node
-}
-
 // Arguments
 func (n *GroupNode) Arguments() (args []Key) {
 	for _, in := range n.in {
 		args = append(args, in.Key())
+	}
+
+	return args
+}
+
+func (n *GroupNode) ArgumentNodes() (args []Node) {
+	for _, in := range n.in {
+		args = append(args, in)
 	}
 
 	return args

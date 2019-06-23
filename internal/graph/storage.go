@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/emicklei/dot"
 	"github.com/pkg/errors"
 )
 
@@ -20,6 +19,15 @@ func NewStorage() *Storage {
 type Storage struct {
 	keys  []Key
 	nodes map[Key]Node
+}
+
+// All
+func (s *Storage) All() (nodes []Node) {
+	for _, k := range s.keys {
+		nodes = append(nodes, s.nodes[k])
+	}
+
+	return nodes
 }
 
 // Check
@@ -104,59 +112,60 @@ func (s *Storage) Compile() (err error) {
 	return s.detectCycles()
 }
 
-// Graph
-func (s *Storage) Graph() *dot.Graph {
-
-	root := dot.NewGraph(dot.Directed)
-	root.Attr("splines", "ortho")
-
-	for _, k := range s.keys {
-		switch s.nodes[k].(type) {
-		case *GroupNode, *InterfaceNode:
-			if len(s.nodes[k].Out()) == 0 {
-				continue
-			}
-		}
-
-		var pkg string
-		switch k.Type.Kind() {
-		case reflect.Slice, reflect.Ptr:
-			pkg = k.Type.Elem().PkgPath()
-		default:
-			pkg = k.Type.PkgPath()
-		}
-
-		subGraph := root.Subgraph(pkg, dot.ClusterOption{})
-		subGraph.Attr("label", "")
-		subGraph.Attr("style", "rounded")
-		subGraph.Attr("bgcolor", "#E8E8E8")
-		subGraph.Attr("color", "lightgrey")
-		subGraph.Attr("fontname", "COURIER")
-		subGraph.Attr("fontcolor", "#46494C")
-		graphNode := s.nodes[k].DotNode(subGraph)
-
-		for _, in := range s.nodes[k].Arguments() {
-			var argPkg string
-			switch in.Type.Kind() {
-			case reflect.Slice, reflect.Ptr:
-				argPkg = in.Type.Elem().PkgPath()
-			default:
-				argPkg = in.Type.PkgPath()
-			}
-
-			subGraph := root.Subgraph(argPkg, dot.ClusterOption{})
-			subGraph.Attr("label", "")
-			subGraph.Attr("style", "rounded")
-			subGraph.Attr("color", "lightgrey")
-			subGraph.Attr("bgcolor", "#E8E8E8")
-			subGraph.Attr("fontname", "COURIER")
-			subGraph.Attr("fontcolor", "#46494C")
-			root.Edge(s.nodes[in].DotNode(subGraph), graphNode).Attr("color", "#949494")
-		}
-	}
-
-	return root
-}
+//
+// // Graph
+// func (s *Storage) Graph() *dot.Graph {
+//
+// 	root := dot.NewGraph(dot.Directed)
+// 	root.Attr("splines", "ortho")
+//
+// 	for _, k := range s.keys {
+// 		switch s.nodes[k].(type) {
+// 		case *GroupNode, *InterfaceNode:
+// 			if len(s.nodes[k].Out()) == 0 {
+// 				continue
+// 			}
+// 		}
+//
+// 		var pkg string
+// 		switch k.Type.Kind() {
+// 		case reflect.Slice, reflect.Ptr:
+// 			pkg = k.Type.Elem().PkgPath()
+// 		default:
+// 			pkg = k.Type.PkgPath()
+// 		}
+//
+// 		subGraph := root.Subgraph(pkg, dot.ClusterOption{})
+// 		subGraph.Attr("label", "")
+// 		subGraph.Attr("style", "rounded")
+// 		subGraph.Attr("bgcolor", "#E8E8E8")
+// 		subGraph.Attr("color", "lightgrey")
+// 		subGraph.Attr("fontname", "COURIER")
+// 		subGraph.Attr("fontcolor", "#46494C")
+// 		graphNode := s.nodes[k].DotNode(subGraph)
+//
+// 		for _, in := range s.nodes[k].Arguments() {
+// 			var argPkg string
+// 			switch in.Type.Kind() {
+// 			case reflect.Slice, reflect.Ptr:
+// 				argPkg = in.Type.Elem().PkgPath()
+// 			default:
+// 				argPkg = in.Type.PkgPath()
+// 			}
+//
+// 			subGraph := root.Subgraph(argPkg, dot.ClusterOption{})
+// 			subGraph.Attr("label", "")
+// 			subGraph.Attr("style", "rounded")
+// 			subGraph.Attr("color", "lightgrey")
+// 			subGraph.Attr("bgcolor", "#E8E8E8")
+// 			subGraph.Attr("fontname", "COURIER")
+// 			subGraph.Attr("fontcolor", "#46494C")
+// 			root.Edge(s.nodes[in].DotNode(subGraph), graphNode).Attr("color", "#949494")
+// 		}
+// 	}
+//
+// 	return root
+// }
 
 func (s *Storage) detectCycles() (err error) {
 	visited := make(map[Key]visitStatus)

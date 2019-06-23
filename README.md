@@ -259,10 +259,7 @@ func (p *ServerProvider) Provide() *http.Server {
 
 ## Visualize graph
 
-*not released*
-
-Container supports `fmt.Stringer` interface. The string is a graph
-description via [graphviz dot language](https://www.graphviz.org/).
+[Graphviz dot language](https://www.graphviz.org/).
 
 This is visualization of container example.
 
