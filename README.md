@@ -257,7 +257,7 @@ func (p *ServerProvider) Provide() *http.Server {
 
 ## Visualize ([Graphviz](https://www.graphviz.org/))
 
-Write visualization into `io.Writer`. Check out result on [graphviz online tool](https://dreampuf.github.io/GraphvizOnline)
+Write visualization into `io.Writer`. Check out result on <a href="https://dreampuf.github.io/GraphvizOnline" target="_blank">graphviz online tool!</a>
 
 ```go
     // visualization data target
