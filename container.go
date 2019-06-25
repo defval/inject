@@ -37,8 +37,9 @@ type Container struct {
 
 // WriteTo writes container entities as a graphviz dot nodes to writer, like
 // https://raw.githubusercontent.com/defval/inject/master/graph.png.
-func (c *Container) WriteTo(w io.Writer) {
+func (c *Container) WriteTo(w io.Writer) (n int64, err error) {
 	dot.NewGraphFromStorage(c.storage).Write(w)
+	return n, err
 }
 
 // Extract populates given target pointer with type instance provided in the container.
