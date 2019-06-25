@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewInterfaceNode
+// NewInterfaceNode creates new interface node.
 func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *InterfaceNode, err error) {
 	if iface == nil {
 		return nil, errors.Errorf("nil interface") // todo: improve message
@@ -33,26 +33,31 @@ func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *In
 	}, nil
 }
 
-// InterfaceNode
+// InterfaceNode ...
 type InterfaceNode struct {
-	WithOut
+	outTrait
 	key      Key
 	node     *ProviderNode
 	multiple bool
 }
 
+// Key returns unique node identifier.
 func (n *InterfaceNode) Key() Key {
 	return n.key
 }
 
+// Arguments returns another node keys that included in this group node.
 func (n *InterfaceNode) Arguments() (args []Key) {
 	return append(args, n.node.Key())
 }
 
+// ArgumentNodes return another nodes that included in this group.
+// todo: Arguments() and ArgumentNodes() is too similar
 func (n *InterfaceNode) ArgumentNodes() (args []Node) {
 	return append(args, n.node)
 }
 
+// Extract extracts node instance to target.
 func (n *InterfaceNode) Extract(target reflect.Value) (err error) {
 	if n.multiple {
 		return errors.Errorf("could not extract %s: you have several instances of this interface type, use WithName() to identify it", n.Key())

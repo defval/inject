@@ -10,17 +10,17 @@ import (
 
 var combinedProviderInterface = reflect.Indirect(reflect.ValueOf(new(CombinedProviderInterface))).Type()
 
-// CombinedProviderInterface
+// CombinedProviderInterface todo
 type CombinedProviderInterface interface {
 	IsInjectProvider()
 }
 
-// IsCombinedProvider
+// IsCombinedProvider todo
 func IsCombinedProvider(rawProvider interface{}) bool {
 	return reflect.ValueOf(rawProvider).Type().Implements(combinedProviderInterface)
 }
 
-// NewConstructorProvider
+// NewCombinedProvider todo
 func NewCombinedProvider(rawProvider interface{}, tag string, exported bool) (_ *CombinedProvider, err error) {
 	value := reflect.ValueOf(rawProvider)
 
@@ -43,21 +43,24 @@ func NewCombinedProvider(rawProvider interface{}, tag string, exported bool) (_ 
 	return &CombinedProvider{objectProvider, ctorProvider}, nil
 }
 
-// ObjectProvider
+// CombinedProvider todo
 type CombinedProvider struct {
 	*ObjectProvider
 	*ConstructorProvider
 }
 
+// Provide todo
 func (p *CombinedProvider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	_, _ = p.ObjectProvider.Provide(arguments)
 	return p.ConstructorProvider.Provide([]reflect.Value{})
 }
 
+// ResultType todo
 func (p *CombinedProvider) ResultType() reflect.Type {
 	return p.ConstructorProvider.ResultType()
 }
 
+// Arguments todo
 func (p *CombinedProvider) Arguments() (args []graph.Key) {
 	return p.ObjectProvider.Arguments()
 }

@@ -9,12 +9,12 @@ import (
 	"github.com/defval/inject/internal/graph"
 )
 
-// IsConstructor
+// IsConstructor todo
 func IsConstructor(rawProvider interface{}) bool {
 	return reflect.ValueOf(rawProvider).Kind() == reflect.Func
 }
 
-// NewConstructorProvider
+// NewConstructorProvider todo
 func NewConstructorProvider(rawProvider interface{}) (*ConstructorProvider, error) {
 	value := reflect.ValueOf(rawProvider)
 
@@ -37,11 +37,12 @@ func NewConstructorProvider(rawProvider interface{}) (*ConstructorProvider, erro
 	return p, nil
 }
 
-// ObjectProvider
+// ConstructorProvider todo
 type ConstructorProvider struct {
 	ctor reflect.Value
 }
 
+// Provide todo
 func (p *ConstructorProvider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	result := p.ctor.Call(arguments)
 
@@ -52,10 +53,12 @@ func (p *ConstructorProvider) Provide(arguments []reflect.Value) (reflect.Value,
 	return result[0], errors.WithStack(result[1].Interface().(error))
 }
 
+// ResultType todo
 func (p *ConstructorProvider) ResultType() reflect.Type {
 	return p.ctor.Type().Out(0)
 }
 
+// Arguments todo
 func (p *ConstructorProvider) Arguments() (args []graph.Key) {
 	pt := p.ctor.Type()
 

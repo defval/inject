@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewStorage
+// NewStorage creates new storage.
 func NewStorage() *Storage {
 	return &Storage{
 		keys:  make([]Key, 0),
@@ -15,13 +15,13 @@ func NewStorage() *Storage {
 	}
 }
 
-// Storage
+// Storage is a type graph storage implementation.
 type Storage struct {
 	keys  []Key
 	nodes map[Key]Node
 }
 
-// All
+// All returns all nodes.
 func (s *Storage) All() (nodes []Node) {
 	for _, k := range s.keys {
 		nodes = append(nodes, s.nodes[k])
@@ -30,7 +30,7 @@ func (s *Storage) All() (nodes []Node) {
 	return nodes
 }
 
-// Check
+// Add adds node to storage.
 func (s *Storage) Add(node Node) (err error) {
 	if n, ok := s.nodes[node.Key()]; ok {
 		if ifaceNode, ok := n.(*InterfaceNode); ok {
@@ -48,6 +48,7 @@ func (s *Storage) Add(node Node) (err error) {
 	return nil
 }
 
+// Replace node in a storage.
 func (s *Storage) Replace(node Node) (err error) {
 	_, isProviderNode := node.(*ProviderNode)
 
@@ -60,7 +61,7 @@ func (s *Storage) Replace(node Node) (err error) {
 	return nil
 }
 
-// GroupNode
+// GroupNode returns or creates group node by interface.
 func (s *Storage) GroupNode(iface interface{}) (_ *GroupNode, err error) {
 	groupNode, err := NewGroupNode(iface)
 
@@ -76,10 +77,10 @@ func (s *Storage) GroupNode(iface interface{}) (_ *GroupNode, err error) {
 	return s.nodes[groupNode.Key()].(*GroupNode), nil
 }
 
-// Get
-func (s *Storage) Extract(name string, value reflect.Value) (err error) {
+// Extract extracts node instance into target.
+func (s *Storage) Extract(name string, target reflect.Value) (err error) {
 	k := Key{
-		Type: value.Type(),
+		Type: target.Type(),
 		Name: name,
 	}
 
@@ -89,10 +90,10 @@ func (s *Storage) Extract(name string, value reflect.Value) (err error) {
 		return errors.Errorf("type %s not provided", k)
 	}
 
-	return node.Extract(value)
+	return node.Extract(target)
 }
 
-// Compile
+// Compile compiles the container.
 func (s *Storage) Compile() (err error) {
 	// link provide nodes
 	for _, node := range s.nodes {
@@ -111,61 +112,6 @@ func (s *Storage) Compile() (err error) {
 
 	return s.detectCycles()
 }
-
-//
-// // Graph
-// func (s *Storage) Graph() *dot.Graph {
-//
-// 	root := dot.NewGraph(dot.Directed)
-// 	root.Attr("splines", "ortho")
-//
-// 	for _, k := range s.keys {
-// 		switch s.nodes[k].(type) {
-// 		case *GroupNode, *InterfaceNode:
-// 			if len(s.nodes[k].Out()) == 0 {
-// 				continue
-// 			}
-// 		}
-//
-// 		var pkg string
-// 		switch k.Type.Kind() {
-// 		case reflect.Slice, reflect.Ptr:
-// 			pkg = k.Type.Elem().PkgPath()
-// 		default:
-// 			pkg = k.Type.PkgPath()
-// 		}
-//
-// 		subGraph := root.Subgraph(pkg, dot.ClusterOption{})
-// 		subGraph.Attr("label", "")
-// 		subGraph.Attr("style", "rounded")
-// 		subGraph.Attr("bgcolor", "#E8E8E8")
-// 		subGraph.Attr("color", "lightgrey")
-// 		subGraph.Attr("fontname", "COURIER")
-// 		subGraph.Attr("fontcolor", "#46494C")
-// 		graphNode := s.nodes[k].DotNode(subGraph)
-//
-// 		for _, in := range s.nodes[k].Arguments() {
-// 			var argPkg string
-// 			switch in.Type.Kind() {
-// 			case reflect.Slice, reflect.Ptr:
-// 				argPkg = in.Type.Elem().PkgPath()
-// 			default:
-// 				argPkg = in.Type.PkgPath()
-// 			}
-//
-// 			subGraph := root.Subgraph(argPkg, dot.ClusterOption{})
-// 			subGraph.Attr("label", "")
-// 			subGraph.Attr("style", "rounded")
-// 			subGraph.Attr("color", "lightgrey")
-// 			subGraph.Attr("bgcolor", "#E8E8E8")
-// 			subGraph.Attr("fontname", "COURIER")
-// 			subGraph.Attr("fontcolor", "#46494C")
-// 			root.Edge(s.nodes[in].DotNode(subGraph), graphNode).Attr("color", "#949494")
-// 		}
-// 	}
-//
-// 	return root
-// }
 
 func (s *Storage) detectCycles() (err error) {
 	visited := make(map[Key]visitStatus)

@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-// Node
+// Node ...
 type Node interface {
 	Arguments
 	ArgumentNodes() []Node
@@ -14,12 +14,12 @@ type Node interface {
 	Of(k Key)
 }
 
-// Arguments
+// Arguments ...
 type Arguments interface {
 	Arguments() (args []Key)
 }
 
-// InstanceProvider
+// InstanceProvider ...
 type InstanceProvider interface {
 	Arguments
 	Provide(arguments []reflect.Value) (reflect.Value, error)

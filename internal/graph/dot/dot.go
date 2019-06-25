@@ -8,9 +8,10 @@ import (
 	"github.com/defval/inject/internal/graph"
 )
 
+// Graph is alias to dot.Graph
 type Graph = dot.Graph
 
-// NewGraph
+// NewGraphFromStorage creates new graph from storage.
 func NewGraphFromStorage(storage *graph.Storage) *dot.Graph {
 	root := dot.NewGraph(dot.Directed)
 
@@ -24,11 +25,11 @@ func NewGraphFromStorage(storage *graph.Storage) *dot.Graph {
 			}
 		}
 
-		pkgGraph := addPkgSubgraph(root, node)
+		pkgGraph := addPkgSubGraph(root, node)
 		graphNode := addDotNode(pkgGraph, node)
 
 		for _, in := range node.ArgumentNodes() {
-			pkgGraph := addPkgSubgraph(root, in)
+			pkgGraph := addPkgSubGraph(root, in)
 
 			root.Edge(addDotNode(pkgGraph, in), graphNode).Attr("color", "#949494")
 		}
@@ -58,15 +59,9 @@ func addDotNode(root *dot.Graph, n graph.Node) dot.Node {
 	return result
 }
 
-// addPkgSubgraph
-func addPkgSubgraph(root *dot.Graph, node graph.Node) *dot.Graph {
+func addPkgSubGraph(root *dot.Graph, node graph.Node) *dot.Graph {
 	pkgGraph := root.Subgraph(packageString(node), dot.ClusterOption{})
-	pkgGraph.Attr("label", "")
-	pkgGraph.Attr("style", "rounded")
-	pkgGraph.Attr("bgcolor", "#E8E8E8")
-	pkgGraph.Attr("color", "lightgrey")
-	pkgGraph.Attr("fontname", "COURIER")
-	pkgGraph.Attr("fontcolor", "#46494C")
+	applySubGraphStyle(pkgGraph)
 
 	return pkgGraph
 }
@@ -81,4 +76,13 @@ func packageString(node graph.Node) string {
 	}
 
 	return pkg
+}
+
+func applySubGraphStyle(graph *dot.Graph) {
+	graph.Attr("label", "")
+	graph.Attr("style", "rounded")
+	graph.Attr("bgcolor", "#E8E8E8")
+	graph.Attr("color", "lightgrey")
+	graph.Attr("fontname", "COURIER")
+	graph.Attr("fontcolor", "#46494C")
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewProviderNode
+// NewProviderNode creates new provider node.
 func NewProviderNode(name string, p InstanceProvider) (_ *ProviderNode) {
 	node := &ProviderNode{
 		key: Key{
@@ -19,9 +19,9 @@ func NewProviderNode(name string, p InstanceProvider) (_ *ProviderNode) {
 	return node
 }
 
-// ProviderNode
+// ProviderNode ...
 type ProviderNode struct {
-	WithOut
+	outTrait
 	InstanceProvider
 
 	in       []Node
@@ -29,11 +29,13 @@ type ProviderNode struct {
 	instance reflect.Value
 }
 
+// Key returns unique node identifier.
 func (n *ProviderNode) Key() Key {
 	return n.key
 }
 
-// ArgumentNodes
+// ArgumentNodes return another nodes that included in this group.
+// todo: Arguments() and ArgumentNodes() is too similar
 func (n *ProviderNode) ArgumentNodes() (args []Node) {
 	for _, in := range n.in {
 		args = append(args, in)
@@ -42,6 +44,7 @@ func (n *ProviderNode) ArgumentNodes() (args []Node) {
 	return args
 }
 
+// Extract extracts node into target.
 func (n *ProviderNode) Extract(target reflect.Value) (err error) {
 	if n.instance.IsValid() {
 		target.Set(n.instance)

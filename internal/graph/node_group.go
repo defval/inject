@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewGroupNode
+// NewGroupNode creates new group node.
 func NewGroupNode(iface interface{}) (_ *GroupNode, err error) {
 	if iface == nil {
 		return nil, errors.Errorf("nil interface") // todo: improve message
@@ -33,9 +33,9 @@ func NewGroupNode(iface interface{}) (_ *GroupNode, err error) {
 	}, nil
 }
 
-// GroupNode
+// GroupNode is a group node.
 type GroupNode struct {
-	WithOut
+	outTrait
 	key Key
 
 	in []*ProviderNode
@@ -43,12 +43,12 @@ type GroupNode struct {
 	node *dot.Node
 }
 
-// Key
+// Key returns node unique identifier.
 func (n *GroupNode) Key() Key {
 	return n.key
 }
 
-// Arguments
+// Arguments returns another node keys that included in this group node.
 func (n *GroupNode) Arguments() (args []Key) {
 	for _, in := range n.in {
 		args = append(args, in.Key())
@@ -57,6 +57,8 @@ func (n *GroupNode) Arguments() (args []Key) {
 	return args
 }
 
+// ArgumentNodes return another nodes that included in this group.
+// todo: Arguments() and ArgumentNodes() is too similar
 func (n *GroupNode) ArgumentNodes() (args []Node) {
 	for _, in := range n.in {
 		args = append(args, in)
@@ -65,7 +67,7 @@ func (n *GroupNode) ArgumentNodes() (args []Node) {
 	return args
 }
 
-// Check
+// Add adds provider node to group.
 func (n *GroupNode) Add(node *ProviderNode) (err error) {
 	if !node.ResultType().Implements(n.key.Type.Elem()) {
 		return errors.Errorf("type %s not implement %s interface", node.ResultType(), n.key.Type.Elem())
@@ -76,6 +78,7 @@ func (n *GroupNode) Add(node *ProviderNode) (err error) {
 	return nil
 }
 
+// Replace replaces provider node in group.
 func (n *GroupNode) Replace(node *ProviderNode) (err error) {
 	for i, in := range n.in {
 		if node.Key() != in.Key() {
@@ -88,7 +91,7 @@ func (n *GroupNode) Replace(node *ProviderNode) (err error) {
 	return nil
 }
 
-// Extract
+// Extract extracts group instance into target.
 func (n *GroupNode) Extract(target reflect.Value) (err error) {
 	if target.Kind() != reflect.Slice || target.Type().Elem().Kind() != reflect.Interface {
 		return errors.Errorf("target value for extracting must be a slice of interfaces, got %s", target.Kind())

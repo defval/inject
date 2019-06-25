@@ -6,7 +6,7 @@ import (
 	"github.com/defval/inject/internal/graph"
 )
 
-// IsObjectProvider
+// IsObjectProvider todo
 func IsObjectProvider(rawProvider interface{}) bool {
 	value := reflect.ValueOf(rawProvider)
 
@@ -16,7 +16,7 @@ func IsObjectProvider(rawProvider interface{}) bool {
 	return isStruct || isStructPtr
 }
 
-// NewConstructorProvider creates object provider.
+// NewObjectProvider creates object provider.
 func NewObjectProvider(rawProvider interface{}, tag string, includeExported bool) (*ObjectProvider, error) {
 	value := reflect.ValueOf(rawProvider)
 
@@ -34,7 +34,7 @@ func NewObjectProvider(rawProvider interface{}, tag string, includeExported bool
 	return p, nil
 }
 
-// ObjectProvider
+// ObjectProvider todo
 type ObjectProvider struct {
 	id    string
 	value reflect.Value
@@ -47,6 +47,7 @@ type ObjectProvider struct {
 	isValue bool
 }
 
+// Provide todo
 func (p *ObjectProvider) Provide(arguments []reflect.Value) (reflect.Value, error) {
 	elem := p.elem()
 
@@ -67,10 +68,12 @@ func (p *ObjectProvider) Provide(arguments []reflect.Value) (reflect.Value, erro
 	return p.value, nil
 }
 
+// ResultType todo
 func (p *ObjectProvider) ResultType() reflect.Type {
 	return p.value.Type()
 }
 
+// Arguments todo
 func (p *ObjectProvider) Arguments() (args []graph.Key) {
 	var value = p.elem()
 

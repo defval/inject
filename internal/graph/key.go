@@ -5,13 +5,13 @@ import (
 	"reflect"
 )
 
-// Key
+// Key unique identifier of node graph.
 type Key struct {
 	Type reflect.Type
 	Name string
 }
 
-// String
+// String is a string representation of key.
 func (k Key) String() string {
 	if k.Name == "" {
 		return fmt.Sprintf("%s", k.Type)
@@ -20,17 +20,17 @@ func (k Key) String() string {
 	return fmt.Sprintf("%s[%s]", k.Type, k.Name)
 }
 
-// WithOut
-type WithOut struct {
+// outTrait
+type outTrait struct {
 	keys []Key
 }
 
 // Of
-func (o *WithOut) Of(k Key) {
+func (o *outTrait) Of(k Key) {
 	o.keys = append(o.keys, k)
 }
 
-// WithOut
-func (o *WithOut) Out() []Key {
+// outTrait
+func (o *outTrait) Out() []Key {
 	return o.keys
 }
