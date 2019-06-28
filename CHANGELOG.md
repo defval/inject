@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v1.4.0
 
-## Change
+### Change
 
 - `Container.WriteTo()` signature to `io.WriterTo`
 
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v1.2.1
 
-## Fixed
+### Fixed
 
 - inject.As() allows provide same interface without name
 
