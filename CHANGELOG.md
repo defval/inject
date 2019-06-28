@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Replace: check that provider implement interface.
+- Replace: check that provider implement interface
 
 ## v1.4.1
 
