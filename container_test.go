@@ -543,7 +543,7 @@ func TestContainer_ProvideAs(t *testing.T) {
 			}, inject.As(new(http.Handler))),
 		)
 
-		require.EqualError(t, err, "could not compile container: type *net.TCPAddr not implement http.Handler interface")
+		require.EqualError(t, err, "could not compile container: could not create interface alias: type *net.TCPAddr not implement http.Handler interface")
 	})
 
 	t.Run("provide as interface with struct injection", func(t *testing.T) {
@@ -923,12 +923,21 @@ func TestContainer_Replace(t *testing.T) {
 		eqPtr(t, s, mockStringer)
 	})
 
-	t.Run("replace nil instanceProvider", func(t *testing.T) {
+	t.Run("replace nil provider", func(t *testing.T) {
 		_, err := inject.New(
 			inject.Replace(nil),
 		)
 
 		require.EqualError(t, err, "could not compile container: could not provide nil")
+	})
+
+	t.Run("replace not implemented interface", func(t *testing.T) {
+		_, err := inject.New(
+			inject.Provide(&net.TCPAddr{}, inject.As(new(net.Addr))),
+			inject.Replace(&http.Server{}, inject.As(new(net.Addr))),
+		)
+
+		require.EqualError(t, err, "could not compile container: could not create interface alias: type *http.Server not implement net.Addr interface")
 	})
 
 	t.Run("replace without interfaces", func(t *testing.T) {
@@ -946,7 +955,7 @@ func TestContainer_Replace(t *testing.T) {
 			inject.Replace(func() {}),
 		)
 
-		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_Replace.func5.1 constructor function must have at least one return value")
+		require.EqualError(t, err, "could not compile container: github.com/defval/inject_test.TestContainer_Replace.func6.1 constructor function must have at least one return value")
 	})
 
 	t.Run("replace already provided type", func(t *testing.T) {

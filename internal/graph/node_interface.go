@@ -24,6 +24,10 @@ func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *In
 		return nil, errors.Errorf("only interface supported") // todo: improve message
 	}
 
+	if !node.ResultType().Implements(typ) {
+		return nil, errors.Errorf("type %s not implement %s interface", node.ResultType(), typ)
+	}
+
 	return &InterfaceNode{
 		key: Key{
 			Type: typ,
