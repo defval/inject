@@ -8,29 +8,13 @@ import (
 )
 
 // NewGroupNode creates new group node.
-func NewGroupNode(iface interface{}) (_ *GroupNode, err error) {
-	if iface == nil {
-		return nil, errors.Errorf("nil interface") // todo: improve message
-	}
-
-	typ := reflect.TypeOf(iface)
-
-	if typ.Kind() != reflect.Ptr {
-		return nil, errors.Errorf("interface type must be a pointer to interface")
-	}
-
-	typ = typ.Elem()
-
-	if typ.Kind() != reflect.Interface {
-		return nil, errors.Errorf("only interface supported") // todo: improve message
-	}
-
+func NewGroupNode(iface *InterfaceNode) *GroupNode {
 	return &GroupNode{
 		key: Key{
-			Type: reflect.SliceOf(typ),
+			Type: reflect.SliceOf(iface.Key().Type),
 		},
 		in: make([]*ProviderNode, 0),
-	}, nil
+	}
 }
 
 // GroupNode is a group node.
@@ -69,10 +53,6 @@ func (n *GroupNode) ArgumentNodes() (args []Node) {
 
 // Add adds provider node to group.
 func (n *GroupNode) Add(node *ProviderNode) (err error) {
-	if !node.ResultType().Implements(n.key.Type.Elem()) {
-		return errors.Errorf("type %s not implement %s interface", node.ResultType(), n.key.Type.Elem())
-	}
-
 	n.in = append(n.in, node)
 
 	return nil
@@ -93,9 +73,10 @@ func (n *GroupNode) Replace(node *ProviderNode) (err error) {
 
 // Extract extracts group instance into target.
 func (n *GroupNode) Extract(target reflect.Value) (err error) {
-	if target.Kind() != reflect.Slice || target.Type().Elem().Kind() != reflect.Interface {
-		return errors.Errorf("target value for extracting must be a slice of interfaces, got %s", target.Kind())
-	}
+	// todo: test case
+	// if target.Kind() != reflect.Slice || target.Type().Elem().Kind() != reflect.Interface {
+	// 	return errors.Errorf("target value for extracting must be a slice of interfaces, got %s", target.Kind())
+	// }
 
 	var members []reflect.Value
 	for _, node := range n.in {

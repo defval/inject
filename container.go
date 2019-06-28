@@ -115,17 +115,14 @@ func (c *Container) registerProviders() (err error) {
 			ifaceNode, err := graph.NewInterfaceNode(po.name, node, iface)
 
 			if err != nil {
-				return errors.Wrapf(err, "could not create interface alias")
+				return errors.Wrapf(err, "could not create interface alias for %s", node.Key())
 			}
 
 			if err = c.storage.Add(ifaceNode); err != nil {
 				return errors.WithStack(err)
 			}
 
-			groupNode, err := c.storage.GroupNode(iface)
-			if err != nil {
-				return errors.WithStack(err)
-			}
+			groupNode := c.storage.GroupNode(ifaceNode)
 
 			if err = groupNode.Add(node); err != nil {
 				return errors.WithStack(err)
@@ -158,17 +155,14 @@ func (c *Container) applyReplacers() (err error) {
 			ifaceNode, err := graph.NewInterfaceNode(po.name, node, iface)
 
 			if err != nil {
-				return errors.Wrapf(err, "could not create interface alias")
+				return errors.Wrapf(err, "could not create interface alias for %s", node.Key())
 			}
 
 			if err = c.storage.Replace(ifaceNode); err != nil {
 				return errors.WithStack(err)
 			}
 
-			groupNode, err := c.storage.GroupNode(iface)
-			if err != nil {
-				return errors.WithStack(err)
-			}
+			groupNode := c.storage.GroupNode(ifaceNode)
 
 			if err = groupNode.Replace(node); err != nil {
 				return errors.WithStack(err)

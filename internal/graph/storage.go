@@ -62,19 +62,15 @@ func (s *Storage) Replace(node Node) (err error) {
 }
 
 // GroupNode returns or creates group node by interface.
-func (s *Storage) GroupNode(iface interface{}) (_ *GroupNode, err error) {
-	groupNode, err := NewGroupNode(iface)
-
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+func (s *Storage) GroupNode(iface *InterfaceNode) (_ *GroupNode) {
+	groupNode := NewGroupNode(iface)
 
 	if _, exists := s.nodes[groupNode.Key()]; !exists {
 		s.keys = append(s.keys, groupNode.Key())
 		s.nodes[groupNode.Key()] = groupNode
 	}
 
-	return s.nodes[groupNode.Key()].(*GroupNode), nil
+	return s.nodes[groupNode.Key()].(*GroupNode)
 }
 
 // Extract extracts node instance into target.

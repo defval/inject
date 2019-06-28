@@ -15,17 +15,17 @@ func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *In
 	typ := reflect.TypeOf(iface)
 
 	if typ.Kind() != reflect.Ptr {
-		return nil, errors.Errorf("interface type must be a pointer to interface")
+		return nil, errors.Errorf("As() argument must be a pointer to interface, like new(http.Handler), got %s", typ.Kind())
 	}
 
 	typ = typ.Elem()
 
 	if typ.Kind() != reflect.Interface {
-		return nil, errors.Errorf("only interface supported") // todo: improve message
+		return nil, errors.Errorf("As() argument must be a pointer to interface, like new(http.Handler), got %s", typ.Kind()) // todo: improve message
 	}
 
 	if !node.ResultType().Implements(typ) {
-		return nil, errors.Errorf("type %s not implement %s interface", node.ResultType(), typ)
+		return nil, errors.Errorf("%s interface not implemented", typ.String())
 	}
 
 	return &InterfaceNode{
@@ -65,10 +65,6 @@ func (n *InterfaceNode) ArgumentNodes() (args []Node) {
 func (n *InterfaceNode) Extract(target reflect.Value) (err error) {
 	if n.multiple {
 		return errors.Errorf("could not extract %s: you have several instances of this interface type, use WithName() to identify it", n.Key())
-	}
-
-	if !target.Type().Implements(n.key.Type) {
-		return errors.Errorf("%s not implement %s", target.Type(), n.key.Type)
 	}
 
 	return n.node.Extract(target)

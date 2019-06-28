@@ -30,10 +30,7 @@ func NewCombinedProvider(rawProvider interface{}, tag string, exported bool) (_ 
 
 	ctorMethod := value.MethodByName("Provide")
 
-	objectProvider, err := NewObjectProvider(rawProvider, tag, exported)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	objectProvider, _ := NewObjectProvider(rawProvider, tag, exported) // todo: cases?
 
 	ctorProvider, err := NewConstructorProvider(ctorMethod.Interface())
 	if err != nil {
