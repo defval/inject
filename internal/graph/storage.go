@@ -31,7 +31,7 @@ func (s *Storage) All() (nodes []Node) {
 }
 
 // Add adds node to storage.
-func (s *Storage) Add(node Node) (err error) {
+func (s *Storage) Add(node Node, implements ...interface{}) (err error) {
 	if n, ok := s.nodes[node.Key()]; ok {
 		if ifaceNode, ok := n.(*InterfaceNode); ok {
 			ifaceNode.multiple = true
@@ -45,11 +45,32 @@ func (s *Storage) Add(node Node) (err error) {
 	s.keys = append(s.keys, node.Key())
 	s.nodes[node.Key()] = node
 
+	if providerNode, ok := node.(*ProviderNode); ok {
+		// create group and interface alias nodes
+		for _, iface := range implements {
+			ifaceNode, err := newInterfaceNode(node.Key().Name, providerNode, iface)
+
+			if err != nil {
+				return errors.Wrapf(err, "could not create interface alias for %s", node.Key())
+			}
+
+			if err = s.Add(ifaceNode); err != nil {
+				return errors.WithStack(err)
+			}
+
+			groupNode := s.GroupNode(ifaceNode)
+
+			if err = groupNode.Add(providerNode); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+
 	return nil
 }
 
 // Replace node in a storage.
-func (s *Storage) Replace(node Node) (err error) {
+func (s *Storage) Replace(node Node, implements ...interface{}) (err error) {
 	_, isProviderNode := node.(*ProviderNode)
 
 	if _, ok := s.nodes[node.Key()]; !ok && !isProviderNode {
@@ -58,12 +79,33 @@ func (s *Storage) Replace(node Node) (err error) {
 
 	s.nodes[node.Key()] = node
 
+	if providerNode, ok := node.(*ProviderNode); ok {
+		// create group and interface alias nodes
+		for _, iface := range implements {
+			ifaceNode, err := newInterfaceNode(node.Key().Name, providerNode, iface)
+
+			if err != nil {
+				return errors.Wrapf(err, "could not create interface alias for %s", node.Key())
+			}
+
+			if err = s.Replace(ifaceNode); err != nil {
+				return errors.WithStack(err)
+			}
+
+			groupNode := s.GroupNode(ifaceNode)
+
+			if err = groupNode.Replace(providerNode); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+
 	return nil
 }
 
 // GroupNode returns or creates group node by interface.
 func (s *Storage) GroupNode(iface *InterfaceNode) (_ *GroupNode) {
-	groupNode := NewGroupNode(iface)
+	groupNode := newGroupNode(iface)
 
 	if _, exists := s.nodes[groupNode.Key()]; !exists {
 		s.keys = append(s.keys, groupNode.Key())

@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewInterfaceNode creates new interface node.
-func NewInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *InterfaceNode, err error) {
+// newInterfaceNode creates new interface node.
+func newInterfaceNode(name string, node *ProviderNode, iface interface{}) (_ *InterfaceNode, err error) {
 	if iface == nil {
 		return nil, errors.Errorf("nil interface") // todo: improve message
 	}

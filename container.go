@@ -106,27 +106,8 @@ func (c *Container) registerProviders() (err error) {
 
 		node := graph.NewProviderNode(po.name, prov)
 
-		if err = c.storage.Add(node); err != nil {
+		if err = c.storage.Add(node, po.implements...); err != nil {
 			return errors.WithStack(err)
-		}
-
-		// create group and interface alias nodes
-		for _, iface := range po.implements {
-			ifaceNode, err := graph.NewInterfaceNode(po.name, node, iface)
-
-			if err != nil {
-				return errors.Wrapf(err, "could not create interface alias for %s", node.Key())
-			}
-
-			if err = c.storage.Add(ifaceNode); err != nil {
-				return errors.WithStack(err)
-			}
-
-			groupNode := c.storage.GroupNode(ifaceNode)
-
-			if err = groupNode.Add(node); err != nil {
-				return errors.WithStack(err)
-			}
 		}
 	}
 
@@ -146,27 +127,8 @@ func (c *Container) applyReplacers() (err error) {
 
 		node := graph.NewProviderNode(po.name, prov)
 
-		if err = c.storage.Replace(node); err != nil {
+		if err = c.storage.Replace(node, po.implements...); err != nil {
 			return errors.WithStack(err)
-		}
-
-		// create group and interface alias nodes
-		for _, iface := range po.implements {
-			ifaceNode, err := graph.NewInterfaceNode(po.name, node, iface)
-
-			if err != nil {
-				return errors.Wrapf(err, "could not create interface alias for %s", node.Key())
-			}
-
-			if err = c.storage.Replace(ifaceNode); err != nil {
-				return errors.WithStack(err)
-			}
-
-			groupNode := c.storage.GroupNode(ifaceNode)
-
-			if err = groupNode.Replace(node); err != nil {
-				return errors.WithStack(err)
-			}
 		}
 	}
 

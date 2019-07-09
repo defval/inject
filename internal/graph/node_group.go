@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewGroupNode creates new group node.
-func NewGroupNode(iface *InterfaceNode) *GroupNode {
+// newGroupNode creates new group node.
+func newGroupNode(iface *InterfaceNode) *GroupNode {
 	return &GroupNode{
 		key: Key{
 			Type: reflect.SliceOf(iface.Key().Type),
