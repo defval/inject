@@ -7,6 +7,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	ErrTypeNotProvided = errors.New("type not provided")
+)
+
 // NewStorage creates new storage.
 func NewStorage() *Storage {
 	return &Storage{
@@ -125,7 +129,7 @@ func (s *Storage) Extract(name string, target reflect.Value) (err error) {
 	node, exists := s.nodes[k]
 
 	if !exists {
-		return errors.Errorf("type %s not provided", k)
+		return errors.Wrap(ErrTypeNotProvided, k.String())
 	}
 
 	return node.Extract(target)

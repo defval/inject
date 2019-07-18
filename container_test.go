@@ -630,7 +630,9 @@ func TestContainer_Extract(t *testing.T) {
 		require.NoError(t, err)
 
 		var s string
-		require.EqualError(t, container.Extract(&s), "type string not provided")
+		extractErr := container.Extract(&s)
+		require.EqualError(t, extractErr, "string: type not provided")
+		require.Equal(t, errors.Cause(extractErr), inject.ErrTypeNotProvided)
 	})
 
 	t.Run("nil", func(t *testing.T) {
@@ -658,7 +660,9 @@ func TestContainer_Extract(t *testing.T) {
 		require.NoError(t, err)
 
 		var addr *net.TCPAddr
-		require.EqualError(t, container.Extract(&addr, inject.Name("second")), "type *net.TCPAddr[second] not provided")
+		extractErr := container.Extract(&addr, inject.Name("second"))
+		require.EqualError(t, extractErr, "*net.TCPAddr[second]: type not provided")
+		require.Equal(t, errors.Cause(extractErr), inject.ErrTypeNotProvided)
 	})
 }
 
