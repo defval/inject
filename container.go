@@ -1,7 +1,6 @@
 package inject
 
 import (
-	"fmt"
 	"io"
 	"reflect"
 
@@ -18,7 +17,6 @@ func New(options ...Option) (_ *Container, err error) {
 	}
 
 	options = append(options, Provide(func() *dot.Graph {
-		fmt.Println("asd")
 		return dot.NewGraphFromStorage(c.storage)
 	}))
 
