@@ -1,6 +1,7 @@
 package inject
 
 import (
+	"fmt"
 	"io"
 	"reflect"
 
@@ -15,6 +16,11 @@ func New(options ...Option) (_ *Container, err error) {
 	var c = &Container{
 		storage: graph.NewStorage(),
 	}
+
+	options = append(options, Provide(func() *dot.Graph {
+		fmt.Println("asd")
+		return dot.NewGraphFromStorage(c.storage)
+	}))
 
 	// apply options.
 	for _, opt := range options {
