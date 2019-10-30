@@ -268,6 +268,20 @@ Write visualization into `io.Writer`. Check out result on <a href="https://dream
     container.WriteTo(buffer)
 ```
 
+or
+
+```go
+    // define github.com/emicklei/*dot.Graph type
+    var graph *dot.Graph
+    
+    // extract graph
+    container.Extract(&graph)
+
+    // use
+    graph.Write(buffer)
+    
+```
+
 This is visualization of container example.
 
 <img src="https://github.com/defval/inject/raw/master/graph.png">
