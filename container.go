@@ -16,6 +16,10 @@ func New(options ...Option) (_ *Container, err error) {
 		storage: graph.NewStorage(),
 	}
 
+	options = append(options, Provide(func() *dot.Graph {
+		return dot.NewGraphFromStorage(c.storage)
+	}))
+
 	// apply options.
 	for _, opt := range options {
 		opt.apply(c)
