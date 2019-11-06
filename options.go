@@ -1,5 +1,9 @@
 package inject
 
+import (
+	Lifetime2 "github.com/defval/inject/internal/Lifetime"
+)
+
 // OPTIONS
 
 // Option configures container. See inject.Provide(), inject.Bundle(), inject.Replace().
@@ -128,6 +132,12 @@ type ProvideOption interface{ apply(*providerOptions) }
 func WithName(name string) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
 		provider.name = name
+	})
+}
+
+func Lifetime(providerLifetime Lifetime2.ProviderLifetime) ProvideOption {
+	return provideOption(func(provider *providerOptions) {
+		provider.lifetime = providerLifetime
 	})
 }
 

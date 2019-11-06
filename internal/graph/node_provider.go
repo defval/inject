@@ -1,18 +1,19 @@
 package graph
 
 import (
-	"reflect"
-
+	"github.com/defval/inject/internal/Lifetime"
 	"github.com/pkg/errors"
+	"reflect"
 )
 
 // NewProviderNode creates new provider node.
-func NewProviderNode(name string, p InstanceProvider) (_ *ProviderNode) {
+func NewProviderNode(name string, lifetime Lifetime.ProviderLifetime, p InstanceProvider) (_ *ProviderNode) {
 	node := &ProviderNode{
 		key: Key{
 			Type: p.ResultType(),
 			Name: name,
 		},
+		lifetime:         lifetime,
 		InstanceProvider: p,
 	}
 
@@ -26,7 +27,12 @@ type ProviderNode struct {
 
 	in       []Node
 	key      Key
+	lifetime Lifetime.ProviderLifetime
 	instance reflect.Value
+}
+
+func (n *ProviderNode) Lifetime() Lifetime.ProviderLifetime {
+	return n.lifetime
 }
 
 // Key returns unique node identifier.
@@ -72,8 +78,11 @@ func (n *ProviderNode) Extract(target reflect.Value) (err error) {
 		return errors.Errorf("%s: nil provided", n.Key())
 	}
 
-	n.instance = value
-	target.Set(n.instance)
+	if n.lifetime == Lifetime.Singleton {
+		n.instance = value
+	}
+
+	target.Set(value)
 
 	return nil
 }

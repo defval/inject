@@ -1,6 +1,7 @@
 package inject
 
 import (
+	Lifetime2 "github.com/defval/inject/internal/Lifetime"
 	"io"
 	"reflect"
 
@@ -108,7 +109,7 @@ func (c *Container) registerProviders() (err error) {
 			return errors.WithStack(err)
 		}
 
-		node := graph.NewProviderNode(po.name, prov)
+		node := graph.NewProviderNode(po.name, po.lifetime, prov)
 
 		if err = c.storage.Add(node, po.implements...); err != nil {
 			return errors.WithStack(err)
@@ -129,7 +130,7 @@ func (c *Container) applyReplacers() (err error) {
 			return errors.WithStack(err)
 		}
 
-		node := graph.NewProviderNode(po.name, prov)
+		node := graph.NewProviderNode(po.name, po.lifetime, prov)
 
 		if err = c.storage.Replace(node, po.implements...); err != nil {
 			return errors.WithStack(err)
@@ -144,6 +145,7 @@ type providerOptions struct {
 	provider        interface{}
 	implements      []interface{}
 	includeExported bool
+	lifetime        Lifetime2.ProviderLifetime
 }
 
 type extractOptions struct {

@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/defval/inject/internal/Lifetime"
 	"reflect"
 )
 
@@ -12,6 +13,7 @@ type Node interface {
 	Extract(target reflect.Value) (err error)
 	Out() []Key
 	Of(k Key)
+	Lifetime() Lifetime.ProviderLifetime
 }
 
 // Arguments ...

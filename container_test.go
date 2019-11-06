@@ -3,6 +3,7 @@ package inject_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/defval/inject/internal/Lifetime"
 	"net"
 	"net/http"
 	"testing"
@@ -124,6 +125,32 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 
 		var r bool
 		require.NoError(t, container.Extract(&r))
+	})
+
+	t.Run("constructors with providerLifetime dependency without errors", func(t *testing.T) {
+
+		container, err := inject.New(
+			inject.Provide(func() *http.ServeMux {
+				return &http.ServeMux{}
+			}, inject.Lifetime(Lifetime.Scoped)),
+			inject.Provide(func(mux *http.ServeMux) *http.Server {
+				return &http.Server{Handler: mux}
+			}, inject.Lifetime(Lifetime.Singleton)),
+		)
+
+		require.NoError(t, err)
+
+		var extractedServer *http.Server
+		require.NoError(t, container.Extract(&extractedServer))
+		extractedServer.Addr = "192.168.1.1"
+		var extractedServer1 *http.Server
+		require.NoError(t, container.Extract(&extractedServer1))
+		eqPtr(t, extractedServer, extractedServer1)
+		require.Contains(t, extractedServer.Addr, extractedServer1.Addr)
+		var extractedMux *http.ServeMux
+		require.NoError(t, container.Extract(&extractedMux))
+		eqPtr(t, extractedMux, extractedServer1.Handler)
+
 	})
 
 	t.Run("constructors with dependency with nil errors", func(t *testing.T) {

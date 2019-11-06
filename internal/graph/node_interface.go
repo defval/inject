@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/defval/inject/internal/Lifetime"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,10 @@ type InterfaceNode struct {
 	key      Key
 	node     *ProviderNode
 	multiple bool
+}
+
+func (n *InterfaceNode) Lifetime() Lifetime.ProviderLifetime {
+	return n.node.lifetime
 }
 
 // Key returns unique node identifier.
