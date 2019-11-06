@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"github.com/defval/inject/internal/Lifetime"
+	"github.com/defval/inject/internal/Scope"
 	"reflect"
 
 	"github.com/emicklei/dot"
@@ -28,8 +28,8 @@ type GroupNode struct {
 	node *dot.Node
 }
 
-func (n *GroupNode) Lifetime() Lifetime.ProviderLifetime {
-	return Lifetime.Transient
+func (n *GroupNode) Lifetime() Scope.ProviderLifetime {
+	return Scope.Transient
 }
 
 // Key returns node unique identifier.

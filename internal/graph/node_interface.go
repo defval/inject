@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"github.com/defval/inject/internal/Lifetime"
+	"github.com/defval/inject/internal/Scope"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -46,7 +46,7 @@ type InterfaceNode struct {
 	multiple bool
 }
 
-func (n *InterfaceNode) Lifetime() Lifetime.ProviderLifetime {
+func (n *InterfaceNode) Lifetime() Scope.ProviderLifetime {
 	return n.node.lifetime
 }
 

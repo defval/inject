@@ -3,7 +3,7 @@ package inject_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/defval/inject/internal/Lifetime"
+	"github.com/defval/inject/internal/Scope"
 	"net"
 	"net/http"
 	"testing"
@@ -132,10 +132,10 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 		container, err := inject.New(
 			inject.Provide(func() *http.ServeMux {
 				return &http.ServeMux{}
-			}, inject.Lifetime(Lifetime.Scoped)),
+			}, inject.Lifetime(Scope.Scoped)),
 			inject.Provide(func(mux *http.ServeMux) *http.Server {
 				return &http.Server{Handler: mux}
-			}, inject.Lifetime(Lifetime.Singleton)),
+			}, inject.Lifetime(Scope.Singleton)),
 		)
 
 		require.NoError(t, err)

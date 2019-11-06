@@ -1,7 +1,7 @@
 package inject
 
 import (
-	Lifetime2 "github.com/defval/inject/internal/Lifetime"
+	Lifetime2 "github.com/defval/inject/internal/Scope"
 )
 
 // OPTIONS

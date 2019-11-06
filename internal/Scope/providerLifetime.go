@@ -1,4 +1,4 @@
-package Lifetime
+package Scope
 
 type ProviderLifetime int32
 

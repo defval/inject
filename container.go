@@ -1,7 +1,7 @@
 package inject
 
 import (
-	Lifetime2 "github.com/defval/inject/internal/Lifetime"
+	"github.com/defval/inject/internal/Scope"
 	"io"
 	"reflect"
 
@@ -145,7 +145,7 @@ type providerOptions struct {
 	provider        interface{}
 	implements      []interface{}
 	includeExported bool
-	lifetime        Lifetime2.ProviderLifetime
+	lifetime        Scope.ProviderLifetime
 }
 
 type extractOptions struct {
