@@ -137,19 +137,14 @@ func TestContainer_ProvideConstructor(t *testing.T) {
 				return &http.Server{Handler: mux}
 			}, inject.Lifetime(Scope.Singleton)),
 		)
-
 		require.NoError(t, err)
-
 		var extractedServer *http.Server
 		require.NoError(t, container.Extract(&extractedServer))
 		extractedServer.Addr = "192.168.1.1"
 		var extractedServer1 *http.Server
 		require.NoError(t, container.Extract(&extractedServer1))
 		eqPtr(t, extractedServer, extractedServer1)
-		require.Contains(t, extractedServer.Addr, extractedServer1.Addr)
-		var extractedMux *http.ServeMux
-		require.NoError(t, container.Extract(&extractedMux))
-		eqPtr(t, extractedMux, extractedServer1.Handler)
+		require.Equal(t, extractedServer.Addr, extractedServer1.Addr)
 
 	})
 
