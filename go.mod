@@ -1,4 +1,4 @@
-module github.com/defval/inject
+module github.com/maxzhang1985/inject
 
 require (
 	github.com/emicklei/dot v0.10.0
