@@ -65,15 +65,3 @@ func (c *Container) compile() {
 
 	return
 }
-
-type providerOptions struct {
-	name       string
-	provider   interface{}
-	interfaces []interface{}
-	prototype  bool
-}
-
-type extractOptions struct {
-	name   string
-	target interface{}
-}

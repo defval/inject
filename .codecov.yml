@@ -1,6 +1,3 @@
-ignore:
-  - "di/internal/ditest"
-
 coverage:
   range: 70..98
   round: down

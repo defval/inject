@@ -143,6 +143,18 @@ type provideOption func(provider *providerOptions)
 
 func (o provideOption) apply(provider *providerOptions) { o(provider) }
 
+type providerOptions struct {
+	name       string
+	provider   interface{}
+	interfaces []interface{}
+	prototype  bool
+}
+
 type extractOption func(eo *extractOptions)
 
 func (o extractOption) apply(eo *extractOptions) { o(eo) }
+
+type extractOptions struct {
+	name   string
+	target interface{}
+}
