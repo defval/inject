@@ -9,7 +9,7 @@ import (
 func InspectInterfacePtr(iface interface{}) *Interface {
 	typ := reflect.TypeOf(iface)
 	if typ.Kind() != reflect.Ptr || typ.Elem().Kind() != reflect.Interface {
-		panic(fmt.Sprintf("%s: not a interface ptr", typ)) // todo: improve message
+		panic(fmt.Sprintf("%s: not a pointer to interface", typ)) // todo: improve message
 	}
 
 	return &Interface{

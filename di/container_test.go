@@ -68,6 +68,12 @@ func TestContainerProvideErrors(t *testing.T) {
 		c.MustProvide(ditest.NewFoo)
 		c.MustProvideError(ditest.NewBar, "*ditest.Bar not implement ditest.Barer", new(ditest.Barer))
 	})
+
+	t.Run("provide as not interface cause error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFoo)
+		c.MustProvideError(ditest.NewBar, "*ditest.Foo: not a pointer to interface", new(ditest.Foo))
+	})
 }
 
 func TestContainerExtractErrors(t *testing.T) {
