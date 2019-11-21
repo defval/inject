@@ -14,15 +14,17 @@ func TestContainer(t *testing.T) {
 	var HTTPBundle = inject.Bundle(
 		inject.Provide(ProvideAddr("0.0.0.0", "8080")),
 		inject.Provide(NewMux, inject.As(new(http.Handler))),
-		inject.Provide(NewHTTPServer, inject.Prototype()),
+		inject.Provide(NewHTTPServer, inject.Prototype(), inject.WithName("server")),
 	)
 
 	c := inject.New(HTTPBundle)
 
-	var server *http.Server
-	err := c.Extract(&server)
+	var server1 *http.Server
+	err := c.Extract(&server1, inject.Name("server"))
 	require.NoError(t, err)
-	err = c.Extract(&server)
+
+	var server2 *http.Server
+	err = c.Extract(&server2, inject.Name("server"))
 	require.NoError(t, err)
 }
 
