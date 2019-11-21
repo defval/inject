@@ -10,10 +10,6 @@ func New(options ...Option) *Container {
 		container: di.New(),
 	}
 
-	options = append(options, Provide(func() *dot.Graph {
-		return dot.NewGraphFromStorage(c.storage)
-	}))
-
 	// apply options.
 	for _, opt := range options {
 		opt.apply(c)
