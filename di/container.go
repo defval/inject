@@ -34,8 +34,9 @@ type ProvideParams struct {
 // Provide provides given provider into container.
 func (c *Container) Provide(params ProvideParams) {
 	var provider dependencyProvider = createConstructor(params.Name, params.Provider)
+	key := provider.Result()
 
-	if _, ok := c.providers[provider.Result()]; ok {
+	if c.graph.NodeExists(key) {
 		panicf("The `%s` type already exists in container", provider.Result())
 	}
 
@@ -43,8 +44,8 @@ func (c *Container) Provide(params ProvideParams) {
 		provider = asSingleton(provider)
 	}
 
-	c.graph.AddNode(provider.Result())
-	c.providers[provider.Result()] = provider
+	c.graph.AddNode(key)
+	c.providers[key] = provider
 
 	for _, iface := range params.Interfaces {
 		c.provideAs(provider, iface)
@@ -106,7 +107,7 @@ func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
 	iface := createInterfaceProvider(provider, as)
 	ifaceKey := iface.Result()
 
-	if _, ok := c.providers[ifaceKey]; ok {
+	if c.graph.NodeExists(ifaceKey) {
 		// if iface already exists, restrict interface resolving
 		c.providers[ifaceKey] = iface.Multiple()
 	} else {
@@ -124,6 +125,7 @@ func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
 		// if exists use existing group
 		group = c.providers[groupKey].(*interfaceGroup)
 	} else {
+		// else add new group to graph
 		c.graph.AddNode(groupKey)
 		c.providers[groupKey] = group
 	}
