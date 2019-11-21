@@ -10,37 +10,30 @@ import (
 
 func Example() {
 	// build container
-	container, err := inject.New(
+	container := inject.New(
 		// inject constructor
 		inject.Provide(NewLogger),
 		inject.Provide(NewServer),
 
 		// inject as interface
 		inject.Provide(NewRouter,
-			inject.As(new(http.Handler)), // *http.Server mux implements http.Handler interface
+			inject.As(new(http.Handler)), // *http.Server mux interfaces http.Handler interface
 		),
 
 		// controller interface group
-		inject.Provide(&AccountController{},
+		inject.Provide(NewAccountController,
 			inject.As(new(Controller)), // add AccountController to controller group
 			inject.WithName("account"),
-			inject.Exported(), // inject all exported fields
 		),
-		inject.Provide(&AuthController{},
+		inject.Provide(NewAuthController,
 			inject.As(new(Controller)), // add AuthController to controller group
 			inject.WithName("auth"),
-			inject.Exported(), // inject all exported fields
 		),
 	)
 
-	// build error
-	if err != nil {
-		panic(err)
-	}
-
 	// extract server from container
 	var server *http.Server
-	if err = container.Extract(&server); err != nil {
+	if err := container.Extract(&server); err != nil {
 		panic(err)
 	}
 
@@ -93,6 +86,10 @@ type AccountController struct {
 	Logger *log.Logger
 }
 
+func NewAccountController(logger *log.Logger) *AccountController {
+	return &AccountController{Logger: logger}
+}
+
 // RegisterRoutes
 func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
 	c.Logger.Println("AccountController registered!")
@@ -103,6 +100,10 @@ func (c *AccountController) RegisterRoutes(mux *http.ServeMux) {
 // AuthController
 type AuthController struct {
 	Logger *log.Logger
+}
+
+func NewAuthController(logger *log.Logger) *AuthController {
+	return &AuthController{Logger: logger}
 }
 
 // RegisterRoutes
