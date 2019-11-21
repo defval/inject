@@ -5,6 +5,6 @@ import "reflect"
 // dependencyProvider
 type dependencyProvider interface {
 	Result() providerKey
-	Parameters() ParameterList
+	Parameters() parameterList
 	Provide(parameters ...reflect.Value) (reflect.Value, error)
 }

@@ -31,7 +31,7 @@ func (i interfaceGroup) Result() providerKey {
 }
 
 // Parameters
-func (i interfaceGroup) Parameters() ParameterList {
+func (i interfaceGroup) Parameters() parameterList {
 	return i.keys
 }
 

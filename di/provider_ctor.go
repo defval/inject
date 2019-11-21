@@ -51,7 +51,7 @@ func (c constructorProvider) Result() providerKey {
 }
 
 // Parameters
-func (c constructorProvider) Parameters() ParameterList {
+func (c constructorProvider) Parameters() parameterList {
 	var parameters []providerKey
 
 	for i := 0; i < c.ctor.NumIn(); i++ {

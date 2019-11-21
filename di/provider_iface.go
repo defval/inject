@@ -37,8 +37,8 @@ func (i *interfaceProvider) Result() providerKey {
 	return i.result
 }
 
-func (i *interfaceProvider) Parameters() ParameterList {
-	return append(ParameterList{}, i.provider.Result())
+func (i *interfaceProvider) Parameters() parameterList {
+	return append(parameterList{}, i.provider.Result())
 }
 
 func (i *interfaceProvider) Provide(parameters ...reflect.Value) (reflect.Value, error) {
@@ -58,8 +58,8 @@ func (m *multipleInterfaceProvider) Result() providerKey {
 	return m.result
 }
 
-func (m *multipleInterfaceProvider) Parameters() ParameterList {
-	return ParameterList{}
+func (m *multipleInterfaceProvider) Parameters() parameterList {
+	return parameterList{}
 }
 
 func (m *multipleInterfaceProvider) Provide(parameters ...reflect.Value) (reflect.Value, error) {
