@@ -23,11 +23,9 @@ func Example() {
 		// controller interface group
 		inject.Provide(NewAccountController,
 			inject.As(new(Controller)), // add AccountController to controller group
-			inject.WithName("account"),
 		),
 		inject.Provide(NewAuthController,
 			inject.As(new(Controller)), // add AuthController to controller group
-			inject.WithName("auth"),
 		),
 	)
 
