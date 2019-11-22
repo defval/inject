@@ -5,28 +5,28 @@ import (
 )
 
 // createInterfaceGroup creates new group from provided key.
-func createInterfaceGroup(key providerKey) *interfaceGroup {
+func createInterfaceGroup(key identity) *interfaceGroup {
 	return &interfaceGroup{
-		result: providerKey{
-			Type: reflect.SliceOf(key.Type),
+		result: identity{
+			typ: reflect.SliceOf(key.typ),
 		},
-		keys: []providerKey{},
+		keys: []identity{},
 	}
 }
 
 // interfaceGroup
 type interfaceGroup struct {
-	result providerKey
-	keys   []providerKey
+	result identity
+	keys   []identity
 }
 
 // Add
-func (i *interfaceGroup) Add(key providerKey) {
+func (i *interfaceGroup) Add(key identity) {
 	i.keys = append(i.keys, key)
 }
 
-// Result
-func (i interfaceGroup) Result() providerKey {
+// Identity
+func (i interfaceGroup) Identity() identity {
 	return i.result
 }
 
@@ -37,6 +37,6 @@ func (i interfaceGroup) Parameters() parameterList {
 
 // Provide
 func (i interfaceGroup) Provide(parameters ...reflect.Value) (reflect.Value, error) {
-	group := reflect.New(i.result.Type).Elem()
+	group := reflect.New(i.result.typ).Elem()
 	return reflect.Append(group, parameters...), nil
 }

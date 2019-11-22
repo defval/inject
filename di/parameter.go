@@ -6,10 +6,10 @@ import (
 )
 
 // parameterList
-type parameterList []providerKey
+type parameterList []identity
 
 // Register
-func (l parameterList) Register(container *Container, dependant providerKey) {
+func (l parameterList) Register(container *Container, dependant identity) {
 	for _, key := range l {
 		if !container.graph.NodeExists(key) {
 			panicf("%s: dependency %s not exists in container", dependant, key)

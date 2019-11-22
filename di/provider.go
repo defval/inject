@@ -4,7 +4,7 @@ import "reflect"
 
 // dependencyProvider
 type dependencyProvider interface {
-	Result() providerKey
+	Identity() identity
 	Parameters() parameterList
 	Provide(parameters ...reflect.Value) (reflect.Value, error)
 }

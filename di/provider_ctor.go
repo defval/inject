@@ -42,21 +42,21 @@ type constructorProvider struct {
 	ctor *reflection.Func
 }
 
-// providerKey returns constructor result type identity.
-func (c constructorProvider) Result() providerKey {
-	return providerKey{
-		Name: c.name,
-		Type: c.ctor.Out(0),
+// identity returns constructor result type identity.
+func (c constructorProvider) Identity() identity {
+	return identity{
+		name: c.name,
+		typ:  c.ctor.Out(0),
 	}
 }
 
 // Parameters
 func (c constructorProvider) Parameters() parameterList {
-	var parameters []providerKey
+	var parameters []identity
 
 	for i := 0; i < c.ctor.NumIn(); i++ {
-		p := providerKey{
-			Type: c.ctor.In(i),
+		p := identity{
+			typ: c.ctor.In(i),
 		}
 
 		parameters = append(parameters, p)
