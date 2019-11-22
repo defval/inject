@@ -55,6 +55,13 @@ func (c *Container) Provide(params ProvideParams) {
 // Compile compiles the container. It iterates over all nodes
 // in graph and register their parameters.
 func (c *Container) Compile() {
+	// provide extractor
+	c.Provide(ProvideParams{
+		Provider: func() Extractor {
+			return c
+		},
+	})
+
 	for _, key := range c.graph.Nodes() {
 		// load provider parameters
 		plist := c.providers[key.(identity)].Parameters()
@@ -70,13 +77,6 @@ func (c *Container) Compile() {
 			panic(err.Error())
 		}
 	}
-
-	// provide extractor
-	c.Provide(ProvideParams{
-		Provider: func() Extractor {
-			return c
-		},
-	})
 
 	c.compiled = true
 }
