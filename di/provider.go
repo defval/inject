@@ -2,9 +2,15 @@ package di
 
 import "reflect"
 
+// Provider
+type Provider interface {
+	Identity() Identity
+	Provide() (interface{}, error)
+}
+
 // dependencyProvider
 type dependencyProvider interface {
-	Identity() identity
-	Parameters() parameterList
-	Provide(parameters ...reflect.Value) (reflect.Value, error)
+	identity() identity
+	parameters() parameterList
+	provide(parameters ...reflect.Value) (reflect.Value, error)
 }

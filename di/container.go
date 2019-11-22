@@ -31,25 +31,24 @@ type ProvideParams struct {
 	IsPrototype bool
 }
 
-// Provide provides given provider into container.
+// Provide adds constructor into container.
 func (c *Container) Provide(params ProvideParams) {
 	var provider dependencyProvider = createConstructor(params.Name, params.Provider)
-	key := provider.Identity()
+	c.provide(provider, params.IsPrototype, params.Interfaces)
+}
 
-	if c.graph.NodeExists(key) {
-		panicf("The `%s` type already exists in container", provider.Identity())
-	}
+// ProvideParams params for Provide method.
+type AddProviderParams struct {
+	Name        string
+	Provider    Provider
+	Interfaces  []interface{}
+	IsPrototype bool
+}
 
-	if !params.IsPrototype {
-		provider = asSingleton(provider)
-	}
-
-	c.graph.AddNode(key)
-	c.providers[key] = provider
-
-	for _, iface := range params.Interfaces {
-		c.provideAs(provider, iface)
-	}
+// AddProvider add structProvider into container.
+func (c *Container) AddProvider(params AddProviderParams) {
+	var provider dependencyProvider = createStructProvider(params.Name, params.Provider)
+	c.provide(provider, params.IsPrototype, params.Interfaces)
 }
 
 // Compile compiles the container. It iterates over all nodes
@@ -62,10 +61,10 @@ func (c *Container) Compile() {
 		},
 	})
 
-	for _, key := range c.graph.Nodes() {
-		// load provider parameters
-		plist := c.providers[key.(identity)].Parameters()
-		plist.Register(c, key.(identity))
+	for _, id := range c.graph.Nodes() {
+		// load structProvider parameters
+		plist := c.providers[id.(identity)].parameters()
+		plist.Register(c, id.(identity))
 	}
 
 	_, err := c.graph.DFSSort()
@@ -109,10 +108,29 @@ func (c *Container) Extract(params ExtractParams) error {
 	return key.Extract(c, params.Target)
 }
 
+func (c *Container) provide(provider dependencyProvider, isPrototype bool, ifaces []interface{}) {
+	id := provider.identity()
+
+	if c.graph.NodeExists(id) {
+		panicf("The `%s` type already exists in container", provider.identity())
+	}
+
+	if !isPrototype {
+		provider = asSingleton(provider)
+	}
+
+	c.graph.AddNode(id)
+	c.providers[id] = provider
+
+	for _, iface := range ifaces {
+		c.provideAs(provider, iface)
+	}
+}
+
 func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
-	// create interface from provider
+	// create interface from structProvider
 	iface := createInterfaceProvider(provider, as)
-	ifaceKey := iface.Identity()
+	ifaceKey := iface.identity()
 
 	if c.graph.NodeExists(ifaceKey) {
 		// if iface already exists, restrict interface resolving
@@ -125,7 +143,7 @@ func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
 
 	// create group
 	group := createInterfaceGroup(ifaceKey)
-	groupKey := group.Identity()
+	groupKey := group.identity()
 
 	// check exists
 	if c.graph.NodeExists(groupKey) {
@@ -137,6 +155,6 @@ func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
 		c.providers[groupKey] = group
 	}
 
-	// add provider ifaceKey into group
-	group.Add(provider.Identity())
+	// add structProvider ifaceKey into group
+	group.Add(provider.identity())
 }

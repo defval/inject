@@ -29,17 +29,17 @@ func TestContainerCompileErrors(t *testing.T) {
 func TestContainerProvideErrors(t *testing.T) {
 	t.Run("provide string cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError("string", "The provider must be a function like `func(dep1, dep2...) (result, optionalError)`, got `string`")
+		c.MustProvideError("string", "The constructor must be a function like `func(dep1, dep2...) (result, optionalError)`, got `string`")
 	})
 
 	t.Run("provide nil cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(nil, "The provider must be a function like `func(dep1, dep2...) (result, optionalError)`, got `nil`")
+		c.MustProvideError(nil, "The constructor must be a function like `func(dep1, dep2...) (result, optionalError)`, got `nil`")
 	})
 
 	t.Run("provide struct pointer cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(&ditest.Foo{}, "The provider must be a function like `func(dep1, dep2...) (result, optionalError)`, got `*ditest.Foo`")
+		c.MustProvideError(&ditest.Foo{}, "The constructor must be a function like `func(dep1, dep2...) (result, optionalError)`, got `*ditest.Foo`")
 	})
 
 	t.Run("provide constructor without result cause panic", func(t *testing.T) {
@@ -207,6 +207,14 @@ func TestContainerExtract(t *testing.T) {
 
 		c.MustNotEqualPointer(extracted1, extracted2)
 	})
+
+	t.Run("container extract correct pointer from provider", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFoo)
+		c.MustProvide(ditest.NewBar, new(ditest.Fooer))
+		c.MustAddProvider(ditest.NewQuxProvider())
+		c.MustCompile()
+	})
 }
 
 func TestContainerResolve(t *testing.T) {
@@ -304,6 +312,15 @@ func (c *TestContainer) MustProvideWithName(name string, provider interface{}, a
 func (c *TestContainer) MustProvideError(provider interface{}, msg string, as ...interface{}) {
 	require.PanicsWithValue(c.t, msg, func() {
 		c.Provide(di.ProvideParams{
+			Provider:   provider,
+			Interfaces: as,
+		})
+	})
+}
+
+func (c *TestContainer) MustAddProvider(provider di.Provider, as ...interface{}) {
+	require.NotPanics(c.t, func() {
+		c.AddProvider(di.AddProviderParams{
 			Provider:   provider,
 			Interfaces: as,
 		})

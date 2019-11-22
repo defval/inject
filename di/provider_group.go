@@ -10,33 +10,36 @@ func createInterfaceGroup(key identity) *interfaceGroup {
 		result: identity{
 			typ: reflect.SliceOf(key.typ),
 		},
-		keys: []identity{},
+		params: parameterList{},
 	}
 }
 
 // interfaceGroup
 type interfaceGroup struct {
 	result identity
-	keys   []identity
+	params parameterList
 }
 
 // Add
-func (i *interfaceGroup) Add(key identity) {
-	i.keys = append(i.keys, key)
+func (i *interfaceGroup) Add(identity identity) {
+	i.params = append(i.params, parameter{
+		identity: identity,
+		optional: false,
+	})
 }
 
-// Identity
-func (i interfaceGroup) Identity() identity {
+// identity
+func (i interfaceGroup) identity() identity {
 	return i.result
 }
 
-// Parameters
-func (i interfaceGroup) Parameters() parameterList {
-	return i.keys
+// parameters
+func (i interfaceGroup) parameters() parameterList {
+	return i.params
 }
 
 // Provide
-func (i interfaceGroup) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (i interfaceGroup) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	group := reflect.New(i.result.typ).Elem()
 	return reflect.Append(group, parameters...), nil
 }

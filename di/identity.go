@@ -5,6 +5,18 @@ import (
 	"reflect"
 )
 
+// Identity
+type Identity struct {
+	typ reflect.Type
+}
+
+// IdentityOf
+func IdentityOf(v interface{}) Identity {
+	return Identity{
+		typ: reflect.TypeOf(v),
+	}
+}
+
 // identity is a key of represented instance in di.
 type identity struct {
 	name string
@@ -36,15 +48,24 @@ func (k identity) Extract(c *Container, target interface{}) error {
 // Load loads instance by key from container.
 func (k identity) Load(c *Container) (reflect.Value, error) {
 	if !c.graph.NodeExists(k) {
-		return reflect.Value{}, fmt.Errorf("type `%s` not exists in container", k)
+		return reflect.Value{}, errTypeNotProvided{identity: k}
 	}
 
 	provider := c.providers[k]
 
-	values, err := provider.Parameters().Load(c)
+	values, err := provider.parameters().Load(c)
 	if err != nil {
 		return reflect.Value{}, err
 	}
 
-	return provider.Provide(values...)
+	return provider.provide(values...)
+}
+
+// errTypeNotProvided
+type errTypeNotProvided struct {
+	identity identity
+}
+
+func (e errTypeNotProvided) Error() string {
+	return fmt.Sprintf("type `%s` not exists in container", e.identity)
 }

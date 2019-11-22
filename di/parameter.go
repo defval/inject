@@ -5,27 +5,38 @@ import (
 	"reflect"
 )
 
+type parameter struct {
+	identity identity
+	optional bool
+}
+
 // parameterList
-type parameterList []identity
+type parameterList []parameter
 
 // Register
-func (l parameterList) Register(container *Container, dependant identity) {
-	for _, key := range l {
-		if !container.graph.NodeExists(key) {
-			panicf("%s: dependency %s not exists in container", dependant, key)
+func (pl parameterList) Register(container *Container, dependant identity) {
+	for _, param := range pl {
+		if !container.graph.NodeExists(param.identity) {
+			panicf("%s: dependency %s not exists in container", dependant, param.identity)
 		}
 
-		container.graph.AddEdge(key, dependant)
+		container.graph.AddEdge(param.identity, dependant)
 	}
 }
 
 // Load loads parameter values from container.
-func (l parameterList) Load(c *Container) ([]reflect.Value, error) {
+func (pl parameterList) Load(c *Container) ([]reflect.Value, error) {
 	var values []reflect.Value
-	for _, key := range l {
-		value, err := key.Load(c)
+	for _, parameter := range pl {
+		value, err := parameter.identity.Load(c)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %s", key, err)
+			// if type not provided and parameter is optional append zero value to values
+			if _, ok := err.(errTypeNotProvided); ok && parameter.optional {
+				values = append(values, reflect.Value{})
+				continue
+			}
+
+			return nil, fmt.Errorf("%s: %s", parameter.identity, err)
 		}
 
 		values = append(values, value)

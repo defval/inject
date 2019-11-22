@@ -9,19 +9,19 @@ func asSingleton(provider dependencyProvider) *singletonWrapper {
 	return &singletonWrapper{dependencyProvider: provider}
 }
 
-// singletonWrapper is a provider wrapper. Stores provided value for prevent reinitialization.
+// singletonWrapper is a structProvider wrapper. Stores provided value for prevent reinitialization.
 type singletonWrapper struct {
-	dependencyProvider               // source provider
+	dependencyProvider               // source structProvider
 	value              reflect.Value // value cache
 }
 
 // Provide
-func (s *singletonWrapper) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (s *singletonWrapper) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	if s.value.IsValid() {
 		return s.value, nil
 	}
 
-	value, err := s.dependencyProvider.Provide(parameters...)
+	value, err := s.dependencyProvider.provide(parameters...)
 	if err != nil {
 		return reflect.Value{}, err
 	}

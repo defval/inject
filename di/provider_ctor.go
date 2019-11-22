@@ -9,11 +9,11 @@ import (
 // createConstructor
 func createConstructor(name string, ctor interface{}) *constructorProvider {
 	if ctor == nil {
-		panicf("The provider must be a function like `func(dep1, dep2...) (result, optionalError)`, got `%s`", "nil")
+		panicf("The constructor must be a function like `func(dep1, dep2...) (result, optionalError)`, got `%s`", "nil")
 	}
 
 	if !reflection.IsFunc(ctor) {
-		panicf("The provider must be a function like `func(dep1, dep2...) (result, optionalError)`, got `%s`", reflect.ValueOf(ctor).Type())
+		panicf("The constructor must be a function like `func(dep1, dep2...) (result, optionalError)`, got `%s`", reflect.ValueOf(ctor).Type())
 	}
 
 	fn := reflection.InspectFunction(ctor)
@@ -43,20 +43,23 @@ type constructorProvider struct {
 }
 
 // identity returns constructor result type identity.
-func (c constructorProvider) Identity() identity {
+func (c constructorProvider) identity() identity {
 	return identity{
 		name: c.name,
 		typ:  c.ctor.Out(0),
 	}
 }
 
-// Parameters
-func (c constructorProvider) Parameters() parameterList {
-	var parameters []identity
+// parameters
+func (c constructorProvider) parameters() parameterList {
+	var parameters parameterList
 
 	for i := 0; i < c.ctor.NumIn(); i++ {
-		p := identity{
-			typ: c.ctor.In(i),
+		p := parameter{
+			identity: identity{
+				typ: c.ctor.In(i),
+			},
+			optional: false,
 		}
 
 		parameters = append(parameters, p)
@@ -66,7 +69,7 @@ func (c constructorProvider) Parameters() parameterList {
 }
 
 // Provide
-func (c constructorProvider) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (c constructorProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	out := c.ctor.Call(parameters)
 
 	if len(out) == 1 || out[1].IsNil() {

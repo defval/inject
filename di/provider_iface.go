@@ -11,13 +11,13 @@ import (
 func createInterfaceProvider(provider dependencyProvider, as interface{}) *interfaceProvider {
 	iface := reflection.InspectInterfacePtr(as)
 
-	if !provider.Identity().typ.Implements(iface.Type) {
-		panicf("%s not implement %s", provider.Identity(), iface.Type)
+	if !provider.identity().typ.Implements(iface.Type) {
+		panicf("%s not implement %s", provider.identity(), iface.Type)
 	}
 
 	// replace type to interface
 	result := identity{
-		name: provider.Identity().name,
+		name: provider.identity().name,
 		typ:  iface.Type,
 	}
 
@@ -33,15 +33,18 @@ type interfaceProvider struct {
 	provider dependencyProvider
 }
 
-func (i *interfaceProvider) Identity() identity {
+func (i *interfaceProvider) identity() identity {
 	return i.result
 }
 
-func (i *interfaceProvider) Parameters() parameterList {
-	return append(parameterList{}, i.provider.Identity())
+func (i *interfaceProvider) parameters() parameterList {
+	return append(parameterList{}, parameter{
+		identity: i.provider.identity(),
+		optional: false,
+	})
 }
 
-func (i *interfaceProvider) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (i *interfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	return parameters[0], nil
 }
 
@@ -54,14 +57,14 @@ type multipleInterfaceProvider struct {
 	result identity
 }
 
-func (m *multipleInterfaceProvider) Identity() identity {
+func (m *multipleInterfaceProvider) identity() identity {
 	return m.result
 }
 
-func (m *multipleInterfaceProvider) Parameters() parameterList {
+func (m *multipleInterfaceProvider) parameters() parameterList {
 	return parameterList{}
 }
 
-func (m *multipleInterfaceProvider) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (m *multipleInterfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	return reflect.Value{}, fmt.Errorf("%s have sereral implementations", m.result.typ)
 }
