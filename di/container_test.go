@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/defval/inject/di"
-	"github.com/defval/inject/di/internal/ditest"
+	"github.com/defval/inject/v2/di"
+	"github.com/defval/inject/v2/di/internal/ditest"
 )
 
 func TestContainerCompileErrors(t *testing.T) {
@@ -44,17 +44,17 @@ func TestContainerProvideErrors(t *testing.T) {
 
 	t.Run("provide constructor without result cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(ditest.ConstructorWithoutResult, "The constructor `github.com/defval/inject/di/internal/ditest.ConstructorWithoutResult` has no results")
+		c.MustProvideError(ditest.ConstructorWithoutResult, "The constructor `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithoutResult` has no results")
 	})
 
 	t.Run("provide constructor with many results cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(ditest.ConstructorWithManyResults, "The constructor `github.com/defval/inject/di/internal/ditest.ConstructorWithManyResults` has many results")
+		c.MustProvideError(ditest.ConstructorWithManyResults, "The constructor `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithManyResults` has many results")
 	})
 
 	t.Run("provide constructor with incorrect result error argument", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(ditest.ConstructorWithIncorrectResultError, "The second result of constructor `github.com/defval/inject/di/internal/ditest.ConstructorWithIncorrectResultError` must be error, got *ditest.Bar")
+		c.MustProvideError(ditest.ConstructorWithIncorrectResultError, "The second result of constructor `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithIncorrectResultError` must be error, got *ditest.Bar")
 	})
 
 	t.Run("provide duplicate", func(t *testing.T) {

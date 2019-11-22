@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/defval/inject"
+	"github.com/defval/inject/v2"
 )
 
 func TestContainer(t *testing.T) {

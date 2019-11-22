@@ -22,14 +22,12 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 - [Type injection](#type-injection)
 - [Groups](#groups)
 - [Bundles](#bundles)
-- [Replace](#replace)
 - [Named definitions](#named-definitions)
-- [Visualize](#visualize-graphviz)
 
 ## Installing
 
 ```shell
-go get -u github.com/defval/inject
+go get -u github.com/defval/inject/v2
 ```
 
 ## Type injection
@@ -60,7 +58,7 @@ Build container and extract values:
 
 ```go
 // build container
-container, err := inject.New(
+container := inject.New(
     inject.Provide(NewHTTPServeMux), // provide mux
     inject.Provide(NewHTTPServer), // provide server
 )
@@ -101,13 +99,9 @@ type Controller interface {
 Group it!
 
 ```go
-// IController is a java style interface alias =D
-// inject.As(new(Controller)) looks worse in readme.
-var IController = new(Controller)
-
 container, err := inject.New(
-	inject.Provide(NewUserController, inject.As(IController)),
-	inject.Provide(NewPostController, inject.As(IController)),
+	inject.Provide(NewUserController, inject.As(new(Controller))),
+	inject.Provide(NewPostController, inject.As(new(Controller))),
 )
 
 var controllers []Controller
@@ -122,7 +116,7 @@ for _, ctrl := range controllers {
 
 ## Return structs, accept interfaces!
 
-Bind implementations as interfaces:
+Define constructors:
 
 ```go
 // NewHandler is a http mux constructor. Returns concrete
@@ -143,10 +137,8 @@ func NewServer(handler http.Handler) *http.Server {
 Provide concrete implementation as interface:
 
 ```go
-var IHandler = new(http.Handler)
-
-container, err := inject.New(
-    inject.Provide(NewServeMux, inject.As(IHandler)),
+container := inject.New(
+    inject.Provide(NewServeMux, inject.As(new(http.Handler))),
     inject.Provide(NewServer),
 )
 
@@ -174,38 +166,10 @@ var BillingBundle = inject.Bundle(
 )
 ```
 
-And test each one separately.
-
-```go
-func TestProcessingBundle(t *testing.T) {
-    bundle, err := inject.New(
-        ProcessingBundle,
-        inject.Replace(processing.NewDevProxy, inject.As(IProxy)),
-    )
-    
-    var dispatcher *processing.Dispatcher
-    container.Extract(&dispatcher)
-    
-    dispatcher.Dispatch(ctx context.Context, thing)
-}
-```
-
-## Replace
-
-```go
-var options []inject.Options
-
-if os.Getenv("ENV") == "dev" {
-    options = append(options, inject.Replace(billing.NewInvoiceRepositoryMock), inject.As(new(InvoiceRepository)))
-}
-
-container, err := inject.New(options...)
-```
-
 ## Named definitions
 
 ```go
-container, err := inject.New{
+container := inject.New{
 	inject.Provide(NewDefaultServer, inject.WithName("default")),
 	inject.Provide(NewAdminServer, inject.WithName("admin")),
 }
@@ -216,73 +180,3 @@ var adminServer *http.Server
 container.Extract(&defaultServer, inject.Name("default"))
 container.Extract(&adminServer, inject.Name("admin"))
 ```
-
-Or with struct provider:
-
-```go
-// Application
-type Application struct {
-    Server *http.Server `inject:"default"`
-    AdminServer *http.Server `inject:"admin"`
-}
-```
-
-```go
-container, err := inject.New(
-    inject.Provide(NewDefaultServer, inject.WithName("default")), 
-    inject.Provide(NewAdminServer, inject.WithName("admin")),
-    inject.Provide(&Application)
-)
-```
-
-If you don't like tags as much as I do, then look to
-`inject.Exported()` provide option.
-
-## Use combined provider
-
-For advanced providing use combined provider. It's both - struct and constructor providers.
-
-```go
-// ServerProvider
-type ServerProvider struct {
-	Mux *http.Server `inject:"dude_mux"`
-}
-
-// Provide is a container predefined constructor function for *http.Server.
-func (p *ServerProvider) Provide() *http.Server {
-	return &http.Server{
-		Handler: p.Mux,
-	}
-}
-```
-
-## Visualize ([Graphviz](https://www.graphviz.org/))
-
-Write visualization into `io.Writer`. Check out result on <a href="https://dreampuf.github.io/GraphvizOnline" target="_blank">graphviz online tool!</a>
-
-```go
-    // visualization data target
-    buffer := &bytes.Buffer{}
-    
-    // write container visualization
-    container.WriteTo(buffer)
-```
-
-or
-
-```go
-    // define github.com/emicklei/*dot.Graph type
-    var graph *dot.Graph
-    
-    // extract graph
-    container.Extract(&graph)
-
-    // use
-    graph.Write(buffer)
-    
-```
-
-This is visualization of container example.
-
-<img src="https://github.com/defval/inject/raw/master/graph.png">
-

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/defval/inject/di/internal/reflection"
+	"github.com/defval/inject/v2/di/internal/reflection"
 )
 
 // createInterfaceProvider

@@ -1,4 +1,4 @@
-module github.com/defval/inject
+module github.com/defval/inject/v2
 
 require (
 	github.com/stretchr/testify v1.4.0

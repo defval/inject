@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/defval/inject"
+	"github.com/defval/inject/v2"
 )
 
 func Example() {

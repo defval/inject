@@ -1,7 +1,7 @@
 package inject
 
 import (
-	"github.com/defval/inject/di"
+	"github.com/defval/inject/v2/di"
 )
 
 // New creates a new container with provided options.

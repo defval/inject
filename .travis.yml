@@ -1,4 +1,4 @@
-go_import_path: github.com/defval/inject
+go_import_path: github.com/defval/inject/v2
 language: go
 sudo: false
 
