@@ -1,4 +1,5 @@
-<img width="312" src="https://github.com/defval/inject/raw/master/logo.png">[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Dependency%20injection%20container%20for%20Golang&url=https://github.com/defval/inject&hashtags=golang,go,di,dependency-injection)
+<img width="312"
+src="https://github.com/defval/inject/raw/master/logo.png">[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Dependency%20injection%20container%20for%20Golang&url=https://github.com/defval/inject&hashtags=golang,go,di,dependency-injection)
 
 [![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg?color=24B898&style=for-the-badge&logo=go&logoColor=ffffff)](https://godoc.org/github.com/defval/inject)
 ![Release](https://img.shields.io/github/tag/defval/inject.svg?label=release&color=24B898&logo=github&style=for-the-badge)
@@ -6,23 +7,19 @@
 [![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/inject)
 ![Contributors](https://img.shields.io/github/contributors/defval/inject.svg?style=for-the-badge)
 
+## How will dependency injection help me?
 
-Dependency injection container allows you to inject dependencies
-into constructors or structures without the need to have specified
-each argument manually.
+Dependency injection is one form of the broader technique of inversion
+of control. It is used to increase modularity of the program and makes
+it extensible.
 
-This container implementation inspired by [google/wire](https://github.com/google/wire),
-[uber-go/fx](https://github.com/uber-go/fx) and [uber-go/dig](https://github.com/uber-go/dig).
+--------
 
-See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
+This container implementation inspired by
+[google/wire](https://github.com/google/wire),
+[uber-go/fx](https://github.com/uber-go/fx) and
+[uber-go/dig](https://github.com/uber-go/dig).
 
-## Contents
-
-- [Installing](#installing)
-- [Type injection](#type-injection)
-- [Groups](#groups)
-- [Bundles](#bundles)
-- [Named definitions](#named-definitions)
 
 ## Installing
 
@@ -30,153 +27,14 @@ See [godoc](https://godoc.org/github.com/defval/inject) for feel the difference.
 go get -u github.com/defval/inject/v2
 ```
 
-## Type injection
+This library has two using levels. Package `inject` provides a clean and
+easy way to build your application components. And package `di` that
+provides more advanced techniques.
 
-Define constructors:
+## Constructors
 
-```go
-// NewHTTPHandler is a http mux constructor.
-func NewHTTPServeMux() *http.ServeMux {
-	return &http.ServeMux{}
-}
-
-// NewHTTPServer is a http server constructor, handler will be injected 
-// by container. If environment variable `STATUS == "stoped"` extract
-// server cause error.
-func NewHTTPServer(handler *net.ServeMux) (*http.Server, error) {
-	if os.Getenv("STATUS") == "stopped" {
-		return nil, errors.New("server stoped")
-	}
-	
-	return &http.Server{
-		Handler: handler,
-	}, nil
-}
-```
-
-Build container and extract values:
-
-```go
-// build container
-container := inject.New(
-    inject.Provide(NewHTTPServeMux), // provide mux
-    inject.Provide(NewHTTPServer), // provide server
-)
-
-// don't forget to handle errors © golang
-
-// define variable for *http.Server
-var server *http.Server
-
-// extract into this variable
-container.Extract(&server)
-
-// use it!
-server.ListenAndServe()
-```
-
-## Groups
-
-When you have two or more implementations of same interface:
-
-```go
-// NewUserController
-func NewUserController() *UserController {
-	return &UserController{}
-}
-
-// NewPostController
-func NewPostController() *PostController {
-	return &PostController()
-}
-
-// Controller
-type Controller interface {
-	RegisterRoutes()
-}
-```
-
-Group it!
-
-```go
-container, err := inject.New(
-	inject.Provide(NewUserController, inject.As(new(Controller))),
-	inject.Provide(NewPostController, inject.As(new(Controller))),
-)
-
-var controllers []Controller
-// extract all controllers
-container.Extract(&controllers)
-
-// and do something!!!
-for _, ctrl := range controllers {
-	ctrl.RegisterRoutes()
-}
-```
-
-## Return structs, accept interfaces!
-
-Define constructors:
-
-```go
-// NewHandler is a http mux constructor. Returns concrete
-// implementation - *http.ServeMux.
-func NewServeMux() *http.ServeMux {
-	return &http.ServeMux{}
-}
-
-// NewServer is a http server constructor. Needs handler for 
-// working.
-func NewServer(handler http.Handler) *http.Server {
-	return &http.Server{
-		Handler: handler,
-	}
-}
-```
-
-Provide concrete implementation as interface:
-
-```go
-container := inject.New(
-    inject.Provide(NewServeMux, inject.As(new(http.Handler))),
-    inject.Provide(NewServer),
-)
-
-var handler http.Handler
-container.Extract(&handler) // *http.ServeMux will be extracted
-
-var server *http.Server
-container.Extract(&server) // server.Handler is *http.ServeMux
-```
-
-## Bundles
-
-```go
-// ProcessingBundle responsible for processing
-var ProcessingBundle = inject.Bundle(
-    inject.Provide(processing.NewDispatcher),
-    inject.Provide(processing.NewProvider),
-    inject.Provide(processing.NewProxy, inject.As(IProxy)),
-)
-
-// BillingBundle responsible for billing
-var BillingBundle = inject.Bundle(
-    inject.Provide(billing.NewInteractor),
-    inject.Provide(billing.NewInvoiceRepository, inject.As(new(InvoiceRepository)))
-)
-```
-
-## Named definitions
-
-```go
-container := inject.New{
-	inject.Provide(NewDefaultServer, inject.WithName("default")),
-	inject.Provide(NewAdminServer, inject.WithName("admin")),
-}
-
-var defaultServer *http.Server
-var adminServer *http.Server
-
-container.Extract(&defaultServer, inject.Name("default"))
-container.Extract(&adminServer, inject.Name("admin"))
-```
+A constructor must be a function. It must have one or two results. The
+first is a result object. Often the type of result object is a pointer.
+The second may be an error. Error is optional. A constructor may have an
+unlimited number of parameters and a container will provide all of these
+automatically.
