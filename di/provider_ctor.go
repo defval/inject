@@ -42,30 +42,35 @@ type constructorProvider struct {
 	ctor *reflection.Func
 }
 
-// identity returns constructor result type identity.
-func (c constructorProvider) identity() identity {
-	return identity{
+// resultKey returns constructor result type resultKey.
+func (c constructorProvider) resultKey() key {
+	return key{
 		name: c.name,
 		typ:  c.ctor.Out(0),
 	}
 }
 
-// parameters
-func (c constructorProvider) parameters() parameterList {
-	var parameters parameterList
-
-	for i := 0; i < c.ctor.NumIn(); i++ {
-		p := parameter{
-			identity: identity{
-				typ: c.ctor.In(i),
-			},
-			optional: false,
-		}
-
-		parameters = append(parameters, p)
+// parameters returns constructor parameters
+// - required
+// - optional
+// - embed
+func (c constructorProvider) parameters() providerParameterList {
+	list := providerParameterList{
+		providerKey: c.resultKey(),
 	}
 
-	return parameters
+	for i := 0; i < c.ctor.NumIn(); i++ {
+		// default list in constructor are required
+		p := parameterRequired{
+			key: key{
+				typ: c.ctor.In(i),
+			},
+		}
+
+		list.add(p)
+	}
+
+	return list
 }
 
 // Provide

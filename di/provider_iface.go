@@ -8,40 +8,40 @@ import (
 )
 
 // createInterfaceProvider
-func createInterfaceProvider(provider dependencyProvider, as interface{}) *interfaceProvider {
+func createInterfaceProvider(provider provider, as interface{}) *interfaceProvider {
 	iface := reflection.InspectInterfacePtr(as)
 
-	if !provider.identity().typ.Implements(iface.Type) {
-		panicf("%s not implement %s", provider.identity(), iface.Type)
-	}
-
-	// replace type to interface
-	result := identity{
-		name: provider.identity().name,
-		typ:  iface.Type,
+	if !provider.resultKey().typ.Implements(iface.Type) {
+		panicf("%s not implement %s", provider.resultKey(), iface.Type)
 	}
 
 	return &interfaceProvider{
-		result:   result,
-		provider: provider,
+		result: key{
+			name: provider.resultKey().name,
+			typ:  iface.Type,
+		},
+		implementation: provider,
 	}
 }
 
 // interfaceProvider
 type interfaceProvider struct {
-	result   identity
-	provider dependencyProvider
+	result         key
+	implementation provider
 }
 
-func (i *interfaceProvider) identity() identity {
+func (i *interfaceProvider) resultKey() key {
 	return i.result
 }
 
-func (i *interfaceProvider) parameters() parameterList {
-	return append(parameterList{}, parameter{
-		identity: i.provider.identity(),
-		optional: false,
-	})
+func (i *interfaceProvider) parameters() providerParameterList {
+	pl := providerParameterList{
+		providerKey: i.resultKey(),
+	}
+
+	pl.add(parameterRequired{i.implementation.resultKey()})
+
+	return pl
 }
 
 func (i *interfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
@@ -54,15 +54,15 @@ func (i *interfaceProvider) Multiple() *multipleInterfaceProvider {
 
 // multipleInterfaceProvider
 type multipleInterfaceProvider struct {
-	result identity
+	result key
 }
 
-func (m *multipleInterfaceProvider) identity() identity {
+func (m *multipleInterfaceProvider) resultKey() key {
 	return m.result
 }
 
-func (m *multipleInterfaceProvider) parameters() parameterList {
-	return parameterList{}
+func (m *multipleInterfaceProvider) parameters() providerParameterList {
+	return providerParameterList{}
 }
 
 func (m *multipleInterfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {

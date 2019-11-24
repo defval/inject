@@ -5,42 +5,55 @@ import (
 	"reflect"
 )
 
-type parameter struct {
-	identity identity
-	optional bool
+// parameter
+type parameter interface {
+	resultKey() key
+	register(c *Container, dependant key)
+	load(c *Container) (reflect.Value, error)
 }
+
+// parameterRequired
+type parameterRequired struct{ key }
+
+// parameterOptional
+type parameterOptional struct{ key }
+
+// parameterEmbed
+type parameterEmbed struct{ key }
 
 // parameterList
 type parameterList []parameter
 
-// Register
-func (pl parameterList) Register(container *Container, dependant identity) {
-	for _, param := range pl {
-		if !container.graph.NodeExists(param.identity) {
-			panicf("%s: dependency %s not exists in container", dependant, param.identity)
-		}
-
-		container.graph.AddEdge(param.identity, dependant)
-	}
-}
-
-// Load loads parameter values from container.
-func (pl parameterList) Load(c *Container) ([]reflect.Value, error) {
+// load loads all parameters presented in parameter list.
+func (pl parameterList) load(c *Container) ([]reflect.Value, error) {
 	var values []reflect.Value
-	for _, parameter := range pl {
-		value, err := parameter.identity.Load(c)
+	for _, p := range pl {
+		pvalue, err := p.load(c)
 		if err != nil {
-			// if type not provided and parameter is optional append zero value to values
-			if _, ok := err.(errTypeNotProvided); ok && parameter.optional {
-				values = append(values, reflect.Value{})
-				continue
-			}
-
-			return nil, fmt.Errorf("%s: %s", parameter.identity, err)
+			return nil, fmt.Errorf("%s: %s", p.resultKey(), err)
 		}
 
-		values = append(values, value)
+		values = append(values, pvalue)
 	}
 
 	return values, nil
+}
+
+// providerParameterList
+type providerParameterList struct {
+	parameterList
+	providerKey key
+}
+
+// add adds parameter into provider parameter list
+func (l *providerParameterList) add(p parameter) {
+	l.parameterList = append(l.parameterList, p)
+}
+
+// register registers parameters in container
+func (l providerParameterList) register(c *Container) {
+	for _, p := range l.parameterList {
+		// register parameter in container
+		p.register(c, l.providerKey)
+	}
 }

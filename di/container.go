@@ -12,18 +12,18 @@ import (
 func New() *Container {
 	return &Container{
 		graph:     dag.NewDirectedGraph(),
-		providers: make(map[identity]dependencyProvider),
+		providers: make(map[key]provider),
 	}
 }
 
 // Container is a dependency injection container.
 type Container struct {
 	graph     *dag.DirectedGraph
-	providers map[identity]dependencyProvider
+	providers map[key]provider
 	compiled  bool
 }
 
-// ProvideParams params for Provide method.
+// ProvideParams parameterList for Provide method.
 type ProvideParams struct {
 	Name        string
 	Provider    interface{}
@@ -33,22 +33,23 @@ type ProvideParams struct {
 
 // Provide adds constructor into container.
 func (c *Container) Provide(params ProvideParams) {
-	var provider dependencyProvider = createConstructor(params.Name, params.Provider)
-	c.provide(provider, params.IsPrototype, params.Interfaces)
-}
+	var provider provider = createConstructor(params.Name, params.Provider)
+	id := provider.resultKey()
 
-// ProvideParams params for Provide method.
-type AddProviderParams struct {
-	Name        string
-	Provider    Provider
-	Interfaces  []interface{}
-	IsPrototype bool
-}
+	if c.graph.NodeExists(id) {
+		panicf("The `%s` type already exists in container", provider.resultKey())
+	}
 
-// AddProvider add structProvider into container.
-func (c *Container) AddProvider(params AddProviderParams) {
-	var provider dependencyProvider = createStructProvider(params.Name, params.Provider)
-	c.provide(provider, params.IsPrototype, params.Interfaces)
+	if !params.IsPrototype {
+		provider = asSingleton(provider)
+	}
+
+	c.graph.AddNode(id)
+	c.providers[id] = provider
+
+	for _, iface := range params.Interfaces {
+		c.provideAs(provider, iface)
+	}
 }
 
 // Compile compiles the container. It iterates over all nodes
@@ -61,10 +62,10 @@ func (c *Container) Compile() {
 		},
 	})
 
-	for _, id := range c.graph.Nodes() {
-		// load structProvider parameters
-		plist := c.providers[id.(identity)].parameters()
-		plist.Register(c, id.(identity))
+	for _, key := range c.all() {
+		// register provider parameters
+		provider, _ := c.provider(key)
+		provider.parameters().register(c)
 	}
 
 	_, err := c.graph.DFSSort()
@@ -93,44 +94,56 @@ func (c *Container) Extract(params ExtractParams) error {
 	}
 
 	if params.Target == nil {
-		return fmt.Errorf("extract target must be a pointer, got `nil`")
+		return fmt.Errorf("extractInto target must be a pointer, got `nil`")
 	}
 
 	if !reflection.IsPtr(params.Target) {
-		return fmt.Errorf("extract target must be a pointer, got `%s`", reflect.TypeOf(params.Target))
+		return fmt.Errorf("extractInto target must be a pointer, got `%s`", reflect.TypeOf(params.Target))
 	}
 
-	key := identity{
+	key := key{
 		name: params.Name,
 		typ:  reflect.TypeOf(params.Target).Elem(),
 	}
 
-	return key.Extract(c, params.Target)
+	return key.extractInto(c, params.Target)
 }
 
-func (c *Container) provide(provider dependencyProvider, isPrototype bool, ifaces []interface{}) {
-	id := provider.identity()
-
-	if c.graph.NodeExists(id) {
-		panicf("The `%s` type already exists in container", provider.identity())
-	}
-
-	if !isPrototype {
-		provider = asSingleton(provider)
-	}
-
-	c.graph.AddNode(id)
-	c.providers[id] = provider
-
-	for _, iface := range ifaces {
-		c.provideAs(provider, iface)
-	}
+// exists checks that resultKey exists
+func (c *Container) exists(k key) bool {
+	return c.graph.NodeExists(k)
 }
 
-func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
+// provider
+func (c *Container) provider(k key) (provider, error) {
+	if !c.exists(k) {
+		return nil, errProviderNotFound{k: k}
+	}
+
+	return c.providers[k], nil
+}
+
+// all
+func (c *Container) all() []key {
+	var keys []key
+
+	for _, node := range c.graph.Nodes() {
+		keys = append(keys, node.(key))
+	}
+
+	return keys
+}
+
+// registerDependency registers dependency
+func (c *Container) registerDependency(dependency key, dependant key) {
+	c.graph.AddEdge(dependency, dependant)
+}
+
+// provideAs
+func (c *Container) provideAs(provider provider, as interface{}) {
 	// create interface from structProvider
 	iface := createInterfaceProvider(provider, as)
-	ifaceKey := iface.identity()
+	ifaceKey := iface.resultKey()
 
 	if c.graph.NodeExists(ifaceKey) {
 		// if iface already exists, restrict interface resolving
@@ -143,7 +156,7 @@ func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
 
 	// create group
 	group := createInterfaceGroup(ifaceKey)
-	groupKey := group.identity()
+	groupKey := group.resultKey()
 
 	// check exists
 	if c.graph.NodeExists(groupKey) {
@@ -156,5 +169,5 @@ func (c *Container) provideAs(provider dependencyProvider, as interface{}) {
 	}
 
 	// add structProvider ifaceKey into group
-	group.Add(provider.identity())
+	group.Add(provider.resultKey())
 }

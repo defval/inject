@@ -5,14 +5,14 @@ import (
 )
 
 // asSingleton creates a singleton wrapper.
-func asSingleton(provider dependencyProvider) *singletonWrapper {
-	return &singletonWrapper{dependencyProvider: provider}
+func asSingleton(provider provider) *singletonWrapper {
+	return &singletonWrapper{provider: provider}
 }
 
 // singletonWrapper is a structProvider wrapper. Stores provided value for prevent reinitialization.
 type singletonWrapper struct {
-	dependencyProvider               // source structProvider
-	value              reflect.Value // value cache
+	provider               // source structProvider
+	value    reflect.Value // value cache
 }
 
 // Provide
@@ -21,7 +21,7 @@ func (s *singletonWrapper) provide(parameters ...reflect.Value) (reflect.Value, 
 		return s.value, nil
 	}
 
-	value, err := s.dependencyProvider.provide(parameters...)
+	value, err := s.provider.provide(parameters...)
 	if err != nil {
 		return reflect.Value{}, err
 	}

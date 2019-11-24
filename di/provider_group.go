@@ -4,38 +4,39 @@ import (
 	"reflect"
 )
 
-// createInterfaceGroup creates new group from provided key.
-func createInterfaceGroup(key identity) *interfaceGroup {
+// createInterfaceGroup creates new group from provided resultKey.
+func createInterfaceGroup(k key) *interfaceGroup {
+	ifaceKey := key{
+		typ: reflect.SliceOf(k.typ),
+	}
+
 	return &interfaceGroup{
-		result: identity{
-			typ: reflect.SliceOf(key.typ),
+		result: ifaceKey,
+		pl: providerParameterList{
+			providerKey: ifaceKey,
 		},
-		params: parameterList{},
 	}
 }
 
 // interfaceGroup
 type interfaceGroup struct {
-	result identity
-	params parameterList
+	result key
+	pl     providerParameterList
 }
 
 // Add
-func (i *interfaceGroup) Add(identity identity) {
-	i.params = append(i.params, parameter{
-		identity: identity,
-		optional: false,
-	})
+func (i *interfaceGroup) Add(k key) {
+	i.pl.add(parameterRequired{k})
 }
 
-// identity
-func (i interfaceGroup) identity() identity {
+// resultKey
+func (i interfaceGroup) resultKey() key {
 	return i.result
 }
 
 // parameters
-func (i interfaceGroup) parameters() parameterList {
-	return i.params
+func (i interfaceGroup) parameters() providerParameterList {
+	return i.pl
 }
 
 // Provide
