@@ -2,6 +2,7 @@ package di_test
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -77,7 +78,7 @@ func TestContainerProvideErrors(t *testing.T) {
 }
 
 func TestContainerExtractErrors(t *testing.T) {
-	t.Run("container panic on trying extractInto before compilation", func(t *testing.T) {
+	t.Run("container panic on trying extract before compilation", func(t *testing.T) {
 		c := NewTestContainer(t)
 		foo := &ditest.Foo{}
 		c.MustProvide(ditest.CreateFooConstructor(foo))
@@ -85,25 +86,25 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustExtractError(&extracted, "container not compiled")
 	})
 
-	t.Run("extractInto into string cause error", func(t *testing.T) {
+	t.Run("extract into string cause error", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFoo)
 		c.MustCompile()
-		c.MustExtractError("string", "extractInto target must be a pointer, got `string`")
+		c.MustExtractError("string", "extract target must be a pointer, got `string`")
 	})
 
-	t.Run("extractInto into struct cause error", func(t *testing.T) {
+	t.Run("extract into struct cause error", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFoo)
 		c.MustCompile()
-		c.MustExtractError(struct{}{}, "extractInto target must be a pointer, got `struct {}`")
+		c.MustExtractError(struct{}{}, "extract target must be a pointer, got `struct {}`")
 	})
 
-	t.Run("extractInto into nil cause error", func(t *testing.T) {
+	t.Run("extract into nil cause error", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFoo)
 		c.MustCompile()
-		c.MustExtractError(nil, "extractInto target must be a pointer, got `nil`")
+		c.MustExtractError(nil, "extract target must be a pointer, got `nil`")
 	})
 
 	t.Run("container does not find type because its named", func(t *testing.T) {
@@ -116,7 +117,7 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustExtractError(&extracted, "type `*ditest.Foo` not exists in container")
 	})
 
-	t.Run("extractInto returns error because dependency constructing failed", func(t *testing.T) {
+	t.Run("extract returns error because dependency constructing failed", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFooError)
 		c.MustProvide(ditest.NewBar)
@@ -125,7 +126,7 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustExtractError(&bar, "*ditest.Foo: internal error")
 	})
 
-	t.Run("extractInto interface with multiple implementations cause error", func(t *testing.T) {
+	t.Run("extract interface with multiple implementations cause error", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFoo)
 		c.MustProvide(ditest.NewBar, new(ditest.Fooer))
@@ -138,7 +139,7 @@ func TestContainerExtractErrors(t *testing.T) {
 }
 
 func TestContainerExtract(t *testing.T) {
-	t.Run("container extractInto correct pointer", func(t *testing.T) {
+	t.Run("container extract correct pointer", func(t *testing.T) {
 		c := NewTestContainer(t)
 		foo := &ditest.Foo{}
 		c.MustProvide(ditest.CreateFooConstructor(foo))
@@ -148,7 +149,7 @@ func TestContainerExtract(t *testing.T) {
 		c.MustExtractPtr(foo, &extracted)
 	})
 
-	t.Run("container extractInto same pointer on each extraction", func(t *testing.T) {
+	t.Run("container extract same pointer on each extraction", func(t *testing.T) {
 		c := NewTestContainer(t)
 		foo := &ditest.Foo{}
 		c.MustProvide(ditest.CreateFooConstructor(foo))
@@ -161,7 +162,7 @@ func TestContainerExtract(t *testing.T) {
 		c.MustExtractPtr(foo, &extracted2)
 	})
 
-	t.Run("container extractInto correct named pointer", func(t *testing.T) {
+	t.Run("container extract correct named pointer", func(t *testing.T) {
 		c := NewTestContainer(t)
 		foo := &ditest.Foo{}
 		c.MustProvideWithName("foo", ditest.CreateFooConstructor(foo))
@@ -171,7 +172,7 @@ func TestContainerExtract(t *testing.T) {
 		c.MustExtractWithName("foo", &extracted)
 	})
 
-	t.Run("container extractInto correct interface implementation", func(t *testing.T) {
+	t.Run("container extract correct interface implementation", func(t *testing.T) {
 		c := NewTestContainer(t)
 		bar := &ditest.Bar{}
 		c.MustProvide(ditest.NewFoo)
@@ -182,7 +183,7 @@ func TestContainerExtract(t *testing.T) {
 		c.MustExtractPtr(bar, &extracted)
 	})
 
-	t.Run("container creates group from interface and extractInto it", func(t *testing.T) {
+	t.Run("container creates group from interface and extract it", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFoo)
 		c.MustProvide(ditest.NewBar, new(ditest.Fooer))
@@ -194,7 +195,7 @@ func TestContainerExtract(t *testing.T) {
 		require.Len(t, group, 2)
 	})
 
-	t.Run("container extractInto new instance of prototype by each extraction", func(t *testing.T) {
+	t.Run("container extract new instance of prototype by each extraction", func(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewFoo)
 		c.MustProvidePrototype(ditest.NewBar)
@@ -258,6 +259,53 @@ func TestContainerResolve(t *testing.T) {
 		require.Len(t, group.Fooers(), 2)
 		c.MustEqualPointer(bar, group.Fooers()[0])
 		c.MustEqualPointer(baz, group.Fooers()[1])
+	})
+}
+
+func TestContainerResolveEmbedParameters(t *testing.T) {
+	t.Run("container resolve embed parameters", func(t *testing.T) {
+		c := NewTestContainer(t)
+		foo := ditest.NewFoo()
+		bar := ditest.NewBar(foo)
+		c.MustProvide(ditest.CreateFooConstructor(foo))
+		c.MustProvide(ditest.CreateBarConstructor(bar))
+		c.MustProvide(ditest.NewBazFromParameters)
+		c.MustCompile()
+
+		var extracted *ditest.Baz
+		c.MustExtract(&extracted)
+		c.MustEqualPointer(foo, extracted.Foo())
+		c.MustEqualPointer(bar, extracted.Bar())
+	})
+
+	t.Run("container skip optional parameter", func(t *testing.T) {
+		c := NewTestContainer(t)
+		foo := ditest.NewFoo()
+		c.MustProvide(ditest.CreateFooConstructor(foo))
+		c.MustProvide(ditest.NewBazFromParameters)
+		c.MustCompile()
+
+		var extracted *ditest.Baz
+		c.MustExtract(&extracted)
+		c.MustEqualPointer(foo, extracted.Foo())
+		require.Nil(t, extracted.Bar())
+	})
+
+	t.Run("name optional group is nil", func(t *testing.T) {
+		c := NewTestContainer(t)
+		type Params struct {
+			di.Parameters
+			Handlers []http.Handler `di:"optional"`
+		}
+
+		c.MustProvide(func(params Params) bool {
+			return params.Handlers == nil
+		})
+		c.MustCompile()
+
+		var extracted bool
+		c.MustExtract(&extracted)
+		require.True(t, extracted)
 	})
 }
 
@@ -348,7 +396,7 @@ func (c *TestContainer) MustExtractWithNameError(name string, target interface{}
 	}), msg)
 }
 
-// MustExtractPtr extractInto value from container into target and check that target and expected pointers are equal.
+// MustExtractPtr extract value from container into target and check that target and expected pointers are equal.
 func (c *TestContainer) MustExtractPtr(expected, target interface{}) {
 	c.MustExtract(target)
 

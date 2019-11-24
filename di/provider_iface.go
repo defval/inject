@@ -34,14 +34,15 @@ func (i *interfaceProvider) resultKey() key {
 	return i.result
 }
 
-func (i *interfaceProvider) parameters() providerParameterList {
-	pl := providerParameterList{
-		providerKey: i.resultKey(),
-	}
+func (i *interfaceProvider) parameters() parameterList {
+	var list parameterList
+	list = append(list, parameter{
+		key:      i.implementation.resultKey(),
+		optional: false,
+		embed:    false,
+	})
 
-	pl.add(parameterRequired{i.implementation.resultKey()})
-
-	return pl
+	return list
 }
 
 func (i *interfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
@@ -61,8 +62,8 @@ func (m *multipleInterfaceProvider) resultKey() key {
 	return m.result
 }
 
-func (m *multipleInterfaceProvider) parameters() providerParameterList {
-	return providerParameterList{}
+func (m *multipleInterfaceProvider) parameters() parameterList {
+	return parameterList{}
 }
 
 func (m *multipleInterfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {

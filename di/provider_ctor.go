@@ -51,23 +51,19 @@ func (c constructorProvider) resultKey() key {
 }
 
 // parameters returns constructor parameters
-// - required
-// - optional
-// - embed
-func (c constructorProvider) parameters() providerParameterList {
-	list := providerParameterList{
-		providerKey: c.resultKey(),
-	}
+func (c constructorProvider) parameters() parameterList {
+	var list parameterList
 
 	for i := 0; i < c.ctor.NumIn(); i++ {
-		// default list in constructor are required
-		p := parameterRequired{
-			key: key{
-				typ: c.ctor.In(i),
-			},
+		ptype := c.ctor.In(i)
+
+		p := parameter{
+			key:      key{typ: ptype},
+			optional: false,
+			embed:    isEmbedParameter(ptype),
 		}
 
-		list.add(p)
+		list = append(list, p)
 	}
 
 	return list

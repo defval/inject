@@ -12,21 +12,23 @@ func createInterfaceGroup(k key) *interfaceGroup {
 
 	return &interfaceGroup{
 		result: ifaceKey,
-		pl: providerParameterList{
-			providerKey: ifaceKey,
-		},
+		pl:     parameterList{},
 	}
 }
 
 // interfaceGroup
 type interfaceGroup struct {
 	result key
-	pl     providerParameterList
+	pl     parameterList
 }
 
 // Add
 func (i *interfaceGroup) Add(k key) {
-	i.pl.add(parameterRequired{k})
+	i.pl = append(i.pl, parameter{
+		key:      k,
+		optional: false,
+		embed:    false,
+	})
 }
 
 // resultKey
@@ -35,7 +37,7 @@ func (i interfaceGroup) resultKey() key {
 }
 
 // parameters
-func (i interfaceGroup) parameters() providerParameterList {
+func (i interfaceGroup) parameters() parameterList {
 	return i.pl
 }
 

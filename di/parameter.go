@@ -5,30 +5,47 @@ import (
 	"reflect"
 )
 
-// parameter
-type parameter interface {
-	resultKey() key
-	register(c *Container, dependant key)
-	load(c *Container) (reflect.Value, error)
+// Parameters
+type Parameters struct {
+	internalParameter
 }
 
+// internalParameter
+type internalParameter interface {
+	isDependencyInjectionParameter()
+}
+
+var parameterInterface = reflect.TypeOf(new(internalParameter)).Elem()
+
 // parameterRequired
-type parameterRequired struct{ key }
+type parameter struct {
+	key
+	optional bool
+	embed    bool
+}
 
-// parameterOptional
-type parameterOptional struct{ key }
+func (p parameter) resolve(c *Container) (reflect.Value, error) {
+	value, err := p.key.resolve(c)
+	if _, notFound := err.(errProviderNotFound); notFound && p.optional {
+		// create empty instance of type
+		return reflect.New(p.typ).Elem(), nil
+	}
 
-// parameterEmbed
-type parameterEmbed struct{ key }
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	return value, nil
+}
 
 // parameterList
 type parameterList []parameter
 
-// load loads all parameters presented in parameter list.
-func (pl parameterList) load(c *Container) ([]reflect.Value, error) {
+// resolve loads all parameters presented in parameter list.
+func (pl parameterList) resolve(c *Container) ([]reflect.Value, error) {
 	var values []reflect.Value
 	for _, p := range pl {
-		pvalue, err := p.load(c)
+		pvalue, err := p.resolve(c)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %s", p.resultKey(), err)
 		}
@@ -39,21 +56,7 @@ func (pl parameterList) load(c *Container) ([]reflect.Value, error) {
 	return values, nil
 }
 
-// providerParameterList
-type providerParameterList struct {
-	parameterList
-	providerKey key
-}
-
-// add adds parameter into provider parameter list
-func (l *providerParameterList) add(p parameter) {
-	l.parameterList = append(l.parameterList, p)
-}
-
-// register registers parameters in container
-func (l providerParameterList) register(c *Container) {
-	for _, p := range l.parameterList {
-		// register parameter in container
-		p.register(c, l.providerKey)
-	}
+// isEmbedParameter
+func isEmbedParameter(typ reflect.Type) bool {
+	return typ.Kind() == reflect.Struct && typ.Implements(parameterInterface)
 }

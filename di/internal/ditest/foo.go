@@ -2,7 +2,6 @@ package ditest
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Foo test struct
@@ -10,7 +9,6 @@ type Foo struct{}
 
 // NewFoo create new foo
 func NewFoo() *Foo {
-	fmt.Println("asd")
 	return &Foo{}
 }
 

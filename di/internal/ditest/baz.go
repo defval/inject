@@ -1,5 +1,7 @@
 package ditest
 
+import "github.com/defval/inject/v2/di"
+
 // Baz
 type Baz struct {
 	foo *Foo
@@ -11,6 +13,22 @@ func NewBaz(foo *Foo, bar *Bar) *Baz {
 	return &Baz{
 		foo: foo,
 		bar: bar,
+	}
+}
+
+// BazParameters
+type BazParameters struct {
+	di.Parameters
+
+	Foo *Foo `di:""`
+	Bar *Bar `di:"optional"`
+}
+
+// NewBazFromParameters
+func NewBazFromParameters(params BazParameters) *Baz {
+	return &Baz{
+		foo: params.Foo,
+		bar: params.Bar,
 	}
 }
 

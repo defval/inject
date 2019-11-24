@@ -9,9 +9,9 @@ func asSingleton(provider provider) *singletonWrapper {
 	return &singletonWrapper{provider: provider}
 }
 
-// singletonWrapper is a structProvider wrapper. Stores provided value for prevent reinitialization.
+// singletonWrapper is a embedParamProvider wrapper. Stores provided value for prevent reinitialization.
 type singletonWrapper struct {
-	provider               // source structProvider
+	provider               // source embedParamProvider
 	value    reflect.Value // value cache
 }
 

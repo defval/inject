@@ -34,9 +34,9 @@ type ProvideParams struct {
 // Provide adds constructor into container.
 func (c *Container) Provide(params ProvideParams) {
 	var provider provider = createConstructor(params.Name, params.Provider)
-	id := provider.resultKey()
+	k := provider.resultKey()
 
-	if c.graph.NodeExists(id) {
+	if c.exists(k) {
 		panicf("The `%s` type already exists in container", provider.resultKey())
 	}
 
@@ -44,11 +44,11 @@ func (c *Container) Provide(params ProvideParams) {
 		provider = asSingleton(provider)
 	}
 
-	c.graph.AddNode(id)
-	c.providers[id] = provider
+	c.add(provider)
+	c.provideEmbedParameters(provider)
 
 	for _, iface := range params.Interfaces {
-		c.provideAs(provider, iface)
+		c.processProviderInterface(provider, iface)
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *Container) Compile() {
 	for _, key := range c.all() {
 		// register provider parameters
 		provider, _ := c.provider(key)
-		provider.parameters().register(c)
+		c.registerParameters(provider)
 	}
 
 	_, err := c.graph.DFSSort()
@@ -94,11 +94,11 @@ func (c *Container) Extract(params ExtractParams) error {
 	}
 
 	if params.Target == nil {
-		return fmt.Errorf("extractInto target must be a pointer, got `nil`")
+		return fmt.Errorf("extract target must be a pointer, got `nil`")
 	}
 
 	if !reflection.IsPtr(params.Target) {
-		return fmt.Errorf("extractInto target must be a pointer, got `%s`", reflect.TypeOf(params.Target))
+		return fmt.Errorf("extract target must be a pointer, got `%s`", reflect.TypeOf(params.Target))
 	}
 
 	key := key{
@@ -106,7 +106,20 @@ func (c *Container) Extract(params ExtractParams) error {
 		typ:  reflect.TypeOf(params.Target).Elem(),
 	}
 
-	return key.extractInto(c, params.Target)
+	return key.extract(c, params.Target)
+}
+
+func (c *Container) add(p provider) {
+	c.graph.AddNode(p.resultKey())
+	c.providers[p.resultKey()] = p
+}
+
+func (c *Container) provideEmbedParameters(p provider) {
+	for _, parameter := range p.parameters() {
+		if parameter.embed {
+			c.add(createEmbedProvider(parameter))
+		}
+	}
 }
 
 // exists checks that resultKey exists
@@ -115,12 +128,12 @@ func (c *Container) exists(k key) bool {
 }
 
 // provider
-func (c *Container) provider(k key) (provider, error) {
+func (c *Container) provider(k key) (provider, bool) {
 	if !c.exists(k) {
-		return nil, errProviderNotFound{k: k}
+		return nil, false
 	}
 
-	return c.providers[k], nil
+	return c.providers[k], true
 }
 
 // all
@@ -134,14 +147,9 @@ func (c *Container) all() []key {
 	return keys
 }
 
-// registerDependency registers dependency
-func (c *Container) registerDependency(dependency key, dependant key) {
-	c.graph.AddEdge(dependency, dependant)
-}
-
-// provideAs
-func (c *Container) provideAs(provider provider, as interface{}) {
-	// create interface from structProvider
+// processProviderInterface
+func (c *Container) processProviderInterface(provider provider, as interface{}) {
+	// create interface from embedParamProvider
 	iface := createInterfaceProvider(provider, as)
 	ifaceKey := iface.resultKey()
 
@@ -168,6 +176,19 @@ func (c *Container) provideAs(provider provider, as interface{}) {
 		c.providers[groupKey] = group
 	}
 
-	// add structProvider ifaceKey into group
+	// add embedParamProvider ifaceKey into group
 	group.Add(provider.resultKey())
+}
+
+func (c *Container) registerParameters(provider provider) {
+	for _, parameter := range provider.parameters() {
+		_, exists := c.provider(parameter.resultKey())
+		if exists {
+			c.graph.AddEdge(parameter.resultKey(), provider.resultKey())
+		}
+
+		if !exists && !parameter.optional {
+			panicf("%s: dependency %s not exists in container", provider.resultKey(), parameter.resultKey())
+		}
+	}
 }

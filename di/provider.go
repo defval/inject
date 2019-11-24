@@ -5,6 +5,6 @@ import "reflect"
 // implementation
 type provider interface {
 	resultKey() key
-	parameters() providerParameterList
+	parameters() parameterList
 	provide(parameters ...reflect.Value) (reflect.Value, error)
 }

@@ -25,22 +25,13 @@ func (k key) resultKey() key {
 	return k
 }
 
-// register registers resultKey as dependency of providerKey in the container.
-func (k key) register(c *Container, dependant key) {
-	if !c.exists(k) {
-		panicf("%s: dependency %s not exists in container", dependant, k)
+func (k key) resolve(c *Container) (reflect.Value, error) {
+	provider, exists := c.provider(k)
+	if !exists {
+		return reflect.Value{}, errProviderNotFound{k: k}
 	}
 
-	c.registerDependency(k, dependant)
-}
-
-func (k key) load(c *Container) (reflect.Value, error) {
-	provider, err := c.provider(k)
-	if err != nil {
-		return reflect.Value{}, err
-	}
-
-	values, err := provider.parameters().load(c)
+	values, err := provider.parameters().resolve(c)
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -49,8 +40,8 @@ func (k key) load(c *Container) (reflect.Value, error) {
 }
 
 // Extract extracts instance by resultKey from container into target.
-func (k key) extractInto(c *Container, target interface{}) error {
-	value, err := k.load(c)
+func (k key) extract(c *Container, target interface{}) error {
+	value, err := k.resolve(c)
 	if err != nil {
 		return err
 	}
