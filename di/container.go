@@ -23,7 +23,8 @@ type Container struct {
 	compiled  bool
 }
 
-// ProvideParams parameterList for Provide method.
+// ProvideParams is a `Provide()` method options. Name is a unique identifier of type instance. Provider is a constructor
+// function. Interfaces is a interface that implements a provider result type.
 type ProvideParams struct {
 	Name        string
 	Provider    interface{}
@@ -31,7 +32,7 @@ type ProvideParams struct {
 	IsPrototype bool
 }
 
-// Provide adds constructor into container.
+// Provide adds constructor into container with parameters.
 func (c *Container) Provide(params ProvideParams) {
 	var provider provider = createConstructor(params.Name, params.Provider)
 	k := provider.resultKey()
@@ -44,7 +45,7 @@ func (c *Container) Provide(params ProvideParams) {
 		provider = asSingleton(provider)
 	}
 
-	c.add(provider)
+	c.addProvider(provider)
 	c.provideEmbedParameters(provider)
 
 	for _, iface := range params.Interfaces {
@@ -109,25 +110,27 @@ func (c *Container) Extract(params ExtractParams) error {
 	return key.extract(c, params.Target)
 }
 
-func (c *Container) add(p provider) {
+// addProvider
+func (c *Container) addProvider(p provider) {
 	c.graph.AddNode(p.resultKey())
 	c.providers[p.resultKey()] = p
 }
 
+// provideEmbedParameters
 func (c *Container) provideEmbedParameters(p provider) {
 	for _, parameter := range p.parameters() {
 		if parameter.embed {
-			c.add(createEmbedProvider(parameter))
+			c.addProvider(createEmbedProvider(parameter))
 		}
 	}
 }
 
-// exists checks that resultKey exists
+// exists checks that key registered in container graph.
 func (c *Container) exists(k key) bool {
 	return c.graph.NodeExists(k)
 }
 
-// provider
+// provider checks that provider exists and return it.
 func (c *Container) provider(k key) (provider, bool) {
 	if !c.exists(k) {
 		return nil, false
@@ -136,7 +139,7 @@ func (c *Container) provider(k key) (provider, bool) {
 	return c.providers[k], true
 }
 
-// all
+// all return all container keys.
 func (c *Container) all() []key {
 	var keys []key
 
@@ -147,7 +150,7 @@ func (c *Container) all() []key {
 	return keys
 }
 
-// processProviderInterface
+// processProviderInterface represents instances as interfaces and groups.
 func (c *Container) processProviderInterface(provider provider, as interface{}) {
 	// create interface from embedParamProvider
 	iface := createInterfaceProvider(provider, as)
@@ -180,6 +183,7 @@ func (c *Container) processProviderInterface(provider provider, as interface{}) 
 	group.Add(provider.resultKey())
 }
 
+// registerParameters registers provider parameters in a dependency graph.
 func (c *Container) registerParameters(provider provider) {
 	for _, parameter := range provider.parameters() {
 		_, exists := c.provider(parameter.resultKey())

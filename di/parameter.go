@@ -10,13 +10,6 @@ type Parameters struct {
 	internalParameter
 }
 
-// internalParameter
-type internalParameter interface {
-	isDependencyInjectionParameter()
-}
-
-var parameterInterface = reflect.TypeOf(new(internalParameter)).Elem()
-
 // parameterRequired
 type parameter struct {
 	key
@@ -55,6 +48,11 @@ func (pl parameterList) resolve(c *Container) ([]reflect.Value, error) {
 
 	return values, nil
 }
+
+// internalParameter
+type internalParameter interface{}
+
+var parameterInterface = reflect.TypeOf(new(internalParameter)).Elem()
 
 // isEmbedParameter
 func isEmbedParameter(typ reflect.Type) bool {
