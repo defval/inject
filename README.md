@@ -78,10 +78,13 @@ yourself.
 
 ### Inversion of control
 
-Let's look on the code without dependency injection and with it.
+Let's look on the code without dependency injection container and with
+it.
 
-In common case programmer control how constructor dependencies are
-injected in (error checking omitted):
+#### Without dependency injection container
+
+> You describe types, call a functions and pass the results to other
+> functions. It's obvious and simple:
 
 ```go
 // data layer
@@ -100,7 +103,7 @@ profileEndpoint := NewProfileEndpoint(mux, profiles)
 //     mux.Post("/profile", endpoint.Create)
 // }
 
-accountEndpoint := NewAccountEndpoint(mux, accountRepository)
+accountEndpoint := NewAccountEndpoint(mux, accounts)
 
 // func NewAccountEndpoint(mux, accounts) *AccountEndpoint {
 //     endpoint := &AccountEndpoint{accounts}
@@ -109,14 +112,17 @@ accountEndpoint := NewAccountEndpoint(mux, accountRepository)
 // }
 
 // messaging layer
-userLoggedInSubscription := NewUserLoggedInSubscription(profileRepository)
+userLoggedInSubscription := NewUserLoggedInSubscription(profiles)
 // service layer
-userInteractor := NewUserInteractor(profileRepository, accountRepository)
+userInteractor := NewUserInteractor(profiles, accounts)
 // start
+userLoggedInSubscription.Start()
 server.ListenAndServe()
 ```
 
-With using of dependency injection, the container decides it.
+#### With dependency injection container
+
+> You describe types and container decides what dependency are injected in.
 
 ```go
 container := inject.New(
@@ -152,7 +158,6 @@ var server *http.Server
 container.Extract(&server)
 server.ListenAndServe()
 ```
-
 
 Some call it magic, but it's an inversion of control.
 
