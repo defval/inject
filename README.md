@@ -10,8 +10,8 @@ src="https://github.com/defval/inject/raw/master/logo.png">[![Tweet](https://img
 ## How will dependency injection help me?
 
 Dependency injection is one form of the broader technique of inversion
-of control. It is used to increase modularity of the program and makes
-it extensible.
+of control. It is used to increase modularity of the program and make it
+extensible.
 
 --------
 
@@ -27,14 +27,70 @@ This container implementation inspired by
 go get -u github.com/defval/inject/v2
 ```
 
-This library has two using levels. Package `inject` provides a clean and
-easy way to build your application components. And package `di` that
-provides more advanced techniques.
+## Documentation
 
-## Constructors
+### Providing
 
-A constructor must be a function. It must have one or two results. The
-first is a result object. Often the type of result object is a pointer.
-The second may be an error. Error is optional. A constructor may have an
-unlimited number of parameters and a container will provide all of these
-automatically.
+Let's code a simple application that processes HTTP requests. For this,
+we need a server and a router. We take the server and mux from the
+standard library.
+
+```go
+// NewServer creates a new http server with provided handler. 
+func NewServer(mux *http.ServeMux) *http.Server {
+	return &http.Server{
+		Handler: mux,
+	}
+}
+
+// NewServeMux creates a new http serve mux.
+func NewServeMux() *http.ServeMux {
+	return &http.ServeMux{}
+}
+```
+
+Now let's teach a container to build these types.
+
+```go
+// Collect container parameters, build and compile container.
+container := inject.New(
+	inject.Provide(NewServer),  // provide http server
+	inject.Provide(NewServeMux) // provide http serve mux
+)
+```
+
+### Extraction
+
+Now, we can extract the built server from the container. For this,
+define the variable of extracted type and pass variable pointer to
+`Extract` function.
+
+```
+var server *http.Server
+err := container.Extract(&server)
+```
+
+If extracted type not found or the process of building instance cause
+error, `Extract` return error.
+
+If no error occurred, we can use the variable as if we had built it
+yourself. It looks like:
+
+```go
+mux := NewServeMux()
+server := NewServer(mux)
+```
+
+### Implementation
+
+For a container to know that as an implementation of `http.Handler` it
+is necessary to use `*http.ServeMux`, we use the option `inject.As()`.
+The argument of this option must be a pointer to an interface like
+`new(http.Handler)`. This syntax may seem strange, but I have not found
+a better way to specify the interface.
+
+```go
+inject.Provide(NewServeMux, inject.As(new(http.Handler)))
+```
+
+
