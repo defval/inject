@@ -37,7 +37,7 @@ func (s *embedParamProvider) parameters() parameterList {
 	var pl parameterList
 
 	for i := 0; i < s.embedType.NumField(); i++ {
-		name, optional, isDependency := s.inspectField(i)
+		name, optional, isDependency := s.inspectFieldTag(i)
 		if !isDependency {
 			continue
 		}
@@ -58,7 +58,7 @@ func (s *embedParamProvider) parameters() parameterList {
 	return pl
 }
 
-func (s *embedParamProvider) inspectField(num int) (name string, optional bool, isDependency bool) {
+func (s *embedParamProvider) inspectFieldTag(num int) (name string, optional bool, isDependency bool) {
 	tag, tagExists := s.embedType.Field(num).Tag.Lookup("di")
 	canSet := s.embedValue.Field(num).CanSet()
 	if !tagExists || !canSet {
@@ -93,7 +93,7 @@ func (s *embedParamProvider) parseTag(tag string) (name string, optional bool) {
 
 func (s *embedParamProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	for i, offset := 0, 0; i < s.embedType.NumField(); i++ {
-		_, _, isDependency := s.inspectField(i)
+		_, _, isDependency := s.inspectFieldTag(i)
 		if !isDependency {
 			offset++
 			continue
