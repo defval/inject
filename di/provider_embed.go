@@ -17,14 +17,16 @@ func createEmbedProvider(p parameter) *embedParamProvider {
 	}
 
 	return &embedParamProvider{
-		key:       result,
-		embedType: embedType,
+		key:        result,
+		embedType:  embedType,
+		embedValue: reflect.New(embedType).Elem(),
 	}
 }
 
 type embedParamProvider struct {
-	key       key
-	embedType reflect.Type
+	key        key
+	embedType  reflect.Type
+	embedValue reflect.Value
 }
 
 func (s *embedParamProvider) resultKey() key {
@@ -57,12 +59,13 @@ func (s *embedParamProvider) parameters() parameterList {
 }
 
 func (s *embedParamProvider) inspectField(num int) (name string, optional bool, isDependency bool) {
-	value, exists := s.embedType.Field(num).Tag.Lookup("di")
-	if !exists {
+	tag, tagExists := s.embedType.Field(num).Tag.Lookup("di")
+	canSet := s.embedValue.Field(num).CanSet()
+	if !tagExists || !canSet {
 		return "", false, false
 	}
 
-	name, optional = s.parseTag(value)
+	name, optional = s.parseTag(tag)
 
 	return name, optional, true
 }
@@ -89,8 +92,6 @@ func (s *embedParamProvider) parseTag(tag string) (name string, optional bool) {
 }
 
 func (s *embedParamProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
-	value := reflect.New(s.embedType).Elem()
-
 	for i, offset := 0, 0; i < s.embedType.NumField(); i++ {
 		_, _, isDependency := s.inspectField(i)
 		if !isDependency {
@@ -98,8 +99,8 @@ func (s *embedParamProvider) provide(parameters ...reflect.Value) (reflect.Value
 			continue
 		}
 
-		value.Field(i).Set(parameters[i-offset])
+		s.embedValue.Field(i).Set(parameters[i-offset])
 	}
 
-	return value, nil
+	return s.embedValue, nil
 }

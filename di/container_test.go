@@ -2,6 +2,7 @@ package di_test
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"reflect"
 	"testing"
@@ -291,18 +292,33 @@ func TestContainerResolveEmbedParameters(t *testing.T) {
 		require.Nil(t, extracted.Bar())
 	})
 
-	t.Run("name optional group is nil", func(t *testing.T) {
+	t.Run("container resolve optional not existing group as nil", func(t *testing.T) {
 		c := NewTestContainer(t)
 		type Params struct {
 			di.Parameters
 			Handlers []http.Handler `di:"optional"`
 		}
-
 		c.MustProvide(func(params Params) bool {
 			return params.Handlers == nil
 		})
 		c.MustCompile()
+		var extracted bool
+		c.MustExtract(&extracted)
+		require.True(t, extracted)
+	})
 
+	t.Run("container skip private fields in parameter", func(t *testing.T) {
+		c := NewTestContainer(t)
+		type Param struct {
+			di.Parameters
+			private    []http.Handler `di:"optional"`
+			Addrs      []net.Addr     `di:"optional"`
+			HaveNotTag string
+		}
+		c.MustProvide(func(param Param) bool {
+			return param.Addrs == nil
+		})
+		c.MustCompile()
 		var extracted bool
 		c.MustExtract(&extracted)
 		require.True(t, extracted)
