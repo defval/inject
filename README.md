@@ -74,12 +74,87 @@ If extracted type not found or the process of building instance cause
 error, `Extract` return error.
 
 If no error occurred, we can use the variable as if we had built it
-yourself. It looks like:
+yourself.
+
+### Inversion of control
+
+Let's look on the code without dependency injection and with it.
+
+In common case programmer control how constructor dependencies are
+injected in (error checking omitted):
 
 ```go
+// data layer
+db := NewDatabaseConnection()
+profiles := NewProfileRepository(db)
+accounts := NewAccountRepository(db)
+// api layer
 mux := NewServeMux()
 server := NewServer(mux)
+
+profileEndpoint := NewProfileEndpoint(mux, profiles)
+
+// func NewProfileEndpoint(mux, profiles) *ProfileEndpoint {
+//     endpoint := &ProfileEndpoint{profiles}
+//     mux.Get("/profile", endpoint.Retrieve)
+//     mux.Post("/profile", endpoint.Create)
+// }
+
+accountEndpoint := NewAccountEndpoint(mux, accountRepository)
+
+// func NewAccountEndpoint(mux, accounts) *AccountEndpoint {
+//     endpoint := &AccountEndpoint{accounts}
+//     mux.Get("/profile", profileEndpoint.Retrieve)
+//     mux.Post("/profile", profileEndpoint.Create)
+// }
+
+// messaging layer
+userLoggedInSubscription := NewUserLoggedInSubscription(profileRepository)
+// service layer
+userInteractor := NewUserInteractor(profileRepository, accountRepository)
+// start
+server.ListenAndServe()
 ```
+
+With using of dependency injection, the container decides it.
+
+```go
+container := inject.New(
+	// data layer
+	inject.Provide(NewDatabaseConnection),
+	inject.Provide(NewProfileRepository),
+	inject.Provide(NewAccountRepository),
+	// api layer
+	inject.Provide(NewServeMux),
+	
+	// func NewServeMux(endpoints []Endpoint) *ServeMux {
+	//     mux := &http.ServeMux{}
+	//     for _, endpoint := range endpoints {
+	//         endpoint.RegisterRoutes(mux)
+	//     }
+	// }
+	
+	inject.Provide(NewServer),
+	inject.Provide(NewProfileEndpoint, inject.As(new(Endpoint))),
+	inject.Provide(NewAccountEndpoint, inject.As(new(Endpoint))),
+	
+	// type Endpoint interface {
+	//     RegisterRoutes(mux *http.ServeMux)
+	// }
+	
+	// messaging layer
+	inject.Provide(NewUserLoggedInSubscription),
+	// service layer
+	inject.Provide(NewUserInteractor),
+)
+
+var server *http.Server
+container.Extract(&server)
+server.ListenAndServe()
+```
+
+
+Some call it magic, but it's an inversion of control.
 
 ### Implementation
 
