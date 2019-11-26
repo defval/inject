@@ -104,13 +104,29 @@ func (c *constructorProvider) provide(parameters ...reflect.Value) (reflect.Valu
 	case ctorSimple:
 		return out[0], nil
 	case ctorError:
-		return out[0], out[1].Interface().(error)
+		instance := out[0]
+		err := out[1]
+
+		if err.IsNil() {
+			return instance, nil
+		}
+
+		return instance, err.Interface().(error)
 	case ctorCleanup:
 		c.saveCleanup(out[1])
 		return out[0], nil
 	case ctorCleanupError:
-		c.saveCleanup(out[2])
-		return out[1], out[1].Interface().(error)
+		instance := out[0]
+		cleanup := out[1]
+		err := out[2]
+
+		c.saveCleanup(cleanup)
+
+		if err.IsNil() {
+			return instance, nil
+		}
+
+		return instance, err.Interface().(error)
 	}
 
 	return reflect.Value{}, errors.New("you found a bug, please create new issue for " +

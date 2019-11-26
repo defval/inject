@@ -1,9 +1,5 @@
 package ditest
 
-import (
-	"errors"
-)
-
 // Foo test struct
 type Foo struct{}
 
@@ -17,16 +13,6 @@ func NewCycleFooBar(bar *Bar) *Foo {
 	return &Foo{}
 }
 
-// NewFooError
-func NewFooError() (*Foo, error) {
-	return nil, errors.New("internal error")
-}
-
-// NewFooCleanup
-func NewFooCleanup() (*Foo, func()) {
-	return &Foo{}, func() {}
-}
-
 // CreateFooConstructor
 func CreateFooConstructor(foo *Foo) func() *Foo {
 	return func() *Foo {
@@ -34,9 +20,23 @@ func CreateFooConstructor(foo *Foo) func() *Foo {
 	}
 }
 
+// CreateFooConstructorWithError
+func CreateFooConstructorWithError(err error) func() (*Foo, error) {
+	return func() (foo *Foo, e error) {
+		return &Foo{}, err
+	}
+}
+
 // CreateFooConstructorWithCleanup
 func CreateFooConstructorWithCleanup(cleanup func()) func() (*Foo, func()) {
 	return func() (foo *Foo, i func()) {
 		return &Foo{}, cleanup
+	}
+}
+
+// CreateFooConstructorWithCleanupAndError
+func CreateFooConstructorWithCleanupAndError(cleanup func(), err error) func() (*Foo, func(), error) {
+	return func() (foo *Foo, i func(), e error) {
+		return &Foo{}, cleanup, err
 	}
 }

@@ -1,6 +1,7 @@
 package di_test
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -120,7 +121,7 @@ func TestContainerExtractErrors(t *testing.T) {
 
 	t.Run("extract returns error because dependency constructing failed", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvide(ditest.NewFooError)
+		c.MustProvide(ditest.CreateFooConstructorWithError(errors.New("internal error")))
 		c.MustProvide(ditest.NewBar)
 		c.MustCompile()
 		var bar *ditest.Bar
@@ -147,7 +148,7 @@ func TestContainerProvide(t *testing.T) {
 
 	t.Run("container successfully accept constructor with error", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvide(ditest.NewFooError)
+		c.MustProvide(ditest.CreateFooConstructorWithError(nil))
 	})
 
 	t.Run("container successfully accept constructor with cleanup function", func(t *testing.T) {
@@ -180,6 +181,25 @@ func TestContainerExtract(t *testing.T) {
 
 		var extracted2 *ditest.Foo
 		c.MustExtractPtr(foo, &extracted2)
+	})
+
+	t.Run("container extract instance if error is nil", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.CreateFooConstructorWithError(nil))
+		c.MustCompile()
+
+		var extracted *ditest.Foo
+		c.MustExtract(&extracted)
+	})
+
+	t.Run("container extract instance if cleanup and error is nil", func(t *testing.T) {
+		c := NewTestContainer(t)
+
+		c.MustProvide(ditest.CreateFooConstructorWithCleanupAndError(nil, nil))
+		c.MustCompile()
+
+		var extracted *ditest.Foo
+		c.MustExtract(&extracted)
 	})
 
 	t.Run("container extract correct named pointer", func(t *testing.T) {
