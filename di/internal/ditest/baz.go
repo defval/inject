@@ -18,7 +18,7 @@ func NewBaz(foo *Foo, bar *Bar) *Baz {
 
 // BazParameters
 type BazParameters struct {
-	di.Parameters
+	di.Parameter
 
 	Foo *Foo `di:""`
 	Bar *Bar `di:"optional"`

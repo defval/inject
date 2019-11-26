@@ -5,8 +5,8 @@ import (
 	"reflect"
 )
 
-// Parameters
-type Parameters struct {
+// Parameter
+type Parameter struct {
 	internalParameter
 }
 

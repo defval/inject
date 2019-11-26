@@ -314,7 +314,7 @@ func TestContainerResolveEmbedParameters(t *testing.T) {
 	t.Run("container resolve optional not existing group as nil", func(t *testing.T) {
 		c := NewTestContainer(t)
 		type Params struct {
-			di.Parameters
+			di.Parameter
 			Handlers []http.Handler `di:"optional"`
 		}
 		c.MustProvide(func(params Params) bool {
@@ -329,7 +329,7 @@ func TestContainerResolveEmbedParameters(t *testing.T) {
 	t.Run("container skip private fields in parameter", func(t *testing.T) {
 		c := NewTestContainer(t)
 		type Param struct {
-			di.Parameters
+			di.Parameter
 			private    []http.Handler `di:"optional"`
 			Addrs      []net.Addr     `di:"optional"`
 			HaveNotTag string
