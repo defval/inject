@@ -122,7 +122,7 @@ func (c *constructorProvider) saveCleanup(value reflect.Value) {
 }
 
 func (c *constructorProvider) cleanup() {
-	if c.clean.IsValid() {
+	if c.clean != nil && c.clean.IsValid() {
 		c.clean.Call([]reflect.Value{})
 	}
 }

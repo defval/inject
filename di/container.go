@@ -110,6 +110,16 @@ func (c *Container) Extract(params ExtractParams) error {
 	return key.extract(c, params.Target)
 }
 
+// Cleanup
+func (c *Container) Cleanup() {
+	for _, key := range c.all() {
+		provider, _ := c.provider(key)
+		if cleanup, ok := provider.(cleanup); ok {
+			cleanup.cleanup()
+		}
+	}
+}
+
 // addProvider
 func (c *Container) addProvider(p provider) {
 	c.graph.AddNode(p.resultKey())

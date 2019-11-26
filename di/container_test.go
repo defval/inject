@@ -345,9 +345,22 @@ func TestContainerResolveEmbedParameters(t *testing.T) {
 }
 
 func TestContainerCleanup(t *testing.T) {
-
 	t.Run("container run cleanup function after container close", func(t *testing.T) {
+		c := NewTestContainer(t)
 
+		var cleanupCalled bool
+		cleanup := func() {
+			cleanupCalled = true
+		}
+
+		c.MustProvide(ditest.CreateFooConstructorWithCleanup(cleanup))
+		c.MustCompile()
+
+		var extracted *ditest.Foo
+		c.MustExtract(&extracted)
+		c.Cleanup()
+
+		require.True(t, cleanupCalled)
 	})
 }
 
