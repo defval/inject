@@ -27,7 +27,7 @@ This container implementation inspired by
 go get -u github.com/defval/inject/v2
 ```
 
-## Documentation
+## Tutorial
 
 ### Providing
 
@@ -36,12 +36,13 @@ we need a server and a router. We take the server and mux from the
 standard library.
 
 ```go
-// NewServer creates a new http server with provided handler. 
+// NewServer creates a http server with provided mux as handler.
 func NewServer(mux *http.ServeMux) *http.Server {
 	return &http.Server{
 		Handler: mux,
 	}
 }
+
 
 // NewServeMux creates a new http serve mux.
 func NewServeMux() *http.ServeMux {
@@ -61,9 +62,9 @@ container := inject.New(
 
 ### Extraction
 
-Now, we can extract the built server from the container. For this,
-define the variable of extracted type and pass variable pointer to
-`Extract` function.
+We can extract the built server from the container. For this, define the
+variable of extracted type and pass variable pointer to `Extract`
+function.
 
 ```
 var server *http.Server
@@ -76,101 +77,123 @@ error, `Extract` return error.
 If no error occurred, we can use the variable as if we had built it
 yourself.
 
-### Inversion of control
+### Interfaces and groups
 
-Let's look on the code without dependency injection container and with
-it.
+Let's add some endpoints to our application.
 
-#### Without dependency injection container
-
-> You describe types, call a functions and pass the results to other
-> functions. It's obvious and simple:
+##### `AuthEndpoint`
 
 ```go
-// data layer
-db := NewDatabaseConnection()
-profiles := NewProfileRepository(db)
-accounts := NewAccountRepository(db)
-// api layer
-mux := NewServeMux()
-server := NewServer(mux)
+// NewAuthEndpoint creates a auth http endpoint.
+func NewAuthEndpoint() *AuthEndpoint {
+	return &AuthEndpoint{}
+}
 
-profileEndpoint := NewProfileEndpoint(mux, profiles)
-
-// func NewProfileEndpoint(mux, profiles) *ProfileEndpoint {
-//     endpoint := &ProfileEndpoint{profiles}
-//     mux.Get("/profile", endpoint.Retrieve)
-//     mux.Post("/profile", endpoint.Create)
-// }
-
-accountEndpoint := NewAccountEndpoint(mux, accounts)
-
-// func NewAccountEndpoint(mux, accounts) *AccountEndpoint {
-//     endpoint := &AccountEndpoint{accounts}
-//     mux.Get("/profile", profileEndpoint.Retrieve)
-//     mux.Post("/profile", profileEndpoint.Create)
-// }
-
-// messaging layer
-userLoggedInSubscription := NewUserLoggedInSubscription(profiles)
-// service layer
-userInteractor := NewUserInteractor(profiles, accounts)
-// start
-userLoggedInSubscription.Start()
-server.ListenAndServe()
+// Login control user authentication.
+func (a *AuthEndpoint) Login(writer http.ResponseWriter, request *http.Request) {
+	// implementation
+}
 ```
 
-#### With dependency injection container
+##### `UserEndpoint`
 
-> You describe types and container decides what dependency are injected in.
+```go
+// NewUserEndpoint create user endpoint.
+func NewUserEndpoint() *UserEndpoint {
+	return &UserEndpoint{}
+}
+
+// UserEndpoint is a http endpoint for user.
+type UserEndpoint struct {}
+
+// Retrieve write user data to writer.
+func (e *UserEndpoint) Retrieve(writer http.ResponseWriter, request *http.Request) {
+    // implementation
+}
+```
+
+Change `*http.ServeMux` constructor for register endpoint routes.
+
+```go
+// NewServeMux creates a new http serve mux and register user endpoint.
+func NewServeMux(auth *AuthEndpoint, users *UserEndpoint) *http.ServeMux {
+	mux := &http.ServeMux{}
+	mux.HandleFunc("/user", users.Retrieve)
+	mux.HandleFunc("/auth", auth.Login)
+	return mux
+}
+```
+
+Updated container initialization code:
 
 ```go
 container := inject.New(
-	// data layer
-	inject.Provide(NewDatabaseConnection),
-	inject.Provide(NewProfileRepository),
-	inject.Provide(NewAccountRepository),
-	// api layer
-	inject.Provide(NewServeMux),
-	
-	// func NewServeMux(endpoints []Endpoint) *ServeMux {
-	//     mux := &http.ServeMux{}
-	//     for _, endpoint := range endpoints {
-	//         endpoint.RegisterRoutes(mux)
-	//     }
-	// }
-	
-	inject.Provide(NewServer),
-	inject.Provide(NewProfileEndpoint, inject.As(new(Endpoint))),
-	inject.Provide(NewAccountEndpoint, inject.As(new(Endpoint))),
-	
-	// type Endpoint interface {
-	//     RegisterRoutes(mux *http.ServeMux)
-	// }
-	
-	// messaging layer
-	inject.Provide(NewUserLoggedInSubscription),
-	// service layer
-	inject.Provide(NewUserInteractor),
+	inject.Provide(NewServer),        // provide http server
+	inject.Provide(NewServeMux)       // provide http serve mux
+	// endpoints
+	inject.Provide(NewUserEndpoint),  // provide user endpoint
+	inject.Provide(NewAuthEndpoint),  // provide auth endpoint
 )
-
-var server *http.Server
-container.Extract(&server)
-server.ListenAndServe()
 ```
 
-Some call it magic, but it's an inversion of control.
-
-### Implementation
-
-For a container to know that as an implementation of `http.Handler` it
-is necessary to use `*http.ServeMux`, we use the option `inject.As()`.
-The argument of this option must be a pointer to an interface like
-`new(http.Handler)`. This syntax may seem strange, but I have not found
-a better way to specify the interface.
+Our endpoints have typical behavior. It is registering routes. Let's
+create an interface for it.
 
 ```go
-inject.Provide(NewServeMux, inject.As(new(http.Handler)))
+// Endpoint is an interface that can register its routes.
+type Endpoint interface {
+	RegisterRoutes(mux *http.ServeMux)
+}
 ```
 
+Now we can provide endpoint implementation as `Endpoint` interface.
+Interface implementation:
+
+```go
+// RegisterRoutes is a Endpoint interface implementation.
+func (a *AuthEndpoint) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/login", a.Login)
+}
+
+// RegisterRoutes is a Endpoint interface implementation.
+func (e *UserEndpoint) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/user", e.Retrieve)
+}
+```
+
+For a container to know that as an implementation of `Endpoint` is
+necessary to use, we use the option `inject.As()`. The argument of this
+option must be a pointer to an interface like `new(Endpoint)`. This
+syntax may seem strange, but I have not found a better way to specify
+the interface.
+
+```go
+container := inject.New(
+	inject.Provide(NewServer),        // provide http server
+	inject.Provide(NewServeMux)       // provide http serve mux
+	// endpoints
+	inject.Provide(NewUserEndpoint, inject.As(new(Endpoint))),  // provide user endpoint
+	inject.Provide(NewAuthEndpoint, inject.As(new(Endpoint))),  // provide auth endpoint
+)
+```
+
+Container groups all implementations of `Endpoint` interface into
+`[]Endpoint` group. We may use it in our mux. See updated code:
+
+```go
+// NewServeMux creates a new http serve mux.
+func NewServeMux(endpoints []Endpoint) *http.ServeMux {
+	mux := &http.ServeMux{}
+
+	for _, endpoint := range endpoints {
+		endpoint.RegisterRoutes(mux)
+	}
+
+	return mux
+}
+```
+
+> If you have only one implementation of an interface then you can use
+> the interface instead of the implementation. This contributes to
+> writing more testable code.
 
