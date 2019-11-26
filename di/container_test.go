@@ -46,17 +46,17 @@ func TestContainerProvideErrors(t *testing.T) {
 
 	t.Run("provide constructor without result cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(ditest.ConstructorWithoutResult, "The constructor `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithoutResult` has no results")
+		c.MustProvideError(ditest.ConstructorWithoutResult, "The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithoutResult`")
 	})
 
 	t.Run("provide constructor with many results cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(ditest.ConstructorWithManyResults, "The constructor `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithManyResults` has many results")
+		c.MustProvideError(ditest.ConstructorWithManyResults, "The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithManyResults`")
 	})
 
 	t.Run("provide constructor with incorrect result error argument", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(ditest.ConstructorWithIncorrectResultError, "The second result of constructor `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithIncorrectResultError` must be error, got *ditest.Bar")
+		c.MustProvideError(ditest.ConstructorWithIncorrectResultError, "The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `github.com/defval/inject/v2/di/internal/ditest.ConstructorWithIncorrectResultError`")
 	})
 
 	t.Run("provide duplicate", func(t *testing.T) {
@@ -136,6 +136,25 @@ func TestContainerExtractErrors(t *testing.T) {
 
 		var extracted ditest.Fooer
 		c.MustExtractError(&extracted, "ditest.Fooer have sereral implementations")
+	})
+}
+
+func TestContainerProvide(t *testing.T) {
+	t.Run("container successfully accept simple constructor", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFoo)
+	})
+
+	t.Run("container successfully accept constructor with error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFooError)
+	})
+
+	t.Run("container successfully accept constructor with cleanup function", func(t *testing.T) {
+		c := NewTestContainer(t)
+
+		cleanup := func() {}
+		c.MustProvide(ditest.CreateFooConstructorWithCleanup(cleanup))
 	})
 }
 
@@ -322,6 +341,13 @@ func TestContainerResolveEmbedParameters(t *testing.T) {
 		var extracted bool
 		c.MustExtract(&extracted)
 		require.True(t, extracted)
+	})
+}
+
+func TestContainerCleanup(t *testing.T) {
+
+	t.Run("container run cleanup function after container close", func(t *testing.T) {
+
 	})
 }
 

@@ -1,10 +1,45 @@
 package di
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/defval/inject/v2/di/internal/reflection"
 )
+
+type ctorType int
+
+const (
+	ctorUnknown      ctorType = iota // unknown ctor signature
+	ctorSimple                       // (deps) (result)
+	ctorError                        // (deps) (result, error)
+	ctorCleanup                      // (deps) (result, cleanup)
+	ctorCleanupError                 // (deps) (result, cleanup, error)
+)
+
+// determineCtorType
+func determineCtorType(fn *reflection.Func) ctorType {
+	if fn.NumOut() == 1 {
+		return ctorSimple
+	}
+
+	if fn.NumOut() == 2 {
+		if reflection.IsError(fn.Out(1)) {
+			return ctorError
+		}
+
+		if reflection.IsCleanup(fn.Out(1)) {
+			return ctorCleanup
+		}
+	}
+
+	if fn.NumOut() == 3 && reflection.IsCleanup(fn.Out(1)) && reflection.IsError(fn.Out(2)) {
+		return ctorCleanupError
+	}
+
+	panic(fmt.Sprintf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", fn.Name))
+}
 
 // createConstructor
 func createConstructor(name string, ctor interface{}) *constructorProvider {
@@ -17,29 +52,21 @@ func createConstructor(name string, ctor interface{}) *constructorProvider {
 	}
 
 	fn := reflection.InspectFunction(ctor)
-
-	if fn.NumOut() == 0 {
-		panicf("The constructor `%s` has no results", fn.Name)
-	}
-
-	if fn.NumOut() > 2 {
-		panicf("The constructor `%s` has many results", fn.Name)
-	}
-
-	if fn.NumOut() == 2 && !reflection.IsError(fn.Out(1)) {
-		panicf("The second result of constructor `%s` must be error, got %s", fn.Name, fn.Out(1))
-	}
+	ctorType := determineCtorType(fn)
 
 	return &constructorProvider{
-		name: name,
-		ctor: fn,
+		name:     name,
+		ctor:     fn,
+		ctorType: ctorType,
 	}
 }
 
 // constructorProvider
 type constructorProvider struct {
-	name string
-	ctor *reflection.Func
+	name     string
+	ctor     *reflection.Func
+	ctorType ctorType
+	clean    *reflection.Func
 }
 
 // resultKey returns constructor result type resultKey.
@@ -70,12 +97,32 @@ func (c constructorProvider) parameters() parameterList {
 }
 
 // Provide
-func (c constructorProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (c *constructorProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
 	out := c.ctor.Call(parameters)
 
-	if len(out) == 1 || out[1].IsNil() {
+	switch c.ctorType {
+	case ctorSimple:
 		return out[0], nil
+	case ctorError:
+		return out[0], out[1].Interface().(error)
+	case ctorCleanup:
+		c.saveCleanup(out[1])
+		return out[0], nil
+	case ctorCleanupError:
+		c.saveCleanup(out[2])
+		return out[1], out[1].Interface().(error)
 	}
 
-	return out[0], out[1].Interface().(error)
+	return reflect.Value{}, errors.New("you found a bug, please create new issue for " +
+		"this: https://github.com/defval/inject/issues/new")
+}
+
+func (c *constructorProvider) saveCleanup(value reflect.Value) {
+	c.clean = reflection.InspectFunction(value.Interface())
+}
+
+func (c *constructorProvider) cleanup() {
+	if c.clean.IsValid() {
+		c.clean.Call([]reflect.Value{})
+	}
 }
