@@ -31,17 +31,17 @@ func TestContainerCompileErrors(t *testing.T) {
 func TestContainerProvideErrors(t *testing.T) {
 	t.Run("provide string cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError("string", "The constructor must be a function like `func(dep1, dep2...) (result, cleanup, error)`, got `string`")
+		c.MustProvideError("string", "The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `string`")
 	})
 
 	t.Run("provide nil cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(nil, "The constructor must be a function like `func(dep1, dep2...) (result, cleanup, error)`, got `nil`")
+		c.MustProvideError(nil, "The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `nil`")
 	})
 
 	t.Run("provide struct pointer cause panic", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvideError(&ditest.Foo{}, "The constructor must be a function like `func(dep1, dep2...) (result, cleanup, error)`, got `*ditest.Foo`")
+		c.MustProvideError(&ditest.Foo{}, "The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `*ditest.Foo`")
 	})
 
 	t.Run("provide constructor without result cause panic", func(t *testing.T) {

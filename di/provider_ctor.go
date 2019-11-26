@@ -9,11 +9,11 @@ import (
 // createConstructor
 func createConstructor(name string, ctor interface{}) *constructorProvider {
 	if ctor == nil {
-		panicf("The constructor must be a function like `func(dep1, dep2...) (result, cleanup, error)`, got `%s`", "nil")
+		panicf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", "nil")
 	}
 
 	if !reflection.IsFunc(ctor) {
-		panicf("The constructor must be a function like `func(dep1, dep2...) (result, cleanup, error)`, got `%s`", reflect.ValueOf(ctor).Type())
+		panicf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", reflect.ValueOf(ctor).Type())
 	}
 
 	fn := reflection.InspectFunction(ctor)
