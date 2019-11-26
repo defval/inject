@@ -51,6 +51,11 @@ func (c *Container) Extract(target interface{}, options ...ExtractOption) (err e
 	})
 }
 
+// Cleanup
+func (c *Container) Cleanup() {
+	c.container.Cleanup()
+}
+
 func (c *Container) compile() {
 	for _, po := range c.providers {
 		c.container.Provide(di.ProvideParams{
