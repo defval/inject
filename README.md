@@ -13,13 +13,18 @@ Dependency injection is one form of the broader technique of inversion
 of control. It is used to increase modularity of the program and make it
 extensible.
 
---------
+## Contents
 
-This container implementation inspired by
-[google/wire](https://github.com/google/wire),
-[uber-go/fx](https://github.com/uber-go/fx) and
-[uber-go/dig](https://github.com/uber-go/dig).
-
+- [Installing](#installing)
+- [Documentation](#documentation)
+  - [Providing](#providing)
+  - [Extraction](#extraction)
+  - [Interfaces and groups](#interfaces-and-groups)
+- [Advanced features](#advanced-features)
+  - [Named definitions](#named-definitions)
+  - [Optional parameters](#optional-parameters)
+  - [Prototypes](#prototypes)
+  - [Cleanup](#cleanup)
 
 ## Installing
 
@@ -232,7 +237,13 @@ func NewServeMux(endpoints []Endpoint) *http.ServeMux {
 > writing more testable code and not contrary to "return structs,
 > accept interfaces" principle.
 
+## Advanced features
+
 ### Named definitions
+
+TBD
+
+### Optional parameters
 
 TBD
 
@@ -241,17 +252,5 @@ TBD
 TBD
 
 ### Cleanup
-
-TBD
-
-### Advanced providing
-
-TBD
-
-#### Naming
-
-TBD
-
-#### Optional parameters
 
 TBD
