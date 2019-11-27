@@ -17,7 +17,8 @@ extensible.
 I use `v2` version in production, but it in a pre-release state. I need
 time to finish documentation and fix possible bugs.
 
-You can see latest `v1` [here](https://github.com/defval/inject/tree/v1.5.2).
+You can see latest `v1`
+[here](https://github.com/defval/inject/tree/v1.5.2).
 
 ## Contents
 
@@ -248,7 +249,63 @@ func NewServeMux(endpoints []Endpoint) *http.ServeMux {
 
 ### Named definitions
 
-TBD
+In some cases you have more than one instance of one type. For example
+two instances of database: master - for writing, slave - for reading.
+
+First way is a wrapping types:
+
+```go
+// MasterDatabase provide write database access.
+type MasterDatabase struct {
+	*Database
+}
+
+// SlaveDatabase provide read database access.
+type SlaveDatabase struct {
+	*Database
+}
+```
+
+Second way is a using named definitions with `inject.WithName()` provide
+option:
+
+```go
+// provide master database
+inject.Provide(NewMasterDatabase, inject.WithName("master"))
+// provide slave database
+inject.Provide(NewSlaveDatabase, inject.WithName("slave"))
+```
+
+If you need to extract it from container use `inject.Name()` extract
+option.
+
+```go
+var db *Database
+container.Extract(&db, inject.Name("master"))
+```
+
+If you need to provide named definition in other constructor use
+`di.Parameter` with embedding.
+
+```go
+// ServiceParameters
+type ServiceParameters struct {
+	di.Parameter
+	
+	// use `di` tag for the container to know that field need to be injected.
+	MasterDatabase *Database `di:"master"`
+	SlaveDatabase *Database  `di:"slave"`
+}
+
+// NewService creates new service with provided parameters.
+func NewService(parameters ServiceParameters) *Service {
+	return &Service{
+		MasterDatabase:  parameters.MasterDatabase,
+		SlaveDatabase: parameters.SlaveDatabase,
+	}
+}
+```
+
 
 ### Optional parameters
 
