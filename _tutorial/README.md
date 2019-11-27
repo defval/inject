@@ -4,18 +4,8 @@ Let's code a simple application that processes HTTP requests.
 
 ## Providing
 
-To start, we will need to create two types. We will create a simple constructors
-that initialize this.
-
-Supported constructor signature:
-
-```go
-// depN - our dependencies
-// result - initialized result
-// cleanup - result cleanup function
-// error - initialize error
-func([dep1, dep2, depN]) (result, [cleanup, error])
-```
+To start, we will need to create two types. We will create a simple
+constructors that initialize this.
 
 Our types:
 
@@ -43,22 +33,41 @@ container := inject.New(
 )
 ```
 
+> Supported constructor signature:
+> ```go
+> func([dep1, dep2, depN]) (result, [cleanup, error])
+> ```
+
+> Container panics if it could not compile. I believe that panic at the
+> initialization of the application and not in runtime is usual.
+
+> Result dependencies will be lazy-loaded. If no one requires a type
+> from the container it will not be constructed.
+
+
 ### Extraction
 
 We can extract the built server from the container. For this, define the
 variable of extracted type and pass variable pointer to `Extract`
 function.
 
-```
-var server *http.Server
-err := container.Extract(&server)
-```
-
 If extracted type not found or the process of building instance cause
 error, `Extract` return error.
 
 If no error occurred, we can use the variable as if we had built it
 yourself.
+
+```go
+// declare type variable
+var server *http.Server
+// extracting
+err := container.Extract(&server)
+if err != nil {
+	// check extraction error
+}
+
+server.ListenAndServe()
+```
 
 ## Interfaces and groups
 
@@ -118,6 +127,9 @@ container := inject.New(
 	inject.Provide(NewAuthEndpoint),  // provide auth endpoint
 )
 ```
+
+Container knows that building mux requires `AuthEndpoint` and
+`UserEndpoint`.
 
 Our endpoints have typical behavior. It is registering routes. Let's
 create an interface for it.
