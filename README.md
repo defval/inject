@@ -26,7 +26,7 @@ You can see latest `v1` [here](https://github.com/defval/inject/tree/v1.5.2).
 ## Contents
 
 - [Installing](#installing)
-- [Documentation](#documentation)
+- [Tutorial](#tutorial)
   - [Providing](#providing)
   - [Extraction](#extraction)
   - [Interfaces and groups](#interfaces-and-groups)
@@ -42,7 +42,7 @@ You can see latest `v1` [here](https://github.com/defval/inject/tree/v1.5.2).
 go get -u github.com/defval/inject/v2
 ```
 
-## Documentation
+## Tutorial
 
 Let's learn to use `inject` by example. We will code a simple
 application that processes HTTP requests.
