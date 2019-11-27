@@ -1,4 +1,4 @@
-package inject_test
+package main
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"github.com/defval/inject/v2"
 )
 
-func ExampleTutorial() {
+func main() {
 	container := inject.New(
 		inject.Provide(NewServer),
 		inject.Provide(NewServeMux),
@@ -20,8 +20,7 @@ func ExampleTutorial() {
 		panic(err)
 	}
 
-	// Output:
-	//
+	server.ListenAndServe()
 }
 
 // NewServer creates a http server with provided mux as handler.
