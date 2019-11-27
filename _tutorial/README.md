@@ -7,6 +7,18 @@ Let's code a simple application that processes HTTP requests.
 To start, we will need to create two types. We will create a simple constructors
 that initialize this.
 
+Supported constructor signature:
+
+```go
+// depN - our dependencies
+// result - initialized result
+// cleanup - result cleanup function
+// error - initialize error
+func([dep1, dep2, depN]) (result, [cleanup, error])
+```
+
+Our types:
+
 ```go
 // NewServer creates a http server with provided mux as handler.
 func NewServer(mux *http.ServeMux) *http.Server {
@@ -20,12 +32,6 @@ func NewServeMux() *http.ServeMux {
 	return &http.ServeMux{}
 }
 ```
-
-> Supported constructor signature is:
->
-> ```go
-> func([dep1, dep2, depN]) (result, [cleanup, error])
-> ```
 
 Now let's teach a container to build these types.
 
