@@ -32,10 +32,10 @@ type Option interface{ apply(*Container) }
 //
 // Other function signatures will cause error.
 //
-// For advanced providing use inject.Provider.
+// For advanced providing use inject.dependencyProvider.
 //
 //   type AdminServerProvider struct {
-//     inject.Provider
+//     inject.dependencyProvider
 //
 //     AdminMux http.Handler `inject:"admin"` // use named definition
 //   }
@@ -57,38 +57,6 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 
 		container.providers = append(container.providers, po)
 
-	})
-}
-
-// Replace replaces a already provided definition to another one.
-// This method also works like Provide(). The difference is that Replace() replaces already provided definition.
-// The method returns an error when the container does not provide a replaceable definition.
-//
-// You may replace concrete provided type to another one.
-//
-//   inject.New(
-//     inject.Provide(&http.Server{Addr: ":80"}),
-//     inject.Replace(&http.Server{Addr: ":8080"}),
-//   )
-//
-// Alternatively, it may replace one interface implementation to another one.
-//
-//   inject.New(
-//     inject.Provide(&http.ServeMux{}, inject.As(new(http.Handler))),
-//     inject.Replace(&mux.AnotherMux{}, inject.As(new(http.Handler))),
-//   )
-//
-func Replace(provider interface{}, options ...ProvideOption) Option {
-	return option(func(container *Container) {
-		var po = &providerOptions{
-			provider: provider,
-		}
-
-		for _, opt := range options {
-			opt.apply(po)
-		}
-
-		container.replacers = append(container.replacers, po)
 	})
 }
 
@@ -131,7 +99,7 @@ func WithName(name string) ProvideOption {
 	})
 }
 
-// As specifies interfaces that implement provider instance. Provide with As() automatically checks that instance implements
+// As specifies interfaces that implement provider instance. Provide with As() automatically checks that instance interfaces
 // interface and creates slice group with it.
 //
 //   Provide(&http.ServerMux{}, inject.As(new(http.Handler)))
@@ -143,24 +111,15 @@ func WithName(name string) ProvideOption {
 //   container.Extract(&handlers) // extract group
 func As(ifaces ...interface{}) ProvideOption {
 	return provideOption(func(provider *providerOptions) {
-		provider.implements = append(provider.implements, ifaces...)
+		provider.interfaces = append(provider.interfaces, ifaces...)
 
 	})
 }
 
-// Exported indicates that all public fields of the structure should be injected.
-//
-//   type AccountController struct {
-//     Accounts AccountRepository // will be injected without tag 'inject'
-//   }
-//
-//   inject.Provide(NewAccountRepository, inject.As(new(AccountRepository)))
-//   inject.Provide(&AccountController{}, inject.Exported())
-//
-// Also works with inject.Provider structures.
-func Exported() ProvideOption {
+// Prototype
+func Prototype() ProvideOption {
 	return provideOption(func(provider *providerOptions) {
-		provider.includeExported = true
+		provider.prototype = true
 	})
 }
 
@@ -184,6 +143,18 @@ type provideOption func(provider *providerOptions)
 
 func (o provideOption) apply(provider *providerOptions) { o(provider) }
 
+type providerOptions struct {
+	name       string
+	provider   interface{}
+	interfaces []interface{}
+	prototype  bool
+}
+
 type extractOption func(eo *extractOptions)
 
 func (o extractOption) apply(eo *extractOptions) { o(eo) }
+
+type extractOptions struct {
+	name   string
+	target interface{}
+}

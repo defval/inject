@@ -67,4 +67,4 @@ The container collects a dependencies of *pkg.AnotherDependency, creates its ins
 places it in a target pointer.
 For advanced extraction see Extract() and inject.ExtractOption documentation.
 */
-package inject // import "github.com/defval/inject"
+package inject // import "github.com/defval/inject/v2"
