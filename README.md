@@ -27,12 +27,12 @@ This container implementation inspired by
 go get -u github.com/defval/inject/v2
 ```
 
-# Documentation
+## Documentation
 
 Let's learn to use `inject` by example. We will code a simple
 application that processes HTTP requests.
 
-## Providing
+### Providing
 
 To start, we will need to create two fundamental types: server and
 router. We will create a simple constructors that initialize this.
@@ -78,7 +78,7 @@ graph.
 > Result dependencies will be lazy-loaded. If no one requires a type
 > from the container it will not be constructed.
 
-## Extraction
+### Extraction
 
 We can extract the built server from the container. For this, define the
 variable of extracted type and pass variable pointer to `Extract`
@@ -102,7 +102,7 @@ if err != nil {
 server.ListenAndServe()
 ```
 
-## Interfaces and groups
+### Interfaces and groups
 
 Let's add some endpoints to our application.
 
@@ -232,26 +232,26 @@ func NewServeMux(endpoints []Endpoint) *http.ServeMux {
 > writing more testable code and not contrary to "return structs,
 > accept interfaces" principle.
 
-## Named definitions
+### Named definitions
 
 TBD
 
-## Prototypes
+### Prototypes
 
 TBD
 
-## Cleanup
+### Cleanup
 
 TBD
 
-## Advanced providing
+### Advanced providing
 
 TBD
 
-### Naming
+#### Naming
 
 TBD
 
-### Optional parameters
+#### Optional parameters
 
 TBD
