@@ -34,6 +34,7 @@ container := inject.New(
 ```
 
 > Supported constructor signature:
+>
 > ```go
 > func([dep1, dep2, depN]) (result, [cleanup, error])
 > ```
@@ -45,14 +46,14 @@ container := inject.New(
 > from the container it will not be constructed.
 
 
-### Extraction
+## Extraction
 
 We can extract the built server from the container. For this, define the
 variable of extracted type and pass variable pointer to `Extract`
 function.
 
-If extracted type not found or the process of building instance cause
-error, `Extract` return error.
+> If extracted type not found or the process of building instance cause
+> error, `Extract` return error.
 
 If no error occurred, we can use the variable as if we had built it
 yourself.
@@ -129,10 +130,13 @@ container := inject.New(
 ```
 
 Container knows that building mux requires `AuthEndpoint` and
-`UserEndpoint`.
+`UserEndpoint`. And construct it for our `*http.ServeMux` on demand.
+
+> Frequently, dependency injection is used to bind a concrete
+> implementation for an interface.
 
 Our endpoints have typical behavior. It is registering routes. Let's
-create an interface for it.
+create an interface for it:
 
 ```go
 // Endpoint is an interface that can register its routes.
@@ -141,8 +145,7 @@ type Endpoint interface {
 }
 ```
 
-Now we can provide endpoint implementation as `Endpoint` interface.
-Interface implementation:
+And implement it:
 
 ```go
 // RegisterRoutes is a Endpoint interface implementation.
@@ -156,11 +159,12 @@ func (e *UserEndpoint) RegisterRoutes(mux *http.ServeMux) {
 }
 ```
 
-For a container to know that as an implementation of `Endpoint` is
-necessary to use, we use the option `inject.As()`. The argument of this
-option must be a pointer to an interface like `new(Endpoint)`. This
-syntax may seem strange, but I have not found a better way to specify
-the interface.
+Now we can provide endpoint implementation as `Endpoint` interface. For
+a container to know that as an implementation of `Endpoint` is necessary
+to use, we use the option `inject.As()`. The argument of this option
+must be a pointer to an interface like `new(Endpoint)`. This syntax may
+seem strange, but I have not found a better way to specify the
+interface.
 
 ```go
 container := inject.New(
@@ -171,6 +175,10 @@ container := inject.New(
 	inject.Provide(NewAuthEndpoint, inject.As(new(Endpoint))),  // provide auth endpoint
 )
 ```
+
+> Container groups all implementation of interface to `[]<interface>`
+> group. For example, `inject.As(new(Endpoint)` automatically creates a
+> group `[]Endpoint`.
 
 Container groups all implementations of `Endpoint` interface into
 `[]Endpoint` group. We may use it in our mux. See updated code:
@@ -192,3 +200,26 @@ func NewServeMux(endpoints []Endpoint) *http.ServeMux {
 > the interface instead of the implementation. This contributes to
 > writing more testable code.
 
+## Named definitions
+
+TBD
+
+## Prototypes
+
+TBD
+
+## Cleanup
+
+TBD
+
+## Advanced providing
+
+TBD
+
+### Naming
+
+TBD
+
+### Optional parameters
+
+TBD
