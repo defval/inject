@@ -27,6 +27,7 @@ You can see latest `v1`
   - [Providing](#providing)
   - [Extraction](#extraction)
   - [Interfaces and groups](#interfaces-and-groups)
+- [Inversion of control](#inversion-of-control)
 - [Advanced features](#advanced-features)
   - [Named definitions](#named-definitions)
   - [Optional parameters](#optional-parameters)
@@ -115,10 +116,12 @@ if err != nil {
 server.ListenAndServe()
 ```
 
+> Note that by default, the container creates instances as a singleton.
+> But you can change this behaviour. See [Prototypes](#prototypes).
+
 ### Interfaces and groups
 
 Let's add some endpoints to our application.
-
 
 ```go
 // NewAuthEndpoint creates a auth http endpoint.
@@ -245,6 +248,10 @@ func NewServeMux(endpoints []Endpoint) *http.ServeMux {
 > more testable code and not contrary to "return structs, accept
 > interfaces" principle.
 
+## Inversion of control
+
+TBD
+
 ## Advanced features
 
 ### Named definitions
@@ -306,18 +313,80 @@ func NewService(parameters ServiceParameters) *Service {
 }
 ```
 
-
 ### Optional parameters
 
-TBD
+Also `di.Parameter` provide ability to skip dependency if it not exists
+in container.
+
+```go
+// ServiceParameter
+type ServiceParameter struct {
+	di.Parameter
+	
+	Logger *Logger `di:"optional"`
+}
+```
+
+> Constructors that declare dependencies as optional must handle the
+> case of those dependencies being absent.
+
+You can use naming and optional together.
+
+```go
+// ServiceParameter
+type ServiceParameter struct {
+	di.Parameter
+	
+	StdOutLogger *Logger `di:"stdout"`
+	FileLogger   *Logger `di:"file,optional"`
+}
+```
 
 ### Prototypes
 
-TBD
+If you want to create a new instance on each extraction use
+`inject.Prototype()` provide option.
+
+```go
+inject.Provide(NewRequestContext, inject.Prototype())
+```
+
+> todo: real use case
 
 ### Cleanup
 
-TBD
+If a provider creates a value that needs to be cleaned up, then it can
+return a closure to clean up the resource.
+
+```go
+func NewFile(log Logger, path Path) (*os.File, func(), error) {
+    f, err := os.Open(string(path))
+    if err != nil {
+        return nil, nil, err
+    }
+    cleanup := func() {
+        if err := f.Close(); err != nil {
+            log.Log(err)
+        }
+    }
+    return f, cleanup, nil
+}
+```
+
+After `container.Cleanup()` call, it iterate over instances and call cleanup
+function if it exists.
+
+```go
+container := inject.New(
+	// ...
+    inject.Provide(NewFile),
+)
+
+// do something
+container.Cleanup() // file was closed
+```
+
+> Cleanup now work incorrectly with prototype providers.
 
 ## Contributing
 
