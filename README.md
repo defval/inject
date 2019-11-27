@@ -13,6 +13,13 @@ Dependency injection is one form of the broader technique of inversion
 of control. It is used to increase modularity of the program and make it
 extensible.
 
+## Disclaimer
+
+I use `v2` version in production, but it in a pre-release state. I need
+time to finish documentation and fix possible bugs.
+
+You can see latest `v1` [here](https://github.com/defval/inject/tree/v1.5.2).
+
 ## Contents
 
 - [Installing](#installing)
@@ -233,9 +240,9 @@ func NewServeMux(endpoints []Endpoint) *http.ServeMux {
 ```
 
 > If you have only one implementation of an interface, then you can use
-> the interface instead of the implementation. It contributes to
-> writing more testable code and not contrary to "return structs,
-> accept interfaces" principle.
+> the interface instead of the implementation. It contributes to writing
+> more testable code and not contrary to "return structs, accept
+> interfaces" principle.
 
 ## Advanced features
 
