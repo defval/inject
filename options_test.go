@@ -9,12 +9,17 @@ import (
 
 // TestProvideOptions
 func TestProvideOptions(t *testing.T) {
-	opts := &providerOptions{}
+	opts := &providerOptions{
+		parameters: map[string]interface{}{},
+	}
 
 	for _, opt := range []ProvideOption{
 		WithName("test"),
 		As(new(http.Handler)),
 		Prototype(),
+		ParameterBag{
+			"test": "test",
+		},
 	} {
 		opt.apply(opts)
 	}
@@ -24,6 +29,9 @@ func TestProvideOptions(t *testing.T) {
 		provider:   nil,
 		interfaces: []interface{}{new(http.Handler)},
 		prototype:  true,
+		parameters: map[string]interface{}{
+			"test": "test",
+		},
 	}, opts)
 }
 

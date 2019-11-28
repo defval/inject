@@ -83,9 +83,17 @@ func (c constructorProvider) parameters() parameterList {
 
 	for i := 0; i < c.ctor.NumIn(); i++ {
 		ptype := c.ctor.In(i)
+		var pname string
+
+		if ptype == parameterBagType {
+			pname = c.resultKey().String()
+		}
 
 		p := parameter{
-			key:      key{typ: ptype},
+			key: key{
+				name: pname,
+				typ:  ptype,
+			},
 			optional: false,
 			embed:    isEmbedParameter(ptype),
 		}

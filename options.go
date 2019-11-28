@@ -48,7 +48,8 @@ type Option interface{ apply(*Container) }
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
 		var po = &providerOptions{
-			provider: provider,
+			provider:   provider,
+			parameters: map[string]interface{}{},
 		}
 
 		for _, opt := range options {
@@ -123,6 +124,15 @@ func Prototype() ProvideOption {
 	})
 }
 
+// Parameters
+type ParameterBag map[string]interface{}
+
+func (p ParameterBag) apply(provider *providerOptions) {
+	for k, v := range p {
+		provider.parameters[k] = v
+	}
+}
+
 // ExtractOption modifies default extract behavior. See inject.Name().
 type ExtractOption interface{ apply(*extractOptions) }
 
@@ -148,6 +158,7 @@ type providerOptions struct {
 	provider   interface{}
 	interfaces []interface{}
 	prototype  bool
+	parameters map[string]interface{}
 }
 
 type extractOption func(eo *extractOptions)

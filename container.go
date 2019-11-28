@@ -63,6 +63,7 @@ func (c *Container) compile() {
 			Provider:    po.provider,
 			Interfaces:  po.interfaces,
 			IsPrototype: po.prototype,
+			Parameters:  po.parameters,
 		})
 	}
 

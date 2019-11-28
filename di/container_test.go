@@ -157,6 +157,7 @@ func TestContainerProvide(t *testing.T) {
 		cleanup := func() {}
 		c.MustProvide(ditest.CreateFooConstructorWithCleanup(cleanup))
 	})
+
 }
 
 func TestContainerExtract(t *testing.T) {
@@ -247,6 +248,50 @@ func TestContainerExtract(t *testing.T) {
 		c.MustExtract(&extracted2)
 
 		c.MustNotEqualPointer(extracted1, extracted2)
+	})
+
+	t.Run("container extract correct parameter bag for type", func(t *testing.T) {
+		c := NewTestContainer(t)
+
+		c.Provide(di.ProvideParams{
+			Provider: ditest.NewFooWithName,
+			Parameters: di.ParameterBag{
+				"name": "test",
+			},
+		})
+
+		c.MustCompile()
+
+		var foo *ditest.Foo
+		err := c.Extract(di.ExtractParams{
+			Target: &foo,
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, "test", foo.Name)
+	})
+
+	t.Run("container extract correct parameter bag for type", func(t *testing.T) {
+		c := NewTestContainer(t)
+
+		c.Provide(di.ProvideParams{
+			Name:     "named",
+			Provider: ditest.NewFooWithName,
+			Parameters: di.ParameterBag{
+				"name": "test",
+			},
+		})
+
+		c.MustCompile()
+
+		var foo *ditest.Foo
+		err := c.Extract(di.ExtractParams{
+			Name:   "named",
+			Target: &foo,
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, "test", foo.Name)
 	})
 }
 
