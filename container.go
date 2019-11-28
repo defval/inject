@@ -22,7 +22,7 @@ func New(options ...Option) *Container {
 
 // Container is a dependency injection container.
 type Container struct {
-	providers []*providerOptions
+	providers []di.ProvideParams
 	container *di.Container
 }
 
@@ -36,19 +36,16 @@ type Container struct {
 // If the target type does not exist in a container or instance type building failed, Extract() returns an error.
 // Use ExtractOption for modifying the behavior of this function.
 func (c *Container) Extract(target interface{}, options ...ExtractOption) (err error) {
-	var po = &extractOptions{
-		target: target,
+	var params = di.ExtractParams{
+		Target: target,
 	}
 
 	// apply extract options
 	for _, opt := range options {
-		opt.apply(po)
+		opt.apply(&params)
 	}
 
-	return c.container.Extract(di.ExtractParams{
-		Name:   po.name,
-		Target: target,
-	})
+	return c.container.Extract(params)
 }
 
 // Cleanup
@@ -58,13 +55,7 @@ func (c *Container) Cleanup() {
 
 func (c *Container) compile() {
 	for _, po := range c.providers {
-		c.container.Provide(di.ProvideParams{
-			Name:        po.name,
-			Provider:    po.provider,
-			Interfaces:  po.interfaces,
-			IsPrototype: po.prototype,
-			Parameters:  po.parameters,
-		})
+		c.container.Provide(po)
 	}
 
 	c.container.Compile()

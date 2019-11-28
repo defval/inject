@@ -1,9 +1,13 @@
 package inject
 
+import "github.com/defval/inject/v2/di"
+
 // OPTIONS
 
 // Option configures container. See inject.Provide(), inject.Bundle(), inject.Replace().
-type Option interface{ apply(*Container) }
+type Option interface {
+	apply(*Container)
+}
 
 // Provide returns container option that explains how to create an instance of a type inside a container.
 //
@@ -47,13 +51,13 @@ type Option interface{ apply(*Container) }
 //   }
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
-		var po = &providerOptions{
-			provider:   provider,
-			parameters: map[string]interface{}{},
+		var po = di.ProvideParams{
+			Provider:   provider,
+			Parameters: map[string]interface{}{},
 		}
 
 		for _, opt := range options {
-			opt.apply(po)
+			opt.apply(&po)
 		}
 
 		container.providers = append(container.providers, po)
@@ -86,7 +90,9 @@ func Bundle(options ...Option) Option {
 }
 
 // ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Exported().
-type ProvideOption interface{ apply(*providerOptions) }
+type ProvideOption interface {
+	apply(params *di.ProvideParams)
+}
 
 // WithName sets string identifier for provided value.
 //
@@ -95,8 +101,8 @@ type ProvideOption interface{ apply(*providerOptions) }
 //
 //   container.Extract(&server, inject.Name("second"))
 func WithName(name string) ProvideOption {
-	return provideOption(func(provider *providerOptions) {
-		provider.name = name
+	return provideOption(func(provider *di.ProvideParams) {
+		provider.Name = name
 	})
 }
 
@@ -111,37 +117,39 @@ func WithName(name string) ProvideOption {
 //   var handlers []http.Handler
 //   container.Extract(&handlers) // extract group
 func As(ifaces ...interface{}) ProvideOption {
-	return provideOption(func(provider *providerOptions) {
-		provider.interfaces = append(provider.interfaces, ifaces...)
+	return provideOption(func(provider *di.ProvideParams) {
+		provider.Interfaces = append(provider.Interfaces, ifaces...)
 
 	})
 }
 
 // Prototype
 func Prototype() ProvideOption {
-	return provideOption(func(provider *providerOptions) {
-		provider.prototype = true
+	return provideOption(func(provider *di.ProvideParams) {
+		provider.IsPrototype = true
 	})
 }
 
 // Parameters
 type ParameterBag map[string]interface{}
 
-func (p ParameterBag) apply(provider *providerOptions) {
+func (p ParameterBag) apply(provider *di.ProvideParams) {
 	for k, v := range p {
-		provider.parameters[k] = v
+		provider.Parameters[k] = v
 	}
 }
 
 // ExtractOption modifies default extract behavior. See inject.Name().
-type ExtractOption interface{ apply(*extractOptions) }
+type ExtractOption interface {
+	apply(params *di.ExtractParams)
+}
 
 // EXTRACT OPTIONS.
 
 // Name specify definition name.
 func Name(name string) ExtractOption {
-	return extractOption(func(eo *extractOptions) {
-		eo.name = name
+	return extractOption(func(eo *di.ExtractParams) {
+		eo.Name = name
 	})
 }
 
@@ -149,21 +157,13 @@ type option func(container *Container)
 
 func (o option) apply(container *Container) { o(container) }
 
-type provideOption func(provider *providerOptions)
+type provideOption func(provider *di.ProvideParams)
 
-func (o provideOption) apply(provider *providerOptions) { o(provider) }
+func (o provideOption) apply(provider *di.ProvideParams) { o(provider) }
 
-type providerOptions struct {
-	name       string
-	provider   interface{}
-	interfaces []interface{}
-	prototype  bool
-	parameters map[string]interface{}
-}
+type extractOption func(eo *di.ExtractParams)
 
-type extractOption func(eo *extractOptions)
-
-func (o extractOption) apply(eo *extractOptions) { o(eo) }
+func (o extractOption) apply(eo *di.ExtractParams) { o(eo) }
 
 type extractOptions struct {
 	name   string

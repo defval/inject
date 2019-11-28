@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/defval/inject/v2/di"
 )
 
 // TestProvideOptions
 func TestProvideOptions(t *testing.T) {
-	opts := &providerOptions{
-		parameters: map[string]interface{}{},
+	opts := &di.ProvideParams{
+		Parameters: map[string]interface{}{},
 	}
 
 	for _, opt := range []ProvideOption{
@@ -24,19 +26,19 @@ func TestProvideOptions(t *testing.T) {
 		opt.apply(opts)
 	}
 
-	require.Equal(t, &providerOptions{
-		name:       "test",
-		provider:   nil,
-		interfaces: []interface{}{new(http.Handler)},
-		prototype:  true,
-		parameters: map[string]interface{}{
+	require.Equal(t, &di.ProvideParams{
+		Name:        "test",
+		Provider:    nil,
+		Interfaces:  []interface{}{new(http.Handler)},
+		IsPrototype: true,
+		Parameters: map[string]interface{}{
 			"test": "test",
 		},
 	}, opts)
 }
 
 func TestExtractOptions(t *testing.T) {
-	opts := &extractOptions{}
+	opts := &di.ExtractParams{}
 
 	for _, opt := range []ExtractOption{
 		Name("test"),
@@ -44,8 +46,8 @@ func TestExtractOptions(t *testing.T) {
 		opt.apply(opts)
 	}
 
-	require.Equal(t, &extractOptions{
-		name:   "test",
-		target: nil,
+	require.Equal(t, &di.ExtractParams{
+		Name:   "test",
+		Target: nil,
 	}, opts)
 }
