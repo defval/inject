@@ -20,6 +20,9 @@ time to finish documentation and fix possible bugs.
 You can see latest `v1`
 [here](https://github.com/defval/inject/tree/v1.5.2).
 
+I will be glad if you contribute to this library. I don't know much
+English, so contributing to the documentation is very meaningful to me.
+
 ## Contents
 
 - [Installing](#installing)
@@ -44,7 +47,6 @@ go get -u github.com/defval/inject/v2
 ```
 
 ## Getting Started
-
 
 
 ## Tutorial
@@ -183,11 +185,8 @@ container := inject.New(
 )
 ```
 
-Container knows that building mux requires `AuthEndpoint` and
-`UserEndpoint`. And construct it for our `*http.ServeMux` on demand.
-
-> Frequently, dependency injection is used to bind a concrete
-> implementation for an interface.
+Container knows that building `*http.ServeMux` requires `*AuthEndpoint`
+and `*UserEndpoint` and construct it on demand.
 
 Our endpoints have typical behavior. It is registering routes. Let's
 create an interface for it:
@@ -350,7 +349,24 @@ type ServiceParameter struct {
 
 ### Parameter Bag
 
-TBD
+If you need to specify some parameters on definition level you can use
+`inject.ParameterBag` provide option. This is a `map[string]interface{}`
+that transforms to `di.ParameterBag` type.
+
+```go
+// Provide server with parameter bag
+inject.Provide(NewServer, inject.ParameterBag{
+	"addr": ":8080",
+})
+
+// NewServer create a server with provided parameter bag. Note: use di.ParameterBag type.
+// Not inject.ParameterBag.
+func NewServer(pb di.ParameterBag) *http.Server {
+	return &http.Server{
+		Addr: pb.RequireString("addr"),
+	}
+}
+```
 
 ### Prototypes
 
@@ -383,8 +399,8 @@ func NewFile(log Logger, path Path) (*os.File, func(), error) {
 }
 ```
 
-After `container.Cleanup()` call, it iterate over instances and call cleanup
-function if it exists.
+After `container.Cleanup()` call, it iterate over instances and call
+cleanup function if it exists.
 
 ```go
 container := inject.New(

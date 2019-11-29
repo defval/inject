@@ -12,8 +12,8 @@ func NewFoo() *Foo {
 	return &Foo{}
 }
 
-// NewFooWithName
-func NewFooWithName(parameters di.ParameterBag) *Foo {
+// NewFooWithParameters
+func NewFooWithParameters(parameters di.ParameterBag) *Foo {
 	return &Foo{Name: parameters.RequireString("name")}
 }
 
