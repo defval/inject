@@ -20,8 +20,12 @@ time to finish documentation and fix possible bugs.
 You can see latest `v1`
 [here](https://github.com/defval/inject/tree/v1.5.2).
 
-I will be glad if you contribute to this library. I don't know much
-English, so contributing to the documentation is very meaningful to me.
+## Contributing
+
+> I will be glad if you contribute to this library. I don't know much
+> English, so contributing to the documentation is very meaningful to me.
+
+[![](https://sourcerer.io/fame/defval/defval/inject/images/0)](https://sourcerer.io/fame/defval/defval/inject/links/0)[![](https://sourcerer.io/fame/defval/defval/inject/images/1)](https://sourcerer.io/fame/defval/defval/inject/links/1)[![](https://sourcerer.io/fame/defval/defval/inject/images/2)](https://sourcerer.io/fame/defval/defval/inject/links/2)[![](https://sourcerer.io/fame/defval/defval/inject/images/3)](https://sourcerer.io/fame/defval/defval/inject/links/3)[![](https://sourcerer.io/fame/defval/defval/inject/images/4)](https://sourcerer.io/fame/defval/defval/inject/links/4)[![](https://sourcerer.io/fame/defval/defval/inject/images/5)](https://sourcerer.io/fame/defval/defval/inject/links/5)[![](https://sourcerer.io/fame/defval/defval/inject/images/6)](https://sourcerer.io/fame/defval/defval/inject/links/6)[![](https://sourcerer.io/fame/defval/defval/inject/images/7)](https://sourcerer.io/fame/defval/defval/inject/links/7)
 
 ## Contents
 
@@ -413,7 +417,3 @@ container.Cleanup() // file was closed
 ```
 
 > Cleanup now work incorrectly with prototype providers.
-
-## Contributing
-
-[![](https://sourcerer.io/fame/defval/defval/inject/images/0)](https://sourcerer.io/fame/defval/defval/inject/links/0)[![](https://sourcerer.io/fame/defval/defval/inject/images/1)](https://sourcerer.io/fame/defval/defval/inject/links/1)[![](https://sourcerer.io/fame/defval/defval/inject/images/2)](https://sourcerer.io/fame/defval/defval/inject/links/2)[![](https://sourcerer.io/fame/defval/defval/inject/images/3)](https://sourcerer.io/fame/defval/defval/inject/links/3)[![](https://sourcerer.io/fame/defval/defval/inject/images/4)](https://sourcerer.io/fame/defval/defval/inject/links/4)[![](https://sourcerer.io/fame/defval/defval/inject/images/5)](https://sourcerer.io/fame/defval/defval/inject/links/5)[![](https://sourcerer.io/fame/defval/defval/inject/images/6)](https://sourcerer.io/fame/defval/defval/inject/links/6)[![](https://sourcerer.io/fame/defval/defval/inject/images/7)](https://sourcerer.io/fame/defval/defval/inject/links/7)
