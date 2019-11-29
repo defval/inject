@@ -29,27 +29,31 @@ type ProvideParams struct {
 	Name        string
 	Provider    interface{}
 	Interfaces  []interface{}
+	Parameters  ParameterBag
 	IsPrototype bool
 }
 
 // Provide adds constructor into container with parameters.
 func (c *Container) Provide(params ProvideParams) {
-	var provider provider = createConstructor(params.Name, params.Provider)
-	k := provider.resultKey()
+	prov := provider(createConstructor(params.Name, params.Provider))
+	k := prov.resultKey()
 
 	if c.exists(k) {
-		panicf("The `%s` type already exists in container", provider.resultKey())
+		panicf("The `%s` type already exists in container", prov.resultKey())
 	}
 
 	if !params.IsPrototype {
-		provider = asSingleton(provider)
+		prov = asSingleton(prov)
 	}
 
-	c.addProvider(provider)
-	c.provideEmbedParameters(provider)
+	c.addProvider(prov)
+	c.provideEmbedParameters(prov)
+
+	parameterBugProvider := createParameterBugProvider(k, params.Parameters)
+	c.addProvider(parameterBugProvider)
 
 	for _, iface := range params.Interfaces {
-		c.processProviderInterface(provider, iface)
+		c.processProviderInterface(prov, iface)
 	}
 }
 

@@ -1,17 +1,18 @@
 package inject
 
+import "github.com/defval/inject/v2/di"
+
 // OPTIONS
 
 // Option configures container. See inject.Provide(), inject.Bundle(), inject.Replace().
-type Option interface{ apply(*Container) }
+type Option interface {
+	apply(*Container)
+}
 
 // Provide returns container option that explains how to create an instance of a type inside a container.
 //
-// The first argument is the provider. The provider can be constructor function, a pointer to a structure (or just
-// structure) or everything else. There are some differences between these providers.
-//
-// A constructor function is a function that creates an instance of the required type. It can take an unlimited
-// number of arguments needed to create an instance - the first returned value.
+// The first argument is the constructor function. A constructor is a function that creates an instance of the required
+// type. It can take an unlimited number of arguments needed to create an instance - the first returned value.
 //
 //   func NewServer(mux *http.ServeMux) *http.Server {
 //     return &http.Server{
@@ -19,40 +20,34 @@ type Option interface{ apply(*Container) }
 //     }
 //   }
 //
-// Optionally, you can return a initializing error.
+// Optionally, you can return a cleanup function and initializing error.
 //
-//   func NewServer(mux *http.ServeMux) (*http.Server, err error) {
+//   func NewServer(mux *http.ServeMux) (*http.Server, cleanup func(), err error) {
 //     if time.Now().Day = 1 {
-//       return nil, errors.New("the server is down on the first day of a month")
+//       return nil, nil, errors.New("the server is down on the first day of a month")
 //     }
-//     return &http.Server{
+//
+//     server := &http.Server{
 //       Handler: mux,
 //     }
+//
+//     cleanup := func() {
+//       _ = server.Close()
+//     }
+//
+//     return &server, cleanup, nil
 //   }
 //
 // Other function signatures will cause error.
-//
-// For advanced providing use inject.dependencyProvider.
-//
-//   type AdminServerProvider struct {
-//     inject.dependencyProvider
-//
-//     AdminMux http.Handler `inject:"admin"` // use named definition
-//   }
-//
-//   func (p *AdminServerProvider) Provide() *http.Server {
-//     return &http.Server{
-//       Handler: p.AdminMux,
-//     }
-//   }
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
-		var po = &providerOptions{
-			provider: provider,
+		var po = di.ProvideParams{
+			Provider:   provider,
+			Parameters: map[string]interface{}{},
 		}
 
 		for _, opt := range options {
-			opt.apply(po)
+			opt.apply(&po)
 		}
 
 		container.providers = append(container.providers, po)
@@ -84,8 +79,10 @@ func Bundle(options ...Option) Option {
 	})
 }
 
-// ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Exported().
-type ProvideOption interface{ apply(*providerOptions) }
+// ProvideOption modifies default provide behavior. See inject.WithName(), inject.As(), inject.Prototype().
+type ProvideOption interface {
+	apply(params *di.ProvideParams)
+}
 
 // WithName sets string identifier for provided value.
 //
@@ -94,13 +91,13 @@ type ProvideOption interface{ apply(*providerOptions) }
 //
 //   container.Extract(&server, inject.Name("second"))
 func WithName(name string) ProvideOption {
-	return provideOption(func(provider *providerOptions) {
-		provider.name = name
+	return provideOption(func(provider *di.ProvideParams) {
+		provider.Name = name
 	})
 }
 
-// As specifies interfaces that implement provider instance. Provide with As() automatically checks that instance interfaces
-// interface and creates slice group with it.
+// As specifies interfaces that implement provider instance. Provide with As() automatically checks that constructor
+// result implements interface and creates slice group with it.
 //
 //   Provide(&http.ServerMux{}, inject.As(new(http.Handler)))
 //
@@ -110,28 +107,57 @@ func WithName(name string) ProvideOption {
 //   var handlers []http.Handler
 //   container.Extract(&handlers) // extract group
 func As(ifaces ...interface{}) ProvideOption {
-	return provideOption(func(provider *providerOptions) {
-		provider.interfaces = append(provider.interfaces, ifaces...)
+	return provideOption(func(provider *di.ProvideParams) {
+		provider.Interfaces = append(provider.Interfaces, ifaces...)
 
 	})
 }
 
-// Prototype
+// Prototype modifies Provide() behavior. By default, each type resolves as a singleton. This option sets that
+// each type resolving creates a new instance of the type.
+//
+//   Provide(&http.Server{], inject.Prototype())
+//
+//   var server1 *http.Server
+//   container.Extract(&server1, &server1)
+//
+//
 func Prototype() ProvideOption {
-	return provideOption(func(provider *providerOptions) {
-		provider.prototype = true
+	return provideOption(func(provider *di.ProvideParams) {
+		provider.IsPrototype = true
 	})
+}
+
+// ParameterBag is a provider parameter bag. It stores a construction parameters.
+//
+//   inject.Provide(NewServer, inject.ParameterBag{
+//     "addr": ":8080",
+//   })
+//
+//   NewServer(pb inject.ParameterBag) *http.Server {
+//     return &http.Server{
+//       Addr: pb.RequireString("addr"),
+//     }
+//   }
+type ParameterBag map[string]interface{}
+
+func (p ParameterBag) apply(provider *di.ProvideParams) {
+	for k, v := range p {
+		provider.Parameters[k] = v
+	}
 }
 
 // ExtractOption modifies default extract behavior. See inject.Name().
-type ExtractOption interface{ apply(*extractOptions) }
+type ExtractOption interface {
+	apply(params *di.ExtractParams)
+}
 
 // EXTRACT OPTIONS.
 
 // Name specify definition name.
 func Name(name string) ExtractOption {
-	return extractOption(func(eo *extractOptions) {
-		eo.name = name
+	return extractOption(func(eo *di.ExtractParams) {
+		eo.Name = name
 	})
 }
 
@@ -139,20 +165,13 @@ type option func(container *Container)
 
 func (o option) apply(container *Container) { o(container) }
 
-type provideOption func(provider *providerOptions)
+type provideOption func(provider *di.ProvideParams)
 
-func (o provideOption) apply(provider *providerOptions) { o(provider) }
+func (o provideOption) apply(provider *di.ProvideParams) { o(provider) }
 
-type providerOptions struct {
-	name       string
-	provider   interface{}
-	interfaces []interface{}
-	prototype  bool
-}
+type extractOption func(eo *di.ExtractParams)
 
-type extractOption func(eo *extractOptions)
-
-func (o extractOption) apply(eo *extractOptions) { o(eo) }
+func (o extractOption) apply(eo *di.ExtractParams) { o(eo) }
 
 type extractOptions struct {
 	name   string

@@ -23,6 +23,7 @@ You can see latest `v1`
 ## Contents
 
 - [Installing](#installing)
+- [Getting Started](#getting-started)
 - [Tutorial](#tutorial)
   - [Providing](#providing)
   - [Extraction](#extraction)
@@ -31,6 +32,7 @@ You can see latest `v1`
 - [Advanced features](#advanced-features)
   - [Named definitions](#named-definitions)
   - [Optional parameters](#optional-parameters)
+  - [Parameter Bag](#parameter-bag)
   - [Prototypes](#prototypes)
   - [Cleanup](#cleanup)
 - [Contributing](#contributing)
@@ -40,6 +42,10 @@ You can see latest `v1`
 ```shell
 go get -u github.com/defval/inject/v2
 ```
+
+## Getting Started
+
+
 
 ## Tutorial
 
@@ -341,6 +347,10 @@ type ServiceParameter struct {
 	FileLogger   *Logger `di:"file,optional"`
 }
 ```
+
+### Parameter Bag
+
+TBD
 
 ### Prototypes
 

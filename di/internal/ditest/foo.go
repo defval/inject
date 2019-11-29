@@ -1,11 +1,20 @@
 package ditest
 
+import "github.com/defval/inject/v2/di"
+
 // Foo test struct
-type Foo struct{}
+type Foo struct {
+	Name string
+}
 
 // NewFoo create new foo
 func NewFoo() *Foo {
 	return &Foo{}
+}
+
+// NewFooWithName
+func NewFooWithName(parameters di.ParameterBag) *Foo {
+	return &Foo{Name: parameters.RequireString("name")}
 }
 
 // NewCycleFooBar
