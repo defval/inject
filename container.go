@@ -48,7 +48,7 @@ func (c *Container) Extract(target interface{}, options ...ExtractOption) (err e
 	return c.container.Extract(params)
 }
 
-// Cleanup
+// Cleanup cleanup container.
 func (c *Container) Cleanup() {
 	c.container.Cleanup()
 }
