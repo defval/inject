@@ -24,6 +24,7 @@ You can see latest `v1`
 
 > I will be glad if you contribute to this library. I don't know much
 > English, so contributing to the documentation is very meaningful to me.
+> If you found a bug and create an issue, it will be fixed in one day.
 
 [![](https://sourcerer.io/fame/defval/defval/inject/images/0)](https://sourcerer.io/fame/defval/defval/inject/links/0)[![](https://sourcerer.io/fame/defval/defval/inject/images/1)](https://sourcerer.io/fame/defval/defval/inject/links/1)[![](https://sourcerer.io/fame/defval/defval/inject/images/2)](https://sourcerer.io/fame/defval/defval/inject/links/2)[![](https://sourcerer.io/fame/defval/defval/inject/images/3)](https://sourcerer.io/fame/defval/defval/inject/links/3)[![](https://sourcerer.io/fame/defval/defval/inject/images/4)](https://sourcerer.io/fame/defval/defval/inject/links/4)[![](https://sourcerer.io/fame/defval/defval/inject/images/5)](https://sourcerer.io/fame/defval/defval/inject/links/5)[![](https://sourcerer.io/fame/defval/defval/inject/images/6)](https://sourcerer.io/fame/defval/defval/inject/links/6)[![](https://sourcerer.io/fame/defval/defval/inject/images/7)](https://sourcerer.io/fame/defval/defval/inject/links/7)
 
