@@ -4,24 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v2.0.0-alpha
+## v2.0.0
 
-### Added
-
-- Prototype providing
-- Low-level container interface
-- Increase code readability
+Massive refactoring and rethinking features.
 
 ### Changed
 
-- Massive refactoring
 - Graph implementation
+- Simplify injection code
+- Documentation
+
+### Added
+
+- Prototypes
+- Cleanup
+- Parameter bag
+- Optional parameters
+- Low-level container interface
 
 ### Removed
 
 - Replacing (investigating)
-- Nonfunctional providers (investigating)
-- Combined providers (investigating)
+- Non constructor providers
+- Combined providers
 
 ## v1.5.2
 
