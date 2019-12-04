@@ -35,6 +35,8 @@ extensible.
 go get -u github.com/defval/inject/v2
 ```
 
+This library follows [SemVer](http://semver.org/) strictly.
+
 ## Tutorial
 
 Let's learn to use Inject by example. We will code a simple application
