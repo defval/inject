@@ -8,10 +8,11 @@ import (
 
 func main() {
 	container := inject.New(
-		inject.Provide(NewServer),
-		inject.Provide(NewServeMux),
-		inject.Provide(NewAuthEndpoint, inject.As(new(Endpoint))),
-		inject.Provide(NewUserEndpoint, inject.As(new(Endpoint))),
+		inject.Provide(NewServer),   // provide http server
+		inject.Provide(NewServeMux), // provide http serve mux
+		// endpoints
+		inject.Provide(NewOrderController, inject.As(new(Controller))), // provide order controller
+		inject.Provide(NewUserController, inject.As(new(Controller))),  // provide user controller
 	)
 
 	var server *http.Server
@@ -31,55 +32,55 @@ func NewServer(mux *http.ServeMux) *http.Server {
 }
 
 // NewServeMux creates a new http serve mux.
-func NewServeMux(endpoints []Endpoint) *http.ServeMux {
+func NewServeMux(controllers []Controller) *http.ServeMux {
 	mux := &http.ServeMux{}
 
-	for _, endpoint := range endpoints {
-		endpoint.RegisterRoutes(mux)
+	for _, controller := range controllers {
+		controller.RegisterRoutes(mux)
 	}
 
 	return mux
 }
 
-// Endpoint
-type Endpoint interface {
+// Controller is an interface that can register its routes.
+type Controller interface {
 	RegisterRoutes(mux *http.ServeMux)
 }
 
-// AuthEndpoint
-type AuthEndpoint struct {
+// OrderController is a http controller for orders.
+type OrderController struct{}
+
+// NewOrderController creates a auth http controller.
+func NewOrderController() *OrderController {
+	return &OrderController{}
 }
 
-// NewAuthEndpoint creates a auth http endpoint.
-func NewAuthEndpoint() *AuthEndpoint {
-	return &AuthEndpoint{}
+// RegisterRoutes is a Controller interface implementation.
+func (a *OrderController) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/orders", a.RetrieveOrders)
 }
 
-func (a *AuthEndpoint) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/login", a.Login)
-}
-
-// Login control user authentication.
-func (a *AuthEndpoint) Login(writer http.ResponseWriter, request *http.Request) {
+// Retrieve loads orders and writes it to the writer.
+func (a *OrderController) RetrieveOrders(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	_, _ = writer.Write([]byte("LoginEndpoint"))
+	_, _ = writer.Write([]byte("Orders"))
 }
 
-// UserEndpoint is a http endpoint for user.
-type UserEndpoint struct {
+// UserController is a http endpoint for a user.
+type UserController struct{}
+
+// NewUserController creates a user http endpoint.
+func NewUserController() *UserController {
+	return &UserController{}
 }
 
-// NewUserEndpoint
-func NewUserEndpoint() *UserEndpoint {
-	return &UserEndpoint{}
+// RegisterRoutes is a Controller interface implementation.
+func (e *UserController) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/users", e.RetrieveUsers)
 }
 
-// Register is a method for Endpoint implementation.
-func (e *UserEndpoint) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/user", e.Retrieve)
-}
-
-func (e *UserEndpoint) Retrieve(writer http.ResponseWriter, request *http.Request) {
+// Retrieve loads users and writes it using the writer.
+func (e *UserController) RetrieveUsers(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	_, _ = writer.Write([]byte("UserEndpoint"))
+	_, _ = writer.Write([]byte("Users"))
 }

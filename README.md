@@ -12,31 +12,15 @@ Dependency injection is one form of the broader technique of inversion
 of control. It is used to increase modularity of the program and make it
 extensible.
 
-## Disclaimer
-
-I use `v2` version in production, but it in a pre-release state. I need
-time to finish documentation and fix possible bugs.
-
-You can see latest `v1`
-[here](https://github.com/defval/inject/tree/v1.5.2).
-
-## Contributing
-
-> I will be glad if you contribute to this library. I don't know much
-> English, so contributing to the documentation is very meaningful to me.
-> If you found a bug and create an issue, it will be fixed in one day.
-
-[![](https://sourcerer.io/fame/defval/defval/inject/images/0)](https://sourcerer.io/fame/defval/defval/inject/links/0)[![](https://sourcerer.io/fame/defval/defval/inject/images/1)](https://sourcerer.io/fame/defval/defval/inject/links/1)[![](https://sourcerer.io/fame/defval/defval/inject/images/2)](https://sourcerer.io/fame/defval/defval/inject/links/2)[![](https://sourcerer.io/fame/defval/defval/inject/images/3)](https://sourcerer.io/fame/defval/defval/inject/links/3)[![](https://sourcerer.io/fame/defval/defval/inject/images/4)](https://sourcerer.io/fame/defval/defval/inject/links/4)[![](https://sourcerer.io/fame/defval/defval/inject/images/5)](https://sourcerer.io/fame/defval/defval/inject/links/5)[![](https://sourcerer.io/fame/defval/defval/inject/images/6)](https://sourcerer.io/fame/defval/defval/inject/links/6)[![](https://sourcerer.io/fame/defval/defval/inject/images/7)](https://sourcerer.io/fame/defval/defval/inject/links/7)
-
 ## Contents
 
 - [Installing](#installing)
-- [Getting Started](#getting-started)
 - [Tutorial](#tutorial)
   - [Providing](#providing)
   - [Extraction](#extraction)
-  - [Interfaces and groups](#interfaces-and-groups)
-- [Inversion of control](#inversion-of-control)
+  - [Lazy-loading](#lazy-loading)
+  - [Interfaces](#interfaces)
+  - [Groups](#groups)
 - [Advanced features](#advanced-features)
   - [Named definitions](#named-definitions)
   - [Optional parameters](#optional-parameters)
@@ -51,20 +35,18 @@ You can see latest `v1`
 go get -u github.com/defval/inject/v2
 ```
 
-## Getting Started
-
-
 ## Tutorial
 
-Let's learn to use `inject` by example. We will code a simple
-application that processes HTTP requests.
+Let's learn to use Inject by example. We will code a simple application
+that processes HTTP requests.
+
+The full tutorial code is available [here](./_tutorial/main.go)
 
 ### Providing
 
-To start, we will need to create two fundamental types: server and
-router. We will create a simple constructors that initialize this.
-
-Our constructors:
+To start, we will need to create two fundamental types: `http.Server`
+and `http.ServeMux`. Let's create a simple constructors that initialize
+it:
 
 ```go
 // NewServer creates a http server with provided mux as handler.
@@ -89,21 +71,20 @@ func NewServeMux() *http.ServeMux {
 Now let's teach a container to build these types.
 
 ```go
-// Collect container parameters, build and compile container.
 container := inject.New(
-	inject.Provide(NewServer),  // provide http server
-	inject.Provide(NewServeMux) // provide http serve mux
+	// provide http server
+	inject.Provide(NewServer),
+    // provide http serve mux
+	inject.Provide(NewServeMux)
 )
 ```
 
-The function `New()` parse our constructors and compile dependency
-graph.
+The function `inject.New()` parse our constructors, compile dependency
+graph and return `*inject.Container` type for interaction. Container
+panics if it could not compile.
 
-> Container panics if it could not compile. I think that panic at the
-> initialization of the application and not in runtime is usual.
-
-> Result dependencies will be lazy-loaded. If no one requires a type
-> from the container it will not be constructed.
+> I think that panic at the initialization of the application and not in
+> runtime is usual.
 
 ### Extraction
 
@@ -132,135 +113,135 @@ server.ListenAndServe()
 > Note that by default, the container creates instances as a singleton.
 > But you can change this behaviour. See [Prototypes](#prototypes).
 
-### Interfaces and groups
+### Lazy-loading
 
-Let's add some endpoints to our application.
+Result dependencies will be lazy-loaded. If no one requires a type from
+the container it will not be constructed.
+
+### Interfaces
+
+Inject make possible to provide implementation as an interface.
 
 ```go
-// NewAuthEndpoint creates a auth http endpoint.
-func NewAuthEndpoint() *AuthEndpoint {
-	return &AuthEndpoint{}
-}
-
-// AuthEndpoint is a http endpoint for auth.
-type AuthEndpoint struct {}
-
-// Login tries authenticate a user and write result using the writer.
-func (a *AuthEndpoint) Login(writer http.ResponseWriter, request *http.Request) {
-	// implementation
+// NewServer creates a http server with provided mux as handler.
+func NewServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler: handler,
+	}
 }
 ```
 
-```go
-// NewUserEndpoint creates a user http endpoint.
-func NewUserEndpoint() *UserEndpoint {
-	return &UserEndpoint{}
-}
+For a container to know that as an implementation of `http.Handler` is
+necessary to use, we use the option `inject.As()`. The arguments of this
+option must be a pointer(s) to an interface like `new(Endpoint)`.
 
-// UserEndpoint is a http endpoint for user.
-type UserEndpoint struct {}
-
-// Retrieve loads of user data and writes it using a writer.
-func (e *UserEndpoint) Retrieve(writer http.ResponseWriter, request *http.Request) {
-    // implementation
-}
-```
-
-Change `*http.ServeMux` constructor for register endpoint routes.
-
-```go
-// NewServeMux creates a new http serve mux and register user endpoint.
-func NewServeMux(auth *AuthEndpoint, users *UserEndpoint) *http.ServeMux {
-	mux := &http.ServeMux{}
-	mux.HandleFunc("/user", users.Retrieve)
-	mux.HandleFunc("/auth", auth.Login)
-	return mux
-}
-```
+> This syntax may seem strange, but I have not found a better way to
+> specify the interface.
 
 Updated container initialization code:
 
 ```go
 container := inject.New(
-	inject.Provide(NewServer),        // provide http server
-	inject.Provide(NewServeMux)       // provide http serve mux
-	// endpoints
-	inject.Provide(NewUserEndpoint),  // provide user endpoint
-	inject.Provide(NewAuthEndpoint),  // provide auth endpoint
+	// provide http server
+	inject.Provide(NewServer),
+	// provide http serve mux as http.Handler interface
+	inject.Provide(NewServeMux, inject.As(new(http.Handler)))
 )
 ```
 
-Container knows that building `*http.ServeMux` requires `*AuthEndpoint`
-and `*UserEndpoint` and construct it on demand.
+Now container uses provide `*http.ServeMux` as `http.Handler` in server
+constructor. Using interfaces contributes to writing more testable code.
 
-Our endpoints have typical behavior. It is registering routes. Let's
-create an interface for it:
+### Groups
+
+Container automatically groups all implementations of interface to `[]<interface>`
+group. For example, provide with `inject.As(new(http.Handler)`
+automatically creates a group `[]http.Handler`.
+
+Let's add some http controllers using this feature. Controllers have
+typical behavior. It is registering routes. At first, will create an
+interface for it.
 
 ```go
-// Endpoint is an interface that can register its routes.
-type Endpoint interface {
+// Controller is an interface that can register its routes.
+type Controller interface {
 	RegisterRoutes(mux *http.ServeMux)
 }
 ```
 
-And implement it:
+Now we will write controllers and implement `Controller` interface.
+
+##### OrderController
 
 ```go
-// RegisterRoutes is a Endpoint interface implementation.
-func (a *AuthEndpoint) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/login", a.Login)
+// OrderController is a http controller for orders.
+type OrderController struct {}
+
+// NewOrderController creates a auth http controller.
+func NewOrderController() *OrderController {
+	return &OrderController{}
 }
 
-// RegisterRoutes is a Endpoint interface implementation.
-func (e *UserEndpoint) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/user", e.Retrieve)
+// RegisterRoutes is a Controller interface implementation.
+func (a *OrderController) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/orders", a.RetrieveOrders)
+}
+
+// Retrieve loads orders and writes it to the writer.
+func (a *OrderController) RetrieveOrders(writer http.ResponseWriter, request *http.Request) {
+	// implementation
 }
 ```
 
-Now we can provide endpoint implementation as `Endpoint` interface. For
-a container to know that as an implementation of `Endpoint` is necessary
-to use, we use the option `inject.As()`. The argument of this option
-must be a pointer to an interface like `new(Endpoint)`. This syntax may
-seem strange, but I have not found a better way to specify the
-interface.
+##### UserController
+
+```go
+// UserController is a http endpoint for a user.
+type UserController struct {}
+
+// NewUserController creates a user http endpoint.
+func NewUserController() *UserController {
+	return &UserController{}
+}
+
+// RegisterRoutes is a Controller interface implementation.
+func (e *UserController) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/users", e.RetrieveUsers)
+}
+
+// Retrieve loads users and writes it using the writer.
+func (e *UserController) RetrieveUsers(writer http.ResponseWriter, request *http.Request) {
+    // implementation
+}
+```
+
+Just like in the example with interfaces, we will use `inject.As()`
+provide option.
 
 ```go
 container := inject.New(
 	inject.Provide(NewServer),        // provide http server
-	inject.Provide(NewServeMux)       // provide http serve mux
+	inject.Provide(NewServeMux),       // provide http serve mux
 	// endpoints
-	inject.Provide(NewUserEndpoint, inject.As(new(Endpoint))),  // provide user endpoint
-	inject.Provide(NewAuthEndpoint, inject.As(new(Endpoint))),  // provide auth endpoint
+	inject.Provide(NewOrderController, inject.As(new(Controller))),  // provide order controller
+	inject.Provide(NewUserController, inject.As(new(Controller))),  // provide user controller
 )
 ```
 
-> Container groups all implementation of interface to `[]<interface>`
-> group. For example, `inject.As(new(Endpoint)` automatically creates a
-> group `[]Endpoint`.
-
-We can use it in our mux. See updated code:
+Now, we can use `[]Controller` group in our mux. See updated code:
 
 ```go
 // NewServeMux creates a new http serve mux.
-func NewServeMux(endpoints []Endpoint) *http.ServeMux {
+func NewServeMux(controllers []Controller) *http.ServeMux {
 	mux := &http.ServeMux{}
 
-	for _, endpoint := range endpoints {
-		endpoint.RegisterRoutes(mux)
+	for _, controller := range controllers {
+		controller.RegisterRoutes(mux)
 	}
 
 	return mux
 }
 ```
-
-> If you have only one implementation of an interface, then you can use
-> the interface instead of the implementation. It contributes to writing
-> more testable code and not contrary to "return structs, accept
-> interfaces" principle.
-
-## Inversion of control
-
-TBD
 
 ## Advanced features
 
@@ -418,3 +399,11 @@ container.Cleanup() // file was closed
 ```
 
 > Cleanup now work incorrectly with prototype providers.
+
+## Contributing
+
+I will be glad if you contribute to this library. I don't know much
+English, so contributing to the documentation is very meaningful to me.
+
+[![](https://sourcerer.io/fame/defval/defval/inject/images/0)](https://sourcerer.io/fame/defval/defval/inject/links/0)[![](https://sourcerer.io/fame/defval/defval/inject/images/1)](https://sourcerer.io/fame/defval/defval/inject/links/1)[![](https://sourcerer.io/fame/defval/defval/inject/images/2)](https://sourcerer.io/fame/defval/defval/inject/links/2)[![](https://sourcerer.io/fame/defval/defval/inject/images/3)](https://sourcerer.io/fame/defval/defval/inject/links/3)[![](https://sourcerer.io/fame/defval/defval/inject/images/4)](https://sourcerer.io/fame/defval/defval/inject/links/4)[![](https://sourcerer.io/fame/defval/defval/inject/images/5)](https://sourcerer.io/fame/defval/defval/inject/links/5)[![](https://sourcerer.io/fame/defval/defval/inject/images/6)](https://sourcerer.io/fame/defval/defval/inject/links/6)[![](https://sourcerer.io/fame/defval/defval/inject/images/7)](https://sourcerer.io/fame/defval/defval/inject/links/7)
+
