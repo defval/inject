@@ -19,7 +19,7 @@ type parameter struct {
 
 func (p parameter) resolve(c *Container) (reflect.Value, error) {
 	value, err := p.key.resolve(c)
-	if _, notFound := err.(errProviderNotFound); notFound && p.optional {
+	if _, notFound := err.(ErrProviderNotFound); notFound && p.optional {
 		// create empty instance of type
 		return reflect.New(p.typ).Elem(), nil
 	}
