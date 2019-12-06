@@ -1,50 +1,10 @@
-package inject_test
+package ditest
 
 import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/defval/inject/v2"
 )
-
-func Example() {
-	// build container
-	container := inject.New(
-		// inject constructor
-		inject.Provide(NewLogger),
-		inject.Provide(NewServer),
-
-		// inject as interface
-		inject.Provide(NewRouter,
-			inject.As(new(http.Handler)), // *http.Server mux implements http.Handler interface
-		),
-
-		// controller interface group
-		inject.Provide(NewAccountController,
-			inject.As(new(Controller)), // add AccountController to controller group
-			inject.WithName("account"),
-		),
-		inject.Provide(NewAuthController,
-			inject.As(new(Controller)), // add AuthController to controller group
-			inject.WithName("auth"),
-		),
-	)
-
-	// extract server from container
-	var server *http.Server
-	if err := container.Extract(&server); err != nil {
-		panic(err)
-	}
-
-	// Output:
-	// Logger loaded!
-	// Create router!
-	// AccountController registered!
-	// AuthController registered!
-	// Router created!
-	// Server created!
-}
 
 // NewLogger
 func NewLogger() *log.Logger {

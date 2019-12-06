@@ -434,9 +434,12 @@ func TestContainerCleanup(t *testing.T) {
 func TestContainer_GraphVisualizing(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		c := NewTestContainer(t)
-		c.MustProvide(ditest.NewFoo)
-		c.MustProvide(ditest.NewBar, new(ditest.Fooer))
-		c.MustProvide(ditest.NewBaz, new(ditest.Fooer))
+
+		c.MustProvide(ditest.NewLogger)
+		c.MustProvide(ditest.NewServer)
+		c.MustProvide(ditest.NewRouter, new(http.Handler))
+		c.MustProvide(ditest.NewAccountController, new(ditest.Controller))
+		c.MustProvide(ditest.NewAuthController, new(ditest.Controller))
 		c.MustCompile()
 
 		var graph *di.Graph
@@ -444,7 +447,43 @@ func TestContainer_GraphVisualizing(t *testing.T) {
 			Target: &graph,
 		}))
 
-		require.Equal(t, "digraph  {\n\tsubgraph cluster_s1 {\n\t\tID = \"cluster_s1\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn4[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*di.Graph\",shape=\"box\",style=\"filled\"];\n\t\t\n\t}subgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn2[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*ditest.Bar\",shape=\"box\",style=\"filled\"];\n\t\tn3[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*ditest.Baz\",shape=\"box\",style=\"filled\"];\n\t\tn1[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*ditest.Foo\",shape=\"box\",style=\"filled\"];\n\t\t\n\t}splines=\"ortho\";\n\tn2->n3[color=\"#949494\"];\n\tn1->n2[color=\"#949494\"];\n\tn1->n3[color=\"#949494\"];\n\t\n}", graph.String())
+		require.Equal(t, `digraph  {
+	subgraph cluster_s3 {
+		ID = "cluster_s3";
+		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
+		n8[color="#46494C",fontcolor="white",fontname="COURIER",label="*di.Graph",shape="box",style="filled"];
+		
+	}subgraph cluster_s2 {
+		ID = "cluster_s2";
+		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
+		n5[color="#46494C",fontcolor="white",fontname="COURIER",label="*ditest.AccountController",shape="box",style="filled"];
+		n7[color="#46494C",fontcolor="white",fontname="COURIER",label="*ditest.AuthController",shape="box",style="filled"];
+		n6[color="#E54B4B",fontcolor="white",fontname="COURIER",label="[]ditest.Controller",shape="doubleoctagon",style="filled"];
+		
+	}subgraph cluster_s0 {
+		ID = "cluster_s0";
+		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
+		n1[color="#46494C",fontcolor="white",fontname="COURIER",label="*log.Logger",shape="box",style="filled"];
+		
+	}subgraph cluster_s1 {
+		ID = "cluster_s1";
+		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
+		n3[color="#46494C",fontcolor="white",fontname="COURIER",label="*http.ServeMux",shape="box",style="filled"];
+		n2[color="#46494C",fontcolor="white",fontname="COURIER",label="*http.Server",shape="box",style="filled"];
+		n4[color="#2589BD",fontcolor="white",fontname="COURIER",label="http.Handler",style="filled"];
+		
+	}splines="ortho";
+	n5->n6[color="#949494"];
+	n7->n6[color="#949494"];
+	n3->n4[color="#949494"];
+	n1->n2[color="#949494"];
+	n1->n3[color="#949494"];
+	n1->n5[color="#949494"];
+	n1->n7[color="#949494"];
+	n6->n3[color="#949494"];
+	n4->n2[color="#949494"];
+	
+}`, graph.String())
 	})
 }
 
