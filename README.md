@@ -422,8 +422,6 @@ dotGraph := graph.String() // use string representation
 And paste it to <a href="https://dreampuf.github.io/GraphvizOnline"
 target="_blank">graphviz online tool</a>:
 
-Example:
-
 <img src="https://github.com/defval/inject/raw/master/graph.png">
 
 ## Contributing
