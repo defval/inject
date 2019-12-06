@@ -411,12 +411,12 @@ Dependency graph may be presented via
 representation:
 
 ```go
-    var graph *di.Graph
-    if err = container.Extract(&graph); err != nil {
-    	// handle err
-    }
+var graph *di.Graph
+if err = container.Extract(&graph); err != nil {
+    // handle err
+}
 
-    dotGraph := graph.String() // use string representation
+dotGraph := graph.String() // use string representation
 ```
 
 And paste it to <a href="https://dreampuf.github.io/GraphvizOnline"
