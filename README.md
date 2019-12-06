@@ -27,6 +27,7 @@ extensible.
   - [Parameter Bag](#parameter-bag)
   - [Prototypes](#prototypes)
   - [Cleanup](#cleanup)
+  - [Visualization](#visualization)
 - [Contributing](#contributing)
 
 ## Installing
@@ -156,9 +157,10 @@ constructor. Using interfaces contributes to writing more testable code.
 
 ### Groups
 
-Container automatically groups all implementations of interface to `[]<interface>`
-group. For example, provide with `inject.As(new(http.Handler)`
-automatically creates a group `[]http.Handler`.
+Container automatically groups all implementations of interface to
+`[]<interface>` group. For example, provide with
+`inject.As(new(http.Handler)` automatically creates a group
+`[]http.Handler`.
 
 Let's add some http controllers using this feature. Controllers have
 typical behavior. It is registering routes. At first, will create an
@@ -401,6 +403,28 @@ container.Cleanup() // file was closed
 ```
 
 > Cleanup now work incorrectly with prototype providers.
+
+## Visualization
+
+Dependency graph may be presented via
+([Graphviz](https://www.graphviz.org/)). For it, load string
+representation:
+
+```go
+    var graph *di.Graph
+    if err = container.Extract(&graph); err != nil {
+    	// handle err
+    }
+
+    dotGraph := graph.String() // use string representation
+```
+
+And paste it to <a href="https://dreampuf.github.io/GraphvizOnline"
+target="_blank">graphviz online tool</a>:
+
+Example:
+
+<img src="https://github.com/defval/inject/raw/master/graph.png">
 
 ## Contributing
 
