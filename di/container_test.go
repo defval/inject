@@ -431,6 +431,23 @@ func TestContainerCleanup(t *testing.T) {
 	})
 }
 
+func TestContainer_GraphVisualizing(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFoo)
+		c.MustProvide(ditest.NewBar, new(ditest.Fooer))
+		c.MustProvide(ditest.NewBaz, new(ditest.Fooer))
+		c.MustCompile()
+
+		var graph *di.Graph
+		require.NoError(t, c.Extract(di.ExtractParams{
+			Target: &graph,
+		}))
+
+		require.Equal(t, "digraph  {\n\tsubgraph cluster_s1 {\n\t\tID = \"cluster_s1\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn4[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*di.Graph\",shape=\"box\",style=\"filled\"];\n\t\t\n\t}subgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n\t\tbgcolor=\"#E8E8E8\";color=\"lightgrey\";fontcolor=\"#46494C\";fontname=\"COURIER\";label=\"\";style=\"rounded\";\n\t\tn2[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*ditest.Bar\",shape=\"box\",style=\"filled\"];\n\t\tn3[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*ditest.Baz\",shape=\"box\",style=\"filled\"];\n\t\tn1[color=\"#46494C\",fontcolor=\"white\",fontname=\"COURIER\",label=\"*ditest.Foo\",shape=\"box\",style=\"filled\"];\n\t\t\n\t}splines=\"ortho\";\n\tn2->n3[color=\"#949494\"];\n\tn1->n2[color=\"#949494\"];\n\tn1->n3[color=\"#949494\"];\n\t\n}", graph.String())
+	})
+}
+
 // NewTestContainer
 func NewTestContainer(t *testing.T) *TestContainer {
 	return &TestContainer{t, di.New()}

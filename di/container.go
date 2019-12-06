@@ -49,8 +49,10 @@ func (c *Container) Provide(params ProvideParams) {
 	c.addProvider(prov)
 	c.provideEmbedParameters(prov)
 
-	parameterBugProvider := createParameterBugProvider(k, params.Parameters)
-	c.addProvider(parameterBugProvider)
+	if len(params.Parameters) != 0 {
+		parameterBugProvider := createParameterBugProvider(k, params.Parameters)
+		c.addProvider(parameterBugProvider)
+	}
 
 	for _, iface := range params.Interfaces {
 		c.processProviderInterface(prov, iface)
@@ -64,6 +66,12 @@ func (c *Container) Compile() {
 	c.Provide(ProvideParams{
 		Provider: func() Extractor {
 			return c
+		},
+	})
+
+	c.Provide(ProvideParams{
+		Provider: func() *Graph {
+			return &Graph{graph: c.graph.DOTGraph()}
 		},
 	})
 
