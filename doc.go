@@ -31,7 +31,7 @@ First of all, when creating a new container, you need to describe
 how to create each instance of a dependency. To do this, use the container
 option inject.Provide().
 
-	container, err := New(
+	container := New(
 		Provide(NewDependency),
 		Provide(NewAnotherDependency)
 	)
@@ -67,4 +67,4 @@ The container collects a dependencies of *pkg.AnotherDependency, creates its ins
 places it in a target pointer.
 For advanced extraction see Extract() and inject.ExtractOption documentation.
 */
-package inject // import "github.com/defval/inject/v2"
+package inject // import "github.com/defval/inject"
