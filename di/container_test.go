@@ -27,6 +27,20 @@ func TestContainerCompileErrors(t *testing.T) {
 		c.MustProvide(ditest.NewBar)
 		c.MustCompileError("*ditest.Bar: dependency *ditest.Foo not exists in container")
 	})
+
+	t.Run("not existing non pointer dependency cause compile error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		type TestStruct struct {
+		}
+
+		c.MustProvide(func(s TestStruct) bool {
+			return true
+		})
+
+		require.PanicsWithValue(t, "bool: dependency di_test.TestStruct not exists in container", func() {
+			c.Compile()
+		})
+	})
 }
 
 func TestContainerProvideErrors(t *testing.T) {

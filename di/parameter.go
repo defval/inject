@@ -50,7 +50,9 @@ func (pl parameterList) resolve(c *Container) ([]reflect.Value, error) {
 }
 
 // internalParameter
-type internalParameter interface{}
+type internalParameter interface {
+	isDependencyInjectionParameter()
+}
 
 var parameterInterface = reflect.TypeOf(new(internalParameter)).Elem()
 
