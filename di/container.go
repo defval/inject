@@ -35,7 +35,7 @@ type ProvideParams struct {
 
 // Provide adds constructor into container with parameters.
 func (c *Container) Provide(params ProvideParams) {
-	prov := provider(createConstructor(params.Name, params.Provider))
+	prov := provider(newConstructorProvider(params.Name, params.Provider))
 	k := prov.resultKey()
 
 	if c.exists(k) {
@@ -122,6 +122,26 @@ func (c *Container) Extract(params ExtractParams) error {
 	return key.extract(c, params.Target)
 }
 
+// InvokeParams
+type InvokeParams struct {
+	// The function
+	Fn interface{}
+}
+
+// Invoke calls provided function.
+func (c *Container) Invoke(params InvokeParams) error {
+	if !c.compiled {
+		return fmt.Errorf("container not compiled")
+	}
+
+	invoker, err := newInvoker(params.Fn)
+	if err != nil {
+		return err
+	}
+
+	return invoker.Invoke(c)
+}
+
 // Cleanup
 func (c *Container) Cleanup() {
 	for _, key := range c.all() {
@@ -142,7 +162,7 @@ func (c *Container) addProvider(p provider) {
 func (c *Container) provideEmbedParameters(p provider) {
 	for _, parameter := range p.parameters() {
 		if parameter.embed {
-			c.addProvider(createEmbedProvider(parameter))
+			c.addProvider(newEmbedProvider(parameter))
 		}
 	}
 }
@@ -175,7 +195,7 @@ func (c *Container) all() []key {
 // processProviderInterface represents instances as interfaces and groups.
 func (c *Container) processProviderInterface(provider provider, as interface{}) {
 	// create interface from embedParamProvider
-	iface := createInterfaceProvider(provider, as)
+	iface := newInterfaceProvider(provider, as)
 	ifaceKey := iface.resultKey()
 
 	if c.graph.NodeExists(ifaceKey) {
@@ -188,7 +208,7 @@ func (c *Container) processProviderInterface(provider provider, as interface{}) 
 	}
 
 	// create group
-	group := createInterfaceGroup(ifaceKey)
+	group := newGroupProvider(ifaceKey)
 	groupKey := group.resultKey()
 
 	// check exists
