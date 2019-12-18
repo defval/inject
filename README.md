@@ -18,6 +18,7 @@ extensible.
 - [Tutorial](#tutorial)
   - [Providing](#providing)
   - [Extraction](#extraction)
+  - [Invocation](#invocation)
   - [Lazy-loading](#lazy-loading)
   - [Interfaces](#interfaces)
   - [Groups](#groups)
