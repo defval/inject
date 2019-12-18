@@ -168,6 +168,11 @@ func TestContainerInvokeErrors(t *testing.T) {
 		c.MustCompile()
 		c.MustInvokeError(func(foo *ditest.Foo) {}, "could not resolve invoke parameters: *ditest.Foo: not exists in container")
 	})
+
+	t.Run("invoke before compile cause error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustInvokeError(func() {}, "container not compiled")
+	})
 }
 
 func TestContainerProvide(t *testing.T) {
@@ -278,6 +283,18 @@ func TestContainerExtract(t *testing.T) {
 		c.MustExtract(&extracted2)
 
 		c.MustNotEqualPointer(extracted1, extracted2)
+	})
+
+	t.Run("container resolve extractor", func(t *testing.T) {
+		c := NewTestContainer(t)
+		foo := ditest.NewFoo()
+		c.MustProvide(ditest.CreateFooConstructor(foo))
+		c.MustCompile()
+		var extractor di.Extractor
+		c.MustExtract(&extractor)
+		var extractedFoo *ditest.Foo
+		require.NoError(t, extractor.Extract(di.ExtractParams{Target: &extractedFoo}))
+		c.MustEqualPointer(foo, extractedFoo)
 	})
 }
 
