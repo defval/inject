@@ -54,6 +54,10 @@ func (i *invoker) Invoke(c *Container) error {
 		return nil
 	}
 
+	if results[0].Interface() == nil {
+		return nil
+	}
+
 	return results[0].Interface().(error)
 }
 

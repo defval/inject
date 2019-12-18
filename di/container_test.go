@@ -441,6 +441,15 @@ func TestContainerInvoke(t *testing.T) {
 			return errors.New("invoke error")
 		}, "invoke error")
 	})
+
+	t.Run("container invoke with nil error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFoo)
+		c.Compile()
+		c.MustInvoke(func(foo *ditest.Foo) error {
+			return nil
+		})
+	})
 }
 
 func TestContainerResolveParameterBag(t *testing.T) {
