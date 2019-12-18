@@ -48,6 +48,15 @@ func (c *Container) Extract(target interface{}, options ...ExtractOption) (err e
 	return c.container.Extract(params)
 }
 
+// Invoke invokes custom function. Dependencies of function will be resolved via container.
+func (c *Container) Invoke(fn interface{}) error {
+	var params = di.InvokeParams{
+		Fn: fn,
+	}
+
+	return c.container.Invoke(params)
+}
+
 // Cleanup cleanup container.
 func (c *Container) Cleanup() {
 	c.container.Cleanup()

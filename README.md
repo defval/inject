@@ -116,6 +116,21 @@ server.ListenAndServe()
 > Note that by default, the container creates instances as a singleton.
 > But you can change this behaviour. See [Prototypes](#prototypes).
 
+### Invocation
+
+As an alternative to extraction we can use `Invoke()` function. It
+resolves function dependencies and call the function. Invoke function
+may return optional error.
+
+```go
+// StartServer starts the server.
+func StartServer(server *http.Server) error {
+    return server.ListenAndServe()
+}
+
+container.Invoke(StartServer)
+```
+
 ### Lazy-loading
 
 Result dependencies will be lazy-loaded. If no one requires a type from

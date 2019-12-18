@@ -1,6 +1,7 @@
 package inject_test
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"testing"
@@ -26,6 +27,9 @@ func TestContainer(t *testing.T) {
 	var server2 *http.Server
 	err = c.Extract(&server2, inject.Name("server"))
 	require.NoError(t, err)
+
+	err = c.Invoke(PrintAddr)
+	require.NoError(t, err)
 }
 
 // Addr
@@ -49,4 +53,9 @@ func NewHTTPServer(addr Addr, handler http.Handler) *http.Server {
 // NewMux
 func NewMux() *http.ServeMux {
 	return &http.ServeMux{}
+}
+
+// PrintAddr
+func PrintAddr(addr Addr) {
+	fmt.Println(addr)
 }
