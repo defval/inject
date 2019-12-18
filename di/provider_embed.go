@@ -6,7 +6,7 @@ import (
 )
 
 // createStructProvider
-func createEmbedProvider(p parameter) *embedParamProvider {
+func newEmbedProvider(p parameter) *embedParamProvider {
 	result := p.resultKey()
 
 	var embedType reflect.Type

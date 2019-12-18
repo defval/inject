@@ -12,37 +12,14 @@ type ctorType int
 
 const (
 	ctorUnknown      ctorType = iota // unknown ctor signature
-	ctorSimple                       // (deps) (result)
+	ctorStd                          // (deps) (result)
 	ctorError                        // (deps) (result, error)
 	ctorCleanup                      // (deps) (result, cleanup)
 	ctorCleanupError                 // (deps) (result, cleanup, error)
 )
 
-// determineCtorType
-func determineCtorType(fn *reflection.Func) ctorType {
-	if fn.NumOut() == 1 {
-		return ctorSimple
-	}
-
-	if fn.NumOut() == 2 {
-		if reflection.IsError(fn.Out(1)) {
-			return ctorError
-		}
-
-		if reflection.IsCleanup(fn.Out(1)) {
-			return ctorCleanup
-		}
-	}
-
-	if fn.NumOut() == 3 && reflection.IsCleanup(fn.Out(1)) && reflection.IsError(fn.Out(2)) {
-		return ctorCleanupError
-	}
-
-	panic(fmt.Sprintf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", fn.Name))
-}
-
-// createConstructor
-func createConstructor(name string, ctor interface{}) *constructorProvider {
+// newConstructorProvider
+func newConstructorProvider(name string, ctor interface{}) *constructorProvider {
 	if ctor == nil {
 		panicf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", "nil")
 	}
@@ -109,7 +86,7 @@ func (c *constructorProvider) provide(parameters ...reflect.Value) (reflect.Valu
 	out := c.ctor.Call(parameters)
 
 	switch c.ctorType {
-	case ctorSimple:
+	case ctorStd:
 		return out[0], nil
 	case ctorError:
 		instance := out[0]
@@ -149,4 +126,27 @@ func (c *constructorProvider) cleanup() {
 	if c.clean != nil && c.clean.IsValid() {
 		c.clean.Call([]reflect.Value{})
 	}
+}
+
+// determineCtorType
+func determineCtorType(fn *reflection.Func) ctorType {
+	if fn.NumOut() == 1 {
+		return ctorStd
+	}
+
+	if fn.NumOut() == 2 {
+		if reflection.IsError(fn.Out(1)) {
+			return ctorError
+		}
+
+		if reflection.IsCleanup(fn.Out(1)) {
+			return ctorCleanup
+		}
+	}
+
+	if fn.NumOut() == 3 && reflection.IsCleanup(fn.Out(1)) && reflection.IsError(fn.Out(2)) {
+		return ctorCleanupError
+	}
+
+	panic(fmt.Sprintf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", fn.Name))
 }

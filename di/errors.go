@@ -8,5 +8,5 @@ type ErrProviderNotFound struct {
 }
 
 func (e ErrProviderNotFound) Error() string {
-	return fmt.Sprintf("type `%s` not exists in container", e.k)
+	return fmt.Sprintf("not exists in container")
 }

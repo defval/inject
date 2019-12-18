@@ -130,7 +130,7 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustCompile()
 
 		var extracted *ditest.Foo
-		c.MustExtractError(&extracted, "type `*ditest.Foo` not exists in container")
+		c.MustExtractError(&extracted, "*ditest.Foo: not exists in container")
 	})
 
 	t.Run("extract returns error because dependency constructing failed", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustProvide(ditest.NewBar)
 		c.MustCompile()
 		var bar *ditest.Bar
-		c.MustExtractError(&bar, "*ditest.Foo: internal error")
+		c.MustExtractError(&bar, "*ditest.Bar: *ditest.Foo: internal error")
 	})
 
 	t.Run("extract interface with multiple implementations cause error", func(t *testing.T) {
@@ -150,7 +150,23 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustCompile()
 
 		var extracted ditest.Fooer
-		c.MustExtractError(&extracted, "ditest.Fooer have sereral implementations")
+		c.MustExtractError(&extracted, "ditest.Fooer: ditest.Fooer have sereral implementations")
+	})
+}
+
+func TestContainerInvokeErrors(t *testing.T) {
+	t.Run("invoke function with incorrect signature cause error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustCompile()
+		c.MustInvokeError(func() *ditest.Foo {
+			return nil
+		}, "the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `func() *ditest.Foo`")
+	})
+
+	t.Run("invoke function with undefined dependency cause error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustCompile()
+		c.MustInvokeError(func(foo *ditest.Foo) {}, "could not resolve invoke parameters: *ditest.Foo: not exists in container")
 	})
 }
 
@@ -379,6 +395,37 @@ func TestContainerResolveEmbedParameters(t *testing.T) {
 	})
 }
 
+func TestContainerInvoke(t *testing.T) {
+	t.Run("container call invoke function", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustCompile()
+		var invokeCalled bool
+		c.MustInvoke(func() {
+			invokeCalled = true
+		})
+		require.True(t, invokeCalled)
+	})
+
+	t.Run("container resolve dependencies in invoke function", func(t *testing.T) {
+		c := NewTestContainer(t)
+		foo := ditest.NewFoo()
+		c.MustProvide(ditest.CreateFooConstructor(foo))
+		c.MustCompile()
+		c.MustInvoke(func(invokeFoo *ditest.Foo) {
+			c.MustEqualPointer(foo, invokeFoo)
+		})
+	})
+
+	t.Run("container invoke return correct error", func(t *testing.T) {
+		c := NewTestContainer(t)
+		c.MustProvide(ditest.NewFoo)
+		c.Compile()
+		c.MustInvokeError(func(foo *ditest.Foo) error {
+			return errors.New("invoke error")
+		}, "invoke error")
+	})
+}
+
 func TestContainerResolveParameterBag(t *testing.T) {
 	t.Run("container extract correct parameter bag for type", func(t *testing.T) {
 		c := NewTestContainer(t)
@@ -602,6 +649,14 @@ func (c *TestContainer) MustExtractPtrWithName(expected interface{}, name string
 
 	actual := reflect.ValueOf(target).Elem().Interface()
 	c.MustEqualPointer(expected, actual)
+}
+
+func (c *TestContainer) MustInvoke(fn interface{}) {
+	require.NoError(c.t, c.Invoke(di.InvokeParams{Fn: fn}))
+}
+
+func (c *TestContainer) MustInvokeError(fn interface{}, msg string) {
+	require.EqualError(c.t, c.Invoke(di.InvokeParams{Fn: fn}), msg)
 }
 
 func (c *TestContainer) MustEqualPointer(expected interface{}, actual interface{}) {

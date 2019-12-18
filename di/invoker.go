@@ -1,0 +1,90 @@
+package di
+
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/defval/inject/v2/di/internal/reflection"
+)
+
+type invokerType int
+
+const (
+	invokerUnknown invokerType = iota
+	invokerStd                 // func (deps) {}
+	invokerError               // func (deps) error {}
+)
+
+type invoker struct {
+	typ invokerType
+	fn  *reflection.Func
+}
+
+func newInvoker(fn interface{}) (*invoker, error) {
+	if fn == nil {
+		return nil, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", "nil")
+	}
+
+	if !reflection.IsFunc(fn) {
+		return nil, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", reflect.ValueOf(fn).Type())
+	}
+
+	ifn := reflection.InspectFunction(fn)
+	typ, err := determineInvokerType(ifn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &invoker{
+		typ: typ,
+		fn:  reflection.InspectFunction(fn),
+	}, nil
+}
+
+func (i *invoker) Invoke(c *Container) error {
+	plist := i.parameters()
+	values, err := plist.resolve(c)
+	if err != nil {
+		return fmt.Errorf("could not resolve invoke parameters: %s", err)
+	}
+
+	results := i.fn.Call(values)
+
+	if len(results) == 0 {
+		return nil
+	}
+
+	return results[0].Interface().(error)
+}
+
+func (i *invoker) parameters() parameterList {
+	var list parameterList
+
+	for j := 0; j < i.fn.NumIn(); j++ {
+		ptype := i.fn.In(j)
+
+		p := parameter{
+			key: key{
+				typ: ptype,
+			},
+			optional: false,
+			embed:    isEmbedParameter(ptype),
+		}
+
+		list = append(list, p)
+	}
+
+	return list
+}
+
+func determineInvokerType(fn *reflection.Func) (invokerType, error) {
+	if fn.NumOut() == 0 {
+		return invokerStd, nil
+	}
+
+	if fn.NumOut() == 1 && reflection.IsError(fn.Out(0)) {
+		return invokerError, nil
+	}
+
+	return invokerUnknown, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", fn.Type)
+}

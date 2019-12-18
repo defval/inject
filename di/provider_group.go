@@ -4,8 +4,8 @@ import (
 	"reflect"
 )
 
-// createInterfaceGroup creates new group from provided resultKey.
-func createInterfaceGroup(k key) *interfaceGroup {
+// newGroupProvider creates new group from provided resultKey.
+func newGroupProvider(k key) *interfaceGroup {
 	ifaceKey := key{
 		typ: reflect.SliceOf(k.typ),
 	}

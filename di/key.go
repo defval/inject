@@ -88,7 +88,7 @@ func (k key) resolve(c *Container) (reflect.Value, error) {
 func (k key) extract(c *Container, target interface{}) error {
 	value, err := k.resolve(c)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %s", k, err)
 	}
 
 	targetValue := reflect.ValueOf(target).Elem()

@@ -7,8 +7,8 @@ import (
 	"github.com/defval/inject/v2/di/internal/reflection"
 )
 
-// createInterfaceProvider
-func createInterfaceProvider(provider provider, as interface{}) *interfaceProvider {
+// newInterfaceProvider
+func newInterfaceProvider(provider provider, as interface{}) *interfaceProvider {
 	iface := reflection.InspectInterfacePtr(as)
 
 	if !provider.resultKey().typ.Implements(iface.Type) {
