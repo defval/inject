@@ -207,7 +207,7 @@ func (c *Container) processProviderInterface(provider provider, as interface{}) 
 // registerProviderParameters registers provider parameters in a dependency graph.
 func (c *Container) registerProviderParameters(p provider) {
 	for _, param := range p.ParameterList() {
-		paramProvider, exists := c.resolveParameterProvider(param)
+		paramProvider, exists := param.ResolveProvider(c)
 		if exists {
 			c.graph.AddEdge(paramProvider.Key(), p.Key())
 			continue
@@ -216,21 +216,4 @@ func (c *Container) registerProviderParameters(p provider) {
 			panicf("%s: dependency %s not exists in container", p.Key(), param)
 		}
 	}
-}
-
-// resolveParameterProvider lookup provider by parameter.
-func (c *Container) resolveParameterProvider(param parameter) (provider, bool) {
-	for _, pt := range providerLookupSequence {
-		k := key{
-			name: param.name,
-			res:  param.res,
-			typ:  pt,
-		}
-		provider, exists := c.provider(k)
-		if !exists {
-			continue
-		}
-		return provider, true
-	}
-	return nil, false
 }
