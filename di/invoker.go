@@ -15,6 +15,16 @@ const (
 	invokerError               // func (deps) error {}
 )
 
+func determineInvokerType(fn *reflection.Func) (invokerType, error) {
+	if fn.NumOut() == 0 {
+		return invokerStd, nil
+	}
+	if fn.NumOut() == 1 && reflection.IsError(fn.Out(0)) {
+		return invokerError, nil
+	}
+	return invokerUnknown, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", fn.Type)
+}
+
 type invoker struct {
 	typ invokerType
 	fn  *reflection.Func
@@ -24,17 +34,14 @@ func newInvoker(fn interface{}) (*invoker, error) {
 	if fn == nil {
 		return nil, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", "nil")
 	}
-
 	if !reflection.IsFunc(fn) {
 		return nil, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", reflect.ValueOf(fn).Type())
 	}
-
 	ifn := reflection.InspectFunction(fn)
 	typ, err := determineInvokerType(ifn)
 	if err != nil {
 		return nil, err
 	}
-
 	return &invoker{
 		typ: typ,
 		fn:  reflection.InspectFunction(fn),
@@ -43,52 +50,30 @@ func newInvoker(fn interface{}) (*invoker, error) {
 
 func (i *invoker) Invoke(c *Container) error {
 	plist := i.parameters()
-	values, err := plist.resolve(c)
+	values, err := plist.ResolveValues(c)
 	if err != nil {
 		return fmt.Errorf("could not resolve invoke parameters: %s", err)
 	}
-
 	results := i.fn.Call(values)
-
 	if len(results) == 0 {
 		return nil
 	}
-
 	if results[0].Interface() == nil {
 		return nil
 	}
-
 	return results[0].Interface().(error)
 }
 
 func (i *invoker) parameters() parameterList {
-	var list parameterList
-
+	var plist parameterList
 	for j := 0; j < i.fn.NumIn(); j++ {
 		ptype := i.fn.In(j)
-
 		p := parameter{
-			key: key{
-				typ: ptype,
-			},
+			res:      ptype,
 			optional: false,
 			embed:    isEmbedParameter(ptype),
 		}
-
-		list = append(list, p)
+		plist = append(plist, p)
 	}
-
-	return list
-}
-
-func determineInvokerType(fn *reflection.Func) (invokerType, error) {
-	if fn.NumOut() == 0 {
-		return invokerStd, nil
-	}
-
-	if fn.NumOut() == 1 && reflection.IsError(fn.Out(0)) {
-		return invokerError, nil
-	}
-
-	return invokerUnknown, fmt.Errorf("the invoke function must be a function like `func([dep1, dep2, ...]) [error]`, got `%s`", fn.Type)
+	return plist
 }

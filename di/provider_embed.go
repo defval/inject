@@ -6,101 +6,91 @@ import (
 )
 
 // createStructProvider
-func newEmbedProvider(p parameter) *embedParamProvider {
-	result := p.resultKey()
-
+func newProviderEmbed(p parameter) *providerEmbed {
 	var embedType reflect.Type
-	if result.typ.Kind() == reflect.Ptr {
-		embedType = result.typ.Elem()
+	if p.res.Kind() == reflect.Ptr {
+		embedType = p.res.Elem()
 	} else {
-		embedType = result.typ
+		embedType = p.res
 	}
 
-	return &embedParamProvider{
-		key:        result,
+	return &providerEmbed{
+		key: key{
+			name: p.name,
+			res:  p.res,
+			typ:  ptEmbedParameter,
+		},
 		embedType:  embedType,
 		embedValue: reflect.New(embedType).Elem(),
 	}
 }
 
-type embedParamProvider struct {
+type providerEmbed struct {
 	key        key
 	embedType  reflect.Type
 	embedValue reflect.Value
 }
 
-func (s *embedParamProvider) resultKey() key {
-	return s.key
+func (p *providerEmbed) Key() key {
+	return p.key
 }
 
-func (s *embedParamProvider) parameters() parameterList {
-	var pl parameterList
-
-	for i := 0; i < s.embedType.NumField(); i++ {
-		name, optional, isDependency := s.inspectFieldTag(i)
+func (p *providerEmbed) ParameterList() parameterList {
+	var plist parameterList
+	for i := 0; i < p.embedType.NumField(); i++ {
+		name, optional, isDependency := p.inspectFieldTag(i)
 		if !isDependency {
 			continue
 		}
-
-		// parameter field
-		pField := s.embedType.Field(i)
-
-		pl = append(pl, parameter{
-			key: key{
-				name: name,
-				typ:  pField.Type,
-			},
+		field := p.embedType.Field(i)
+		plist = append(plist, parameter{
+			name:     name,
+			res:      field.Type,
 			optional: optional,
-			embed:    isEmbedParameter(pField.Type),
+			embed:    isEmbedParameter(field.Type),
 		})
 	}
-
-	return pl
+	return plist
 }
 
-func (s *embedParamProvider) inspectFieldTag(num int) (name string, optional bool, isDependency bool) {
-	tag, tagExists := s.embedType.Field(num).Tag.Lookup("di")
-	canSet := s.embedValue.Field(num).CanSet()
-	if !tagExists || !canSet {
-		return "", false, false
-	}
-
-	name, optional = s.parseTag(tag)
-
-	return name, optional, true
-}
-
-func (s *embedParamProvider) parseTag(tag string) (name string, optional bool) {
-	options := strings.Split(tag, ",")
-	if len(options) == 0 {
-		return "", false
-	}
-
-	if len(options) == 1 && options[0] == "optional" {
-		return "", true
-	}
-
-	if len(options) == 1 {
-		return options[0], false
-	}
-
-	if len(options) == 2 && options[1] == "optional" {
-		return options[0], true
-	}
-
-	panic("incorrect di tag")
-}
-
-func (s *embedParamProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
-	for i, offset := 0, 0; i < s.embedType.NumField(); i++ {
-		_, _, isDependency := s.inspectFieldTag(i)
+func (p *providerEmbed) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+	for i, offset := 0, 0; i < p.embedType.NumField(); i++ {
+		_, _, isDependency := p.inspectFieldTag(i)
 		if !isDependency {
 			offset++
 			continue
 		}
 
-		s.embedValue.Field(i).Set(parameters[i-offset])
+		p.embedValue.Field(i).Set(parameters[i-offset])
 	}
 
-	return s.embedValue, nil
+	return p.embedValue, nil
+}
+
+func (p *providerEmbed) inspectFieldTag(num int) (name string, optional bool, isDependency bool) {
+	fieldType := p.embedType.Field(num)
+	fieldValue := p.embedValue.Field(num)
+	tag, tagExists := fieldType.Tag.Lookup("di")
+	if !tagExists || !fieldValue.CanSet() {
+		return "", false, false
+	}
+	name, optional = p.parseTag(tag)
+	return name, optional, true
+}
+
+func (p *providerEmbed) parseTag(tag string) (name string, optional bool) {
+	options := strings.Split(tag, ",")
+	if len(options) == 0 {
+		return "", false
+	}
+	if len(options) == 1 && options[0] == "optional" {
+		return "", true
+	}
+	if len(options) == 1 {
+		return options[0], false
+	}
+	if len(options) == 2 && options[1] == "optional" {
+		return options[0], true
+	}
+	panic("incorrect di tag")
 }

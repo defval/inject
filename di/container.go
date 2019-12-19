@@ -35,27 +35,28 @@ type ProvideParams struct {
 
 // Provide adds constructor into container with parameters.
 func (c *Container) Provide(params ProvideParams) {
-	prov := provider(newConstructorProvider(params.Name, params.Provider))
-	k := prov.resultKey()
-
-	if c.exists(k) {
-		panicf("The `%s` type already exists in container", prov.resultKey())
+	p := provider(newProviderConstructor(params.Name, params.Provider))
+	if c.exists(p.Key()) {
+		panicf("The `%s` type already exists in container", p.Key())
 	}
-
 	if !params.IsPrototype {
-		prov = asSingleton(prov)
+		p = asSingleton(p)
 	}
-
-	c.addProvider(prov)
-	c.provideEmbedParameters(prov)
-
+	// add provider to graph
+	c.add(p)
+	// parse embed parameters
+	for _, parameter := range p.ParameterList() {
+		if parameter.embed {
+			c.add(newProviderEmbed(parameter))
+		}
+	}
+	// provide parameter bag
 	if len(params.Parameters) != 0 {
-		parameterBugProvider := createParameterBugProvider(k, params.Parameters)
-		c.addProvider(parameterBugProvider)
+		c.add(createParameterBugProvider(p.Key(), params.Parameters))
 	}
-
+	// process interfaces
 	for _, iface := range params.Interfaces {
-		c.processProviderInterface(prov, iface)
+		c.processProviderInterface(p, iface)
 	}
 }
 
@@ -68,19 +69,14 @@ func (c *Container) Compile() {
 			return c
 		},
 	})
-
 	c.Provide(ProvideParams{
 		Provider: func() *Graph {
 			return &Graph{graph: c.graph.DOTGraph()}
 		},
 	})
-
-	for _, key := range c.all() {
-		// register provider parameters
-		provider, _ := c.provider(key)
-		c.registerParameters(provider)
+	for _, p := range c.all() {
+		c.registerProviderParameters(p)
 	}
-
 	_, err := c.graph.DFSSort()
 	if err != nil {
 		switch err {
@@ -90,7 +86,6 @@ func (c *Container) Compile() {
 			panic(err.Error())
 		}
 	}
-
 	c.compiled = true
 }
 
@@ -105,21 +100,25 @@ func (c *Container) Extract(params ExtractParams) error {
 	if !c.compiled {
 		return fmt.Errorf("container not compiled")
 	}
-
 	if params.Target == nil {
 		return fmt.Errorf("extract target must be a pointer, got `nil`")
 	}
-
 	if !reflection.IsPtr(params.Target) {
 		return fmt.Errorf("extract target must be a pointer, got `%s`", reflect.TypeOf(params.Target))
 	}
-
-	key := key{
-		name: params.Name,
-		typ:  reflect.TypeOf(params.Target).Elem(),
+	typ := reflect.TypeOf(params.Target)
+	param := parameter{
+		name:  params.Name,
+		res:   typ.Elem(),
+		embed: isEmbedParameter(typ),
 	}
-
-	return key.extract(c, params.Target)
+	value, err := param.ResolveValue(c)
+	if err != nil {
+		return err
+	}
+	targetValue := reflect.ValueOf(params.Target).Elem()
+	targetValue.Set(value)
+	return nil
 }
 
 // InvokeParams
@@ -133,38 +132,26 @@ func (c *Container) Invoke(params InvokeParams) error {
 	if !c.compiled {
 		return fmt.Errorf("container not compiled")
 	}
-
 	invoker, err := newInvoker(params.Fn)
 	if err != nil {
 		return err
 	}
-
 	return invoker.Invoke(c)
 }
 
 // Cleanup
 func (c *Container) Cleanup() {
-	for _, key := range c.all() {
-		provider, _ := c.provider(key)
-		if cleanup, ok := provider.(cleanup); ok {
+	for _, p := range c.all() {
+		if cleanup, ok := p.(cleanup); ok {
 			cleanup.cleanup()
 		}
 	}
 }
 
-// addProvider
-func (c *Container) addProvider(p provider) {
-	c.graph.AddNode(p.resultKey())
-	c.providers[p.resultKey()] = p
-}
-
-// provideEmbedParameters
-func (c *Container) provideEmbedParameters(p provider) {
-	for _, parameter := range p.parameters() {
-		if parameter.embed {
-			c.addProvider(newEmbedProvider(parameter))
-		}
-	}
+// add
+func (c *Container) add(p provider) {
+	c.graph.AddNode(p.Key())
+	c.providers[p.Key()] = p
 }
 
 // exists checks that key registered in container graph.
@@ -177,64 +164,73 @@ func (c *Container) provider(k key) (provider, bool) {
 	if !c.exists(k) {
 		return nil, false
 	}
-
 	return c.providers[k], true
 }
 
 // all return all container keys.
-func (c *Container) all() []key {
-	var keys []key
-
-	for _, node := range c.graph.Nodes() {
-		keys = append(keys, node.(key))
+func (c *Container) all() []provider {
+	var providers []provider
+	for _, k := range c.graph.Nodes() {
+		p, _ := c.provider(k.(key))
+		providers = append(providers, p)
 	}
-
-	return keys
+	return providers
 }
 
 // processProviderInterface represents instances as interfaces and groups.
 func (c *Container) processProviderInterface(provider provider, as interface{}) {
-	// create interface from embedParamProvider
-	iface := newInterfaceProvider(provider, as)
-	ifaceKey := iface.resultKey()
-
-	if c.graph.NodeExists(ifaceKey) {
+	// create interface from provider
+	iface := newProviderInterface(provider, as)
+	if c.graph.NodeExists(iface.Key()) {
 		// if iface already exists, restrict interface resolving
-		c.providers[ifaceKey] = iface.Multiple()
+		c.providers[iface.Key()] = newProviderStub(iface.Key(), "have several implementations")
 	} else {
 		// add interface node
-		c.graph.AddNode(ifaceKey)
-		c.providers[ifaceKey] = iface
+		c.graph.AddNode(iface.Key())
+		c.providers[iface.Key()] = iface
 	}
-
 	// create group
-	group := newGroupProvider(ifaceKey)
-	groupKey := group.resultKey()
-
+	group := newGroupProvider(iface.Key())
 	// check exists
-	if c.graph.NodeExists(groupKey) {
+	if c.exists(group.Key()) {
 		// if exists use existing group
-		group = c.providers[groupKey].(*interfaceGroup)
+		group = c.providers[group.Key()].(*interfaceGroup)
 	} else {
 		// else add new group to graph
-		c.graph.AddNode(groupKey)
-		c.providers[groupKey] = group
+		c.graph.AddNode(group.Key())
+		c.providers[group.Key()] = group
 	}
-
 	// add embedParamProvider ifaceKey into group
-	group.Add(provider.resultKey())
+	group.Add(provider.Key())
 }
 
-// registerParameters registers provider parameters in a dependency graph.
-func (c *Container) registerParameters(provider provider) {
-	for _, parameter := range provider.parameters() {
-		_, exists := c.provider(parameter.resultKey())
+// registerProviderParameters registers provider parameters in a dependency graph.
+func (c *Container) registerProviderParameters(p provider) {
+	for _, param := range p.ParameterList() {
+		paramProvider, exists := c.resolveParameterProvider(param)
 		if exists {
-			c.graph.AddEdge(parameter.resultKey(), provider.resultKey())
+			c.graph.AddEdge(paramProvider.Key(), p.Key())
+			continue
 		}
-
-		if !exists && !parameter.optional {
-			panicf("%s: dependency %s not exists in container", provider.resultKey(), parameter.resultKey())
+		if !exists && !param.optional {
+			panicf("%s: dependency %s not exists in container", p.Key(), param)
 		}
 	}
+}
+
+// resolveParameterProvider lookup provider by parameter.
+func (c *Container) resolveParameterProvider(param parameter) (provider, bool) {
+	for _, pt := range providerLookupSequence {
+		k := key{
+			name: param.name,
+			res:  param.res,
+			typ:  pt,
+		}
+		provider, exists := c.provider(k)
+		if !exists {
+			continue
+		}
+		return provider, true
+	}
+	return nil, false
 }

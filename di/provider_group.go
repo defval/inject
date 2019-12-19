@@ -7,7 +7,8 @@ import (
 // newGroupProvider creates new group from provided resultKey.
 func newGroupProvider(k key) *interfaceGroup {
 	ifaceKey := key{
-		typ: reflect.SliceOf(k.typ),
+		res: reflect.SliceOf(k.res),
+		typ: ptGroup,
 	}
 
 	return &interfaceGroup{
@@ -25,24 +26,25 @@ type interfaceGroup struct {
 // Add
 func (i *interfaceGroup) Add(k key) {
 	i.pl = append(i.pl, parameter{
-		key:      k,
+		name:     k.name,
+		res:      k.res,
 		optional: false,
 		embed:    false,
 	})
 }
 
 // resultKey
-func (i interfaceGroup) resultKey() key {
+func (i interfaceGroup) Key() key {
 	return i.result
 }
 
 // parameters
-func (i interfaceGroup) parameters() parameterList {
+func (i interfaceGroup) ParameterList() parameterList {
 	return i.pl
 }
 
 // Provide
-func (i interfaceGroup) provide(parameters ...reflect.Value) (reflect.Value, error) {
-	group := reflect.New(i.result.typ).Elem()
+func (i interfaceGroup) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+	group := reflect.New(i.result.res).Elem()
 	return reflect.Append(group, parameters...), nil
 }

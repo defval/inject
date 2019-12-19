@@ -1,71 +1,48 @@
 package di
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/defval/inject/v2/di/internal/reflection"
 )
 
-// newInterfaceProvider
-func newInterfaceProvider(provider provider, as interface{}) *interfaceProvider {
+// newProviderInterface
+func newProviderInterface(provider provider, as interface{}) *providerInterface {
 	iface := reflection.InspectInterfacePtr(as)
-
-	if !provider.resultKey().typ.Implements(iface.Type) {
-		panicf("%s not implement %s", provider.resultKey(), iface.Type)
+	if !provider.Key().res.Implements(iface.Type) {
+		panicf("%s not implement %s", provider.Key(), iface.Type)
 	}
-
-	return &interfaceProvider{
-		result: key{
-			name: provider.resultKey().name,
-			typ:  iface.Type,
+	return &providerInterface{
+		res: key{
+			name: provider.Key().name,
+			res:  iface.Type,
+			typ:  ptInterface,
 		},
-		implementation: provider,
+		provider: provider,
 	}
 }
 
-// interfaceProvider
-type interfaceProvider struct {
-	result         key
-	implementation provider
+// providerInterface
+type providerInterface struct {
+	res      key
+	provider provider
 }
 
-func (i *interfaceProvider) resultKey() key {
-	return i.result
+func (i *providerInterface) Key() key {
+	return i.res
 }
 
-func (i *interfaceProvider) parameters() parameterList {
-	var list parameterList
-	list = append(list, parameter{
-		key:      i.implementation.resultKey(),
+func (i *providerInterface) ParameterList() parameterList {
+	var plist parameterList
+	plist = append(plist, parameter{
+		name:     i.provider.Key().name,
+		res:      i.provider.Key().res,
 		optional: false,
 		embed:    false,
 	})
-
-	return list
+	return plist
 }
 
-func (i *interfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (i *providerInterface) Provide(parameters ...reflect.Value) (reflect.Value, error) {
 	return parameters[0], nil
-}
-
-func (i *interfaceProvider) Multiple() *multipleInterfaceProvider {
-	return &multipleInterfaceProvider{result: i.result}
-}
-
-// multipleInterfaceProvider
-type multipleInterfaceProvider struct {
-	result key
-}
-
-func (m *multipleInterfaceProvider) resultKey() key {
-	return m.result
-}
-
-func (m *multipleInterfaceProvider) parameters() parameterList {
-	return parameterList{}
-}
-
-func (m *multipleInterfaceProvider) provide(parameters ...reflect.Value) (reflect.Value, error) {
-	return reflect.Value{}, fmt.Errorf("%s have sereral implementations", m.result.typ)
 }

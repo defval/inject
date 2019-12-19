@@ -139,7 +139,7 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustProvide(ditest.NewBar)
 		c.MustCompile()
 		var bar *ditest.Bar
-		c.MustExtractError(&bar, "*ditest.Bar: *ditest.Foo: internal error")
+		c.MustExtractError(&bar, "*ditest.Foo: internal error")
 	})
 
 	t.Run("extract interface with multiple implementations cause error", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestContainerExtractErrors(t *testing.T) {
 		c.MustCompile()
 
 		var extracted ditest.Fooer
-		c.MustExtractError(&extracted, "ditest.Fooer: ditest.Fooer have sereral implementations")
+		c.MustExtractError(&extracted, "ditest.Fooer: have several implementations")
 	})
 }
 
@@ -519,7 +519,7 @@ func TestContainerCleanup(t *testing.T) {
 }
 
 func TestContainer_GraphVisualizing(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	t.Run("graph", func(t *testing.T) {
 		c := NewTestContainer(t)
 
 		c.MustProvide(ditest.NewLogger)
@@ -534,18 +534,22 @@ func TestContainer_GraphVisualizing(t *testing.T) {
 			Target: &graph,
 		}))
 
+		fmt.Println(graph.String())
+
 		require.Equal(t, `digraph  {
 	subgraph cluster_s3 {
 		ID = "cluster_s3";
 		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
-		n8[color="#46494C",fontcolor="white",fontname="COURIER",label="*di.Graph",shape="box",style="filled"];
+		n10[color="#46494C",fontcolor="white",fontname="COURIER",label="*di.Graph",shape="box",style="filled"];
+		n9[color="#46494C",fontcolor="white",fontname="COURIER",label="di.Extractor",shape="box",style="filled"];
 		
 	}subgraph cluster_s2 {
 		ID = "cluster_s2";
 		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
-		n5[color="#46494C",fontcolor="white",fontname="COURIER",label="*ditest.AccountController",shape="box",style="filled"];
-		n7[color="#46494C",fontcolor="white",fontname="COURIER",label="*ditest.AuthController",shape="box",style="filled"];
-		n6[color="#E54B4B",fontcolor="white",fontname="COURIER",label="[]ditest.Controller",shape="doubleoctagon",style="filled"];
+		n6[color="#46494C",fontcolor="white",fontname="COURIER",label="*ditest.AccountController",shape="box",style="filled"];
+		n8[color="#46494C",fontcolor="white",fontname="COURIER",label="*ditest.AuthController",shape="box",style="filled"];
+		n7[color="#E54B4B",fontcolor="white",fontname="COURIER",label="[]ditest.Controller",shape="doubleoctagon",style="filled"];
+		n4[color="#E5984B",fontcolor="white",fontname="COURIER",label="ditest.RouterParams",shape="box",style="filled"];
 		
 	}subgraph cluster_s0 {
 		ID = "cluster_s0";
@@ -557,18 +561,19 @@ func TestContainer_GraphVisualizing(t *testing.T) {
 		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
 		n3[color="#46494C",fontcolor="white",fontname="COURIER",label="*http.ServeMux",shape="box",style="filled"];
 		n2[color="#46494C",fontcolor="white",fontname="COURIER",label="*http.Server",shape="box",style="filled"];
-		n4[color="#2589BD",fontcolor="white",fontname="COURIER",label="http.Handler",style="filled"];
+		n5[color="#2589BD",fontcolor="white",fontname="COURIER",label="http.Handler",style="filled"];
 		
 	}splines="ortho";
-	n5->n6[color="#949494"];
-	n7->n6[color="#949494"];
-	n3->n4[color="#949494"];
+	n6->n7[color="#949494"];
+	n8->n7[color="#949494"];
+	n3->n5[color="#949494"];
 	n1->n2[color="#949494"];
 	n1->n3[color="#949494"];
-	n1->n5[color="#949494"];
-	n1->n7[color="#949494"];
-	n6->n3[color="#949494"];
-	n4->n2[color="#949494"];
+	n1->n6[color="#949494"];
+	n1->n8[color="#949494"];
+	n7->n4[color="#949494"];
+	n4->n3[color="#949494"];
+	n5->n2[color="#949494"];
 	
 }`, graph.String())
 	})

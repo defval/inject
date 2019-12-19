@@ -10,7 +10,7 @@ import (
 type NodeVisualizer interface {
 	Visualize(node *dot.Node)
 	SubGraph() string
-	IsPrimary() bool
+	IsAlwaysVisible() bool
 }
 
 // DOTGraph returns a textual representation of the graph in the DOT graph
@@ -22,21 +22,21 @@ func (g *DirectedGraph) DOTGraph() *dot.Graph {
 	subgraphs := make(map[string]*dot.Graph)
 	itemsByNode := make(map[Node]dot.Node)
 	for _, node := range g.Nodes() {
-		visualizer := node.(NodeVisualizer)
+		nv := node.(NodeVisualizer)
 
-		if !g.HasOutgoingEdges(node) && !visualizer.IsPrimary() {
+		if !g.HasOutgoingEdges(node) && !nv.IsAlwaysVisible() {
 			continue
 		}
 
 		name := fmt.Sprintf("%s", node)
-		subgraph, ok := subgraphs[visualizer.SubGraph()]
+		subgraph, ok := subgraphs[nv.SubGraph()]
 		if !ok {
-			subgraph = root.Subgraph(visualizer.SubGraph(), dot.ClusterOption{})
-			subgraphs[visualizer.SubGraph()] = subgraph
+			subgraph = root.Subgraph(nv.SubGraph(), dot.ClusterOption{})
+			subgraphs[nv.SubGraph()] = subgraph
 			applySubGraphStyle(subgraph)
 		}
 		item := subgraph.Node(name)
-		visualizer.Visualize(&item)
+		nv.Visualize(&item)
 		itemsByNode[node] = item
 
 	}

@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/defval/inject/v2/di"
 )
 
 // NewLogger
@@ -22,14 +24,20 @@ func NewServer(logger *log.Logger, handler http.Handler) *http.Server {
 	}
 }
 
+// RouterParams
+type RouterParams struct {
+	di.Parameter
+	Controllers []Controller `di:"optional"`
+}
+
 // NewRouter
-func NewRouter(logger *log.Logger, controllers []Controller) *http.ServeMux {
+func NewRouter(logger *log.Logger, params RouterParams) *http.ServeMux {
 	logger.Println("Create router!")
 	defer logger.Println("Router created!")
 
 	mux := &http.ServeMux{}
 
-	for _, ctrl := range controllers {
+	for _, ctrl := range params.Controllers {
 		ctrl.RegisterRoutes(mux)
 	}
 
