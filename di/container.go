@@ -45,9 +45,9 @@ func (c *Container) Provide(params ProvideParams) {
 	// add provider to graph
 	c.add(p)
 	// parse embed parameters
-	for _, parameter := range p.ParameterList() {
-		if parameter.embed {
-			c.add(newProviderEmbed(parameter))
+	for _, param := range p.ParameterList() {
+		if param.embed {
+			c.add(newProviderEmbed(param))
 		}
 	}
 	// provide parameter bag
@@ -143,7 +143,7 @@ func (c *Container) Invoke(params InvokeParams) error {
 func (c *Container) Cleanup() {
 	for _, p := range c.all() {
 		if cleanup, ok := p.(cleanup); ok {
-			cleanup.cleanup()
+			cleanup.Cleanup()
 		}
 	}
 }
@@ -181,13 +181,13 @@ func (c *Container) all() []provider {
 func (c *Container) processProviderInterface(provider provider, as interface{}) {
 	// create interface from provider
 	iface := newProviderInterface(provider, as)
-	if c.graph.NodeExists(iface.Key()) {
+	if c.exists(iface.Key()) {
 		// if iface already exists, restrict interface resolving
+		// c.replace(newProviderStub(iface.Key(), "have several implementations"))
 		c.providers[iface.Key()] = newProviderStub(iface.Key(), "have several implementations")
 	} else {
 		// add interface node
-		c.graph.AddNode(iface.Key())
-		c.providers[iface.Key()] = iface
+		c.add(iface)
 	}
 	// create group
 	group := newGroupProvider(iface.Key())
@@ -197,10 +197,9 @@ func (c *Container) processProviderInterface(provider provider, as interface{}) 
 		group = c.providers[group.Key()].(*interfaceGroup)
 	} else {
 		// else add new group to graph
-		c.graph.AddNode(group.Key())
-		c.providers[group.Key()] = group
+		c.add(group)
 	}
-	// add embedParamProvider ifaceKey into group
+	// add provider reference into group
 	group.Add(provider.Key())
 }
 

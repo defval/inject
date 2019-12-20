@@ -33,6 +33,7 @@ func (p parameter) ResolveProvider(c *Container) (provider, bool) {
 		if !exists {
 			continue
 		}
+
 		return provider, true
 	}
 	return nil, false
@@ -47,7 +48,7 @@ func (p parameter) ResolveValue(c *Container) (reflect.Value, error) {
 		return reflect.Value{}, ErrParameterProviderNotFound{param: p}
 	}
 	pl := provider.ParameterList()
-	values, err := pl.ResolveValues(c)
+	values, err := pl.Resolve(c)
 	if err != nil {
 		return reflect.Value{}, err
 	}

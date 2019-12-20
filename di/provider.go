@@ -28,5 +28,5 @@ type provider interface {
 
 // cleanup
 type cleanup interface {
-	cleanup()
+	Cleanup()
 }

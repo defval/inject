@@ -6,7 +6,7 @@ import "reflect"
 type parameterList []parameter
 
 // ResolveValues loads all parameters presented in parameter list.
-func (pl parameterList) ResolveValues(c *Container) ([]reflect.Value, error) {
+func (pl parameterList) Resolve(c *Container) ([]reflect.Value, error) {
 	var values []reflect.Value
 	for _, p := range pl {
 		value, err := p.ResolveValue(c)

@@ -35,7 +35,7 @@ type Option interface {
 //       _ = server.Close()
 //     }
 //
-//     return &server, cleanup, nil
+//     return server, cleanup, nil
 //   }
 //
 // Other function signatures will cause error.
@@ -49,9 +49,7 @@ func Provide(provider interface{}, options ...ProvideOption) Option {
 		for _, opt := range options {
 			opt.apply(&po)
 		}
-
 		container.providers = append(container.providers, po)
-
 	})
 }
 
@@ -119,16 +117,16 @@ func As(ifaces ...interface{}) ProvideOption {
 //   Provide(&http.Server{], inject.Prototype())
 //
 //   var server1 *http.Server
-//   container.Extract(&server1, &server1)
-//
-//
+//   var server2 *http.Server
+//   container.Extract(&server1, &server2)
 func Prototype() ProvideOption {
 	return provideOption(func(provider *di.ProvideParams) {
 		provider.IsPrototype = true
 	})
 }
 
-// ParameterBag is a provider parameter bag. It stores a construction parameters.
+// ParameterBag is a provider parameter bag. It stores a construction parameters. It is a alternative way to
+// configure type.
 //
 //   inject.Provide(NewServer, inject.ParameterBag{
 //     "addr": ":8080",

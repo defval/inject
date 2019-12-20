@@ -50,7 +50,7 @@ func newInvoker(fn interface{}) (*invoker, error) {
 
 func (i *invoker) Invoke(c *Container) error {
 	plist := i.parameters()
-	values, err := plist.ResolveValues(c)
+	values, err := plist.Resolve(c)
 	if err != nil {
 		return fmt.Errorf("could not resolve invoke parameters: %s", err)
 	}

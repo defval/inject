@@ -104,7 +104,7 @@ func (c *providerConstructor) saveCleanup(value reflect.Value) {
 	c.clean = reflection.InspectFunction(value.Interface())
 }
 
-func (c *providerConstructor) cleanup() {
+func (c *providerConstructor) Cleanup() {
 	if c.clean != nil && c.clean.IsValid() {
 		c.clean.Call([]reflect.Value{})
 	}

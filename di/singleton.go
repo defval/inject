@@ -28,9 +28,9 @@ func (s *singletonWrapper) Provide(parameters ...reflect.Value) (reflect.Value, 
 	return value, nil
 }
 
-func (s *singletonWrapper) cleanup() {
+func (s *singletonWrapper) Cleanup() {
 	s.value = reflect.Value{}
 	if cleanup, ok := s.provider.(cleanup); ok {
-		cleanup.cleanup()
+		cleanup.Cleanup()
 	}
 }
