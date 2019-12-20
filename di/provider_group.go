@@ -4,27 +4,27 @@ import (
 	"reflect"
 )
 
-// newGroupProvider creates new group from provided resultKey.
-func newGroupProvider(k key) *interfaceGroup {
+// newProviderGroup creates new group from provided resultKey.
+func newProviderGroup(k key) *providerGroup {
 	ifaceKey := key{
 		res: reflect.SliceOf(k.res),
 		typ: ptGroup,
 	}
 
-	return &interfaceGroup{
+	return &providerGroup{
 		result: ifaceKey,
 		pl:     parameterList{},
 	}
 }
 
-// interfaceGroup
-type interfaceGroup struct {
+// providerGroup
+type providerGroup struct {
 	result key
 	pl     parameterList
 }
 
 // Add
-func (i *interfaceGroup) Add(k key) {
+func (i *providerGroup) Add(k key) {
 	i.pl = append(i.pl, parameter{
 		name:     k.name,
 		res:      k.res,
@@ -34,17 +34,17 @@ func (i *interfaceGroup) Add(k key) {
 }
 
 // resultKey
-func (i interfaceGroup) Key() key {
+func (i providerGroup) Key() key {
 	return i.result
 }
 
 // parameters
-func (i interfaceGroup) ParameterList() parameterList {
+func (i providerGroup) ParameterList() parameterList {
 	return i.pl
 }
 
 // Provide
-func (i interfaceGroup) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (i providerGroup) Provide(parameters ...reflect.Value) (reflect.Value, error) {
 	group := reflect.New(i.result.res).Elem()
 	return reflect.Append(group, parameters...), nil
 }

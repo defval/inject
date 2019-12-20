@@ -190,11 +190,11 @@ func (c *Container) processProviderInterface(provider provider, as interface{}) 
 		c.add(iface)
 	}
 	// create group
-	group := newGroupProvider(iface.Key())
+	group := newProviderGroup(iface.Key())
 	// check exists
 	if c.exists(group.Key()) {
 		// if exists use existing group
-		group = c.providers[group.Key()].(*interfaceGroup)
+		group = c.providers[group.Key()].(*providerGroup)
 	} else {
 		// else add new group to graph
 		c.add(group)
