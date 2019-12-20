@@ -167,7 +167,7 @@ func (c *Container) provider(k key) (provider, bool) {
 	return c.providers[k], true
 }
 
-// all return all container keys.
+// all returns providers.
 func (c *Container) all() []provider {
 	var providers []provider
 	for _, k := range c.graph.Nodes() {
