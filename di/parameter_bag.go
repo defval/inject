@@ -91,7 +91,7 @@ func (b ParameterBag) RequireFloat64(key string) float64 {
 
 // createParameterBugProvider
 func createParameterBugProvider(key key, parameters ParameterBag) provider {
-	return newProviderConstructor(key.String(), func() ParameterBag { return parameters })
+	return newProviderConstructor(key.String(), func() ParameterBag { return parameters }, nil)
 }
 
 var parameterBagType = reflect.TypeOf(ParameterBag{})

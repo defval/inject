@@ -16,6 +16,16 @@ const (
 	ptEmbedParameter
 )
 
+// provideHistory
+type provideHistory struct {
+	items []key
+}
+
+// add
+func (h *provideHistory) add(k key) {
+	h.items = append(h.items, k)
+}
+
 // provider
 type provider interface {
 	// The identity of result type.

@@ -13,6 +13,7 @@ func New() *Container {
 	return &Container{
 		graph:     dag.NewDirectedGraph(),
 		providers: make(map[key]provider),
+		history:   &provideHistory{},
 	}
 }
 
@@ -20,6 +21,7 @@ func New() *Container {
 type Container struct {
 	graph     *dag.DirectedGraph
 	providers map[key]provider
+	history   *provideHistory
 	compiled  bool
 }
 
@@ -35,7 +37,7 @@ type ProvideParams struct {
 
 // Provide adds constructor into container with parameters.
 func (c *Container) Provide(params ProvideParams) {
-	p := provider(newProviderConstructor(params.Name, params.Provider))
+	p := provider(newProviderConstructor(params.Name, params.Provider, c.history))
 	if c.exists(p.Key()) {
 		panicf("The `%s` type already exists in container", p.Key())
 	}
@@ -141,7 +143,8 @@ func (c *Container) Invoke(params InvokeParams) error {
 
 // Cleanup
 func (c *Container) Cleanup() {
-	for _, p := range c.all() {
+	for _, k := range c.history.items {
+		p, _ := c.provider(k)
 		if cleanup, ok := p.(cleanup); ok {
 			cleanup.Cleanup()
 		}
