@@ -19,7 +19,7 @@ const (
 )
 
 // newProviderConstructor
-func newProviderConstructor(name string, ctor interface{}, history *provideHistory) *providerConstructor {
+func newProviderConstructor(name string, ctor interface{}) *providerConstructor {
 	if ctor == nil {
 		panicf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", "nil")
 	}
@@ -32,7 +32,6 @@ func newProviderConstructor(name string, ctor interface{}, history *provideHisto
 		name:     name,
 		ctor:     fn,
 		ctorType: ctorType,
-		history:  history,
 	}
 }
 
@@ -42,7 +41,6 @@ type providerConstructor struct {
 	ctor     *reflection.Func
 	ctorType ctorType
 	clean    *reflection.Func
-	history  *provideHistory
 }
 
 func (c providerConstructor) Key() key {
@@ -73,49 +71,20 @@ func (c providerConstructor) ParameterList() parameterList {
 }
 
 // Provide
-func (c *providerConstructor) Provide(parameters ...reflect.Value) (reflect.Value, error) {
-	defer func() {
-		if c.history != nil {
-			c.history.add(c.Key())
-		}
-	}()
-
-	out := c.ctor.Call(parameters)
+func (c *providerConstructor) Provide(values ...reflect.Value) (reflect.Value, func(), error) {
+	out := callResult(c.ctor.Call(values))
 	switch c.ctorType {
 	case ctorStd:
-		return out[0], nil
+		return out.instance(), nil, nil
 	case ctorError:
-		instance := out[0]
-		err := out[1]
-		if err.IsNil() {
-			return instance, nil
-		}
-		return instance, err.Interface().(error)
+		return out.instance(), nil, out.error(1)
 	case ctorCleanup:
-		c.setCleanup(out[1])
-		return out[0], nil
+		return out.instance(), out.cleanup(), nil
 	case ctorCleanupError:
-		instance := out[0]
-		cleanup := out[1]
-		err := out[2]
-		c.setCleanup(cleanup)
-		if err.IsNil() {
-			return instance, nil
-		}
-		return instance, err.Interface().(error)
+		return out.instance(), out.cleanup(), out.error(2)
 	}
-	return reflect.Value{}, errors.New("you found a bug, please create new issue for " +
+	return reflect.Value{}, nil, errors.New("you found a bug, please create new issue for " +
 		"this: https://github.com/defval/inject/issues/new")
-}
-
-func (c *providerConstructor) setCleanup(value reflect.Value) {
-	c.clean = reflection.InspectFunction(value.Interface())
-}
-
-func (c *providerConstructor) Cleanup() {
-	if c.clean != nil && c.clean.IsValid() {
-		c.clean.Call([]reflect.Value{})
-	}
 }
 
 // determineCtorType
@@ -135,4 +104,25 @@ func determineCtorType(fn *reflection.Func) ctorType {
 		return ctorCleanupError
 	}
 	panic(fmt.Sprintf("The constructor must be a function like `func([dep1, dep2, ...]) (<result>, [cleanup, error])`, got `%s`", fn.Name))
+}
+
+// callResult
+type callResult []reflect.Value
+
+func (r callResult) instance() reflect.Value {
+	return r[0]
+}
+
+func (r callResult) cleanup() func() {
+	if r[1].IsNil() {
+		return nil
+	}
+	return r[1].Interface().(func())
+}
+
+func (r callResult) error(position int) error {
+	if r[position].IsNil() {
+		return nil
+	}
+	return r[position].Interface().(error)
 }

@@ -16,21 +16,12 @@ type singletonWrapper struct {
 }
 
 // Provide
-func (s *singletonWrapper) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (s *singletonWrapper) Provide(values ...reflect.Value) (reflect.Value, func(), error) {
 	if s.value.IsValid() {
-		return s.value, nil
+		return s.value, nil, nil
 	}
-	value, err := s.provider.Provide(parameters...)
-	if err != nil {
-		return reflect.Value{}, err
-	}
+	value, cleanup, err := s.provider.Provide(values...)
 	s.value = value
-	return value, nil
-}
 
-func (s *singletonWrapper) Cleanup() {
-	s.value = reflect.Value{}
-	if cleanup, ok := s.provider.(cleanup); ok {
-		cleanup.Cleanup()
-	}
+	return value, cleanup, err
 }

@@ -16,16 +16,6 @@ const (
 	ptEmbedParameter
 )
 
-// provideHistory
-type provideHistory struct {
-	items []key
-}
-
-// add
-func (h *provideHistory) add(k key) {
-	h.items = append(h.items, k)
-}
-
 // provider
 type provider interface {
 	// The identity of result type.
@@ -33,10 +23,5 @@ type provider interface {
 	// ParameterList returns array of dependencies.
 	ParameterList() parameterList
 	// Provide provides value from provided parameters.
-	Provide(values ...reflect.Value) (reflect.Value, error)
-}
-
-// cleanup
-type cleanup interface {
-	Cleanup()
+	Provide(values ...reflect.Value) (reflect.Value, func(), error)
 }

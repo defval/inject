@@ -53,7 +53,7 @@ func (p *providerEmbed) ParameterList() parameterList {
 	return plist
 }
 
-func (p *providerEmbed) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (p *providerEmbed) Provide(values ...reflect.Value) (reflect.Value, func(), error) {
 	for i, offset := 0, 0; i < p.embedType.NumField(); i++ {
 		_, _, isDependency := p.inspectFieldTag(i)
 		if !isDependency {
@@ -61,10 +61,10 @@ func (p *providerEmbed) Provide(parameters ...reflect.Value) (reflect.Value, err
 			continue
 		}
 
-		p.embedValue.Field(i).Set(parameters[i-offset])
+		p.embedValue.Field(i).Set(values[i-offset])
 	}
 
-	return p.embedValue, nil
+	return p.embedValue, nil, nil
 }
 
 func (p *providerEmbed) inspectFieldTag(num int) (name string, optional bool, isDependency bool) {

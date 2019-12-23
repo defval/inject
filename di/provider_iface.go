@@ -43,6 +43,6 @@ func (i *providerInterface) ParameterList() parameterList {
 	return plist
 }
 
-func (i *providerInterface) Provide(parameters ...reflect.Value) (reflect.Value, error) {
-	return parameters[0], nil
+func (i *providerInterface) Provide(values ...reflect.Value) (reflect.Value, func(), error) {
+	return values[0], nil, nil
 }

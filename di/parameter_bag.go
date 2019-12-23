@@ -5,7 +5,15 @@ import (
 	"reflect"
 )
 
-// Parameters
+// createParameterBugProvider
+func createParameterBugProvider(key key, parameters ParameterBag) provider {
+	return newProviderConstructor(key.String(), func() ParameterBag { return parameters })
+}
+
+// parameterBagType
+var parameterBagType = reflect.TypeOf(ParameterBag{})
+
+// ParameterBag
 type ParameterBag map[string]interface{}
 
 // Exists
@@ -88,10 +96,3 @@ func (b ParameterBag) RequireFloat64(key string) float64 {
 	}
 	return value
 }
-
-// createParameterBugProvider
-func createParameterBugProvider(key key, parameters ParameterBag) provider {
-	return newProviderConstructor(key.String(), func() ParameterBag { return parameters }, nil)
-}
-
-var parameterBagType = reflect.TypeOf(ParameterBag{})
