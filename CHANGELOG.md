@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 
 - Cleanup ordering
+- Cleanup with prototypes
 - Removed duplicate function `resolveParameterProvider()`
 - Code style fixes
 - Documentation fixes
