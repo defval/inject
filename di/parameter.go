@@ -52,11 +52,13 @@ func (p parameter) ResolveValue(c *Container) (reflect.Value, error) {
 	if err != nil {
 		return reflect.Value{}, err
 	}
-	value, err := provider.Provide(values...)
+	value, cleanup, err := provider.Provide(values...)
 	if err != nil {
 		return value, ErrParameterProvideFailed{k: provider.Key(), err: err}
 	}
-
+	if cleanup != nil {
+		c.cleanups = append(c.cleanups, cleanup)
+	}
 	return value, nil
 }
 

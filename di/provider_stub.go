@@ -24,6 +24,6 @@ func (m *providerStub) ParameterList() parameterList {
 	return parameterList{}
 }
 
-func (m *providerStub) Provide(_ ...reflect.Value) (reflect.Value, error) {
-	return reflect.Value{}, fmt.Errorf(m.msg)
+func (m *providerStub) Provide(values ...reflect.Value) (reflect.Value, func(), error) {
+	return reflect.Value{}, nil, fmt.Errorf(m.msg)
 }

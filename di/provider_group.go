@@ -44,7 +44,7 @@ func (i providerGroup) ParameterList() parameterList {
 }
 
 // Provide
-func (i providerGroup) Provide(parameters ...reflect.Value) (reflect.Value, error) {
+func (i providerGroup) Provide(values ...reflect.Value) (reflect.Value, func(), error) {
 	group := reflect.New(i.result.res).Elem()
-	return reflect.Append(group, parameters...), nil
+	return reflect.Append(group, values...), nil, nil
 }

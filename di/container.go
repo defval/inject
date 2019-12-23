@@ -13,16 +13,15 @@ func New() *Container {
 	return &Container{
 		graph:     dag.NewDirectedGraph(),
 		providers: make(map[key]provider),
-		history:   &provideHistory{},
 	}
 }
 
 // Container is a dependency injection container.
 type Container struct {
+	compiled  bool
 	graph     *dag.DirectedGraph
 	providers map[key]provider
-	history   *provideHistory
-	compiled  bool
+	cleanups  []func()
 }
 
 // ProvideParams is a `Provide()` method options. Name is a unique identifier of type instance. Provider is a constructor
@@ -37,7 +36,7 @@ type ProvideParams struct {
 
 // Provide adds constructor into container with parameters.
 func (c *Container) Provide(params ProvideParams) {
-	p := provider(newProviderConstructor(params.Name, params.Provider, c.history))
+	p := provider(newProviderConstructor(params.Name, params.Provider))
 	if c.exists(p.Key()) {
 		panicf("The `%s` type already exists in container", p.Key())
 	}
@@ -143,11 +142,8 @@ func (c *Container) Invoke(params InvokeParams) error {
 
 // Cleanup
 func (c *Container) Cleanup() {
-	for _, k := range c.history.items {
-		p, _ := c.provider(k)
-		if cleanup, ok := p.(cleanup); ok {
-			cleanup.Cleanup()
-		}
+	for _, cleanup := range c.cleanups {
+		cleanup()
 	}
 }
 

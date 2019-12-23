@@ -528,6 +528,25 @@ func TestContainerCleanup(t *testing.T) {
 		c.Cleanup()
 		require.Equal(t, []string{"bar", "foo"}, cleanupCalls)
 	})
+
+	t.Run("cleanup for every prototyped instance", func(t *testing.T) {
+		c := NewTestContainer(t)
+		var cleanupCalls []string
+		c.Provide(di.ProvideParams{
+			Provider: func() (*ditest.Foo, func()) {
+				return &ditest.Foo{}, func() {
+					cleanupCalls = append(cleanupCalls, fmt.Sprintf("foo_%d", len(cleanupCalls)))
+				}
+			},
+			IsPrototype: true,
+		})
+		c.MustCompile()
+		var foo1, foo2 *ditest.Foo
+		c.MustExtract(&foo1)
+		c.MustExtract(&foo2)
+		c.Cleanup()
+		require.Equal(t, []string{"foo_0", "foo_1"}, cleanupCalls)
+	})
 }
 
 func TestContainer_GraphVisualizing(t *testing.T) {
