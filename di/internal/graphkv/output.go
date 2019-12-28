@@ -1,4 +1,4 @@
-package dag
+package graphkv
 
 import (
 	"fmt"
@@ -15,12 +15,12 @@ type NodeVisualizer interface {
 
 // DOTGraph returns a textual representation of the graph in the DOT graph
 // description language.
-func (g *DirectedGraph) DOTGraph() *dot.Graph {
+func (g *directedGraph) DOTGraph() *dot.Graph {
 	root := dot.NewGraph(dot.Directed)
 	root.Attr("splines", "ortho")
 
 	subgraphs := make(map[string]*dot.Graph)
-	itemsByNode := make(map[Node]dot.Node)
+	itemsByNode := make(map[Key]dot.Node)
 	for _, node := range g.Nodes() {
 		nv := node.(NodeVisualizer)
 

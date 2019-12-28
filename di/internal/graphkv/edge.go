@@ -1,24 +1,24 @@
-package dag
+package graphkv
 
 type directedEdgeList struct {
-	outgoingEdges map[Node]*nodeList
-	incomingEdges map[Node]*nodeList
+	outgoingEdges map[Key]*nodeList
+	incomingEdges map[Key]*nodeList
 }
 
 func newDirectedEdgeList() *directedEdgeList {
 	return &directedEdgeList{
-		outgoingEdges: make(map[Node]*nodeList),
-		incomingEdges: make(map[Node]*nodeList),
+		outgoingEdges: make(map[Key]*nodeList),
+		incomingEdges: make(map[Key]*nodeList),
 	}
 }
 
 func (l *directedEdgeList) Copy() *directedEdgeList {
-	outgoingEdges := make(map[Node]*nodeList, len(l.outgoingEdges))
+	outgoingEdges := make(map[Key]*nodeList, len(l.outgoingEdges))
 	for node, edges := range l.outgoingEdges {
 		outgoingEdges[node] = edges.Copy()
 	}
 
-	incomingEdges := make(map[Node]*nodeList, len(l.incomingEdges))
+	incomingEdges := make(map[Key]*nodeList, len(l.incomingEdges))
 	for node, edges := range l.incomingEdges {
 		incomingEdges[node] = edges.Copy()
 	}
@@ -33,19 +33,19 @@ func (l *directedEdgeList) Count() int {
 	return len(l.outgoingEdges)
 }
 
-func (l *directedEdgeList) HasOutgoingEdges(node Node) bool {
+func (l *directedEdgeList) HasOutgoingEdges(node Key) bool {
 	_, ok := l.outgoingEdges[node]
 	return ok
 }
 
-func (l *directedEdgeList) OutgoingEdgeCount(node Node) int {
+func (l *directedEdgeList) OutgoingEdgeCount(node Key) int {
 	if list := l.outgoingNodeList(node, false); list != nil {
 		return list.Count()
 	}
 	return 0
 }
 
-func (l *directedEdgeList) outgoingNodeList(node Node, create bool) *nodeList {
+func (l *directedEdgeList) outgoingNodeList(node Key, create bool) *nodeList {
 	if list, ok := l.outgoingEdges[node]; ok {
 		return list
 	}
@@ -57,26 +57,26 @@ func (l *directedEdgeList) outgoingNodeList(node Node, create bool) *nodeList {
 	return nil
 }
 
-func (l *directedEdgeList) OutgoingEdges(node Node) []Node {
+func (l *directedEdgeList) OutgoingEdges(node Key) []Key {
 	if list := l.outgoingNodeList(node, false); list != nil {
 		return list.Nodes()
 	}
 	return nil
 }
 
-func (l *directedEdgeList) HasIncomingEdges(node Node) bool {
+func (l *directedEdgeList) HasIncomingEdges(node Key) bool {
 	_, ok := l.incomingEdges[node]
 	return ok
 }
 
-func (l *directedEdgeList) IncomingEdgeCount(node Node) int {
+func (l *directedEdgeList) IncomingEdgeCount(node Key) int {
 	if list := l.incomingNodeList(node, false); list != nil {
 		return list.Count()
 	}
 	return 0
 }
 
-func (l *directedEdgeList) incomingNodeList(node Node, create bool) *nodeList {
+func (l *directedEdgeList) incomingNodeList(node Key, create bool) *nodeList {
 	if list, ok := l.incomingEdges[node]; ok {
 		return list
 	}
@@ -88,19 +88,19 @@ func (l *directedEdgeList) incomingNodeList(node Node, create bool) *nodeList {
 	return nil
 }
 
-func (l *directedEdgeList) IncomingEdges(node Node) []Node {
+func (l *directedEdgeList) IncomingEdges(node Key) []Key {
 	if list := l.incomingNodeList(node, false); list != nil {
 		return list.Nodes()
 	}
 	return nil
 }
 
-func (l *directedEdgeList) Add(from Node, to Node) {
+func (l *directedEdgeList) Add(from Key, to Key) {
 	l.outgoingNodeList(from, true).Add(to)
 	l.incomingNodeList(to, true).Add(from)
 }
 
-func (l *directedEdgeList) Remove(from Node, to Node) {
+func (l *directedEdgeList) Remove(from Key, to Key) {
 	if list := l.outgoingNodeList(from, false); list != nil {
 		list.Remove(to)
 
@@ -117,7 +117,7 @@ func (l *directedEdgeList) Remove(from Node, to Node) {
 	}
 }
 
-func (l *directedEdgeList) Exists(from Node, to Node) bool {
+func (l *directedEdgeList) Exists(from Key, to Key) bool {
 	if list := l.outgoingNodeList(from, false); list != nil {
 		return list.Exists(to)
 	}

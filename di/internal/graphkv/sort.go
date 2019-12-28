@@ -1,4 +1,4 @@
-package dag
+package graphkv
 
 import (
 	"errors"
@@ -12,27 +12,27 @@ var (
 // DFSSorter topologically sorts a directed graph's nodes based on the
 // directed edges between them using the Depth-first search algorithm.
 type DFSSorter struct {
-	graph      *DirectedGraph
-	sorted     []Node
-	visiting   map[Node]bool
-	discovered map[Node]bool
+	graph      *directedGraph
+	sorted     []Key
+	visiting   map[Key]bool
+	discovered map[Key]bool
 }
 
 // NewDFSSorter returns a new DFS sorter.
-func NewDFSSorter(graph *DirectedGraph) *DFSSorter {
+func NewDFSSorter(graph *directedGraph) *DFSSorter {
 	return &DFSSorter{
 		graph: graph,
 	}
 }
 
 func (s *DFSSorter) init() {
-	s.sorted = make([]Node, 0, s.graph.NodeCount())
-	s.visiting = make(map[Node]bool)
-	s.discovered = make(map[Node]bool, s.graph.NodeCount())
+	s.sorted = make([]Key, 0, s.graph.NodeCount())
+	s.visiting = make(map[Key]bool)
+	s.discovered = make(map[Key]bool, s.graph.NodeCount())
 }
 
 // Sort returns the sorted nodes.
-func (s *DFSSorter) Sort() ([]Node, error) {
+func (s *DFSSorter) Sort() ([]Key, error) {
 	s.init()
 
 	// > while there are unmarked nodes do
@@ -53,7 +53,7 @@ func (s *DFSSorter) Sort() ([]Node, error) {
 }
 
 // See https://en.wikipedia.org/wiki/Topological_sorting#Depth-first_search
-func (s *DFSSorter) visit(node Node) error {
+func (s *DFSSorter) visit(node Key) error {
 	// > if n has a permanent mark then return
 	if discovered, ok := s.discovered[node]; ok && discovered {
 		return nil
@@ -82,7 +82,7 @@ func (s *DFSSorter) visit(node Node) error {
 
 // DFSSort returns the graph's nodes in topological order based on the
 // directed edges between them using the Depth-first search algorithm.
-func (g *DirectedGraph) DFSSort() ([]Node, error) {
+func (g *directedGraph) DFSSort() ([]Key, error) {
 	sorter := NewDFSSorter(g)
 	return sorter.Sort()
 }
@@ -97,12 +97,12 @@ var (
 // assigned to a lower level, and that a level never exceeds the width.
 // See https://en.wikipedia.org/wiki/Coffman–Graham_algorithm
 type CoffmanGrahamSorter struct {
-	graph *DirectedGraph
+	graph *directedGraph
 	width int
 }
 
 // NewCoffmanGrahamSorter returns a new Coffman-Graham sorter.
-func NewCoffmanGrahamSorter(graph *DirectedGraph, width int) *CoffmanGrahamSorter {
+func NewCoffmanGrahamSorter(graph *directedGraph, width int) *CoffmanGrahamSorter {
 	return &CoffmanGrahamSorter{
 		graph: graph,
 		width: width,
@@ -110,7 +110,7 @@ func NewCoffmanGrahamSorter(graph *DirectedGraph, width int) *CoffmanGrahamSorte
 }
 
 // Sort returns the sorted nodes.
-func (s *CoffmanGrahamSorter) Sort() ([][]Node, error) {
+func (s *CoffmanGrahamSorter) Sort() ([][]Key, error) {
 	// create a copy of the graph and remove transitive edges
 	reduced := s.graph.Copy()
 	reduced.RemoveTransitives()
@@ -121,8 +121,8 @@ func (s *CoffmanGrahamSorter) Sort() ([][]Node, error) {
 		return nil, err
 	}
 
-	layers := make([][]Node, 0)
-	levels := make(map[Node]int, len(nodes))
+	layers := make([][]Key, 0)
+	levels := make(map[Key]int, len(nodes))
 
 	for _, node := range nodes {
 		dependantLevel := -1
@@ -150,7 +150,7 @@ func (s *CoffmanGrahamSorter) Sort() ([][]Node, error) {
 		}
 		// create a new layer new none was found
 		if level == -1 {
-			layers = append(layers, make([]Node, 0, 1))
+			layers = append(layers, make([]Key, 0, 1))
 			level = len(layers) - 1
 		}
 
@@ -164,7 +164,7 @@ func (s *CoffmanGrahamSorter) Sort() ([][]Node, error) {
 // CoffmanGrahamSort sorts the graph's nodes into a sequence of levels,
 // arranging so that a node which comes after another in the order is
 // assigned to a lower level, and that a level never exceeds the specified width.
-func (g *DirectedGraph) CoffmanGrahamSort(width int) ([][]Node, error) {
+func (g *directedGraph) CoffmanGrahamSort(width int) ([][]Key, error) {
 	sorter := NewCoffmanGrahamSorter(g, width)
 	return sorter.Sort()
 }

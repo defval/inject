@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cleanup ordering
 - Cleanup with prototypes
 - Removed duplicate function `resolveParameterProvider()`
+- Refactor graph storage
+- Change internal di container interface.
 - Code style fixes
 - Documentation fixes
 

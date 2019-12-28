@@ -22,19 +22,18 @@ func (p parameter) String() string {
 }
 
 // ResolveProvider resolves parameter provider
-func (p parameter) ResolveProvider(c *Container) (provider, bool) {
+func (p parameter) ResolveProvider(c *Container) (internalProvider, bool) {
 	for _, pt := range providerLookupSequence {
 		k := key{
 			name: p.name,
 			res:  p.res,
 			typ:  pt,
 		}
-		provider, exists := c.provider(k)
-		if !exists {
+		if !c.graph.Exists(k) {
 			continue
 		}
-
-		return provider, true
+		node := c.graph.Get(k)
+		return node.Value.(internalProvider), true
 	}
 	return nil, false
 }

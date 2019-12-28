@@ -41,15 +41,18 @@ type Option interface {
 // Other function signatures will cause error.
 func Provide(provider interface{}, options ...ProvideOption) Option {
 	return option(func(container *Container) {
-		var po = di.ProvideParams{
-			Provider:   provider,
+		// todo: add provider
+		var params = di.ProvideParams{
 			Parameters: map[string]interface{}{},
 		}
 
 		for _, opt := range options {
-			opt.apply(&po)
+			opt.apply(&params)
 		}
-		container.providers = append(container.providers, po)
+		container.providers = append(container.providers, provide{
+			provider: provider,
+			params:   params,
+		})
 	})
 }
 

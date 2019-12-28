@@ -1,4 +1,4 @@
-package dag
+package graphkv
 
 import (
 	"testing"
@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newTestDirectedGraph() *DirectedGraph {
-	graph := NewDirectedGraph()
+func newTestDirectedGraph() *directedGraph {
+	graph := newDirectedGraph()
 	graph.AddNodes("A", "B", "C", "D")
 	return graph
 }
 
 func TestNewDirectedGraph(t *testing.T) {
-	graph := NewDirectedGraph()
+	graph := newDirectedGraph()
 	assert.NotNil(t, graph, "graph should not be nil")
 	assert.Zero(t, graph.NodeCount(), "graph.NodeCount() should equal zero")
 	assert.Empty(t, graph.Nodes(), "graph.Nodes() should equal empty")
@@ -44,7 +44,7 @@ func TestDirectedGraphAddEdgeDuplicate(t *testing.T) {
 }
 
 func TestDirectedGraphAddEdgeMissingNodes(t *testing.T) {
-	graph := NewDirectedGraph()
+	graph := newDirectedGraph()
 	graph.AddEdge("A", "B")
 	graph.AddEdge("B", "C")
 
@@ -117,14 +117,14 @@ func TestDirectedGraphRootNodes(t *testing.T) {
 	graph.AddEdge("E", "C")
 	graph.AddEdge("F", "E")
 
-	assert.Equal(t, []Node{"A", "D", "F"}, graph.RootNodes(), "graph.RootNodes() should equal [A, D, F]")
+	assert.Equal(t, []Key{"A", "D", "F"}, graph.RootNodes(), "graph.RootNodes() should equal [A, D, F]")
 }
 
 func TestDirectedGraphIsolatedNodes(t *testing.T) {
 	graph := newTestDirectedGraph()
 	graph.AddEdge("A", "C")
 
-	assert.Equal(t, []Node{"B", "D"}, graph.IsolatedNodes(), "graph.IsolatedNodes() should equal [B, D]")
+	assert.Equal(t, []Key{"B", "D"}, graph.IsolatedNodes(), "graph.IsolatedNodes() should equal [B, D]")
 }
 
 func TestDirectedGraphAdjacencyMatrix(t *testing.T) {

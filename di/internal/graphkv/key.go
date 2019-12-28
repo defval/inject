@@ -1,25 +1,25 @@
-package dag
+package graphkv
 
-// Node represents a graph node.
-type Node = interface{}
+// Key represents a graph node.
+type Key = interface{}
 
 type nodeList struct {
-	nodes []Node
-	set   map[Node]bool
+	nodes []Key
+	set   map[Key]bool
 }
 
 func newNodeList() *nodeList {
 	return &nodeList{
-		nodes: make([]Node, 0),
-		set:   make(map[Node]bool),
+		nodes: make([]Key, 0),
+		set:   make(map[Key]bool),
 	}
 }
 
 func (l *nodeList) Copy() *nodeList {
-	nodes := make([]Node, len(l.nodes))
+	nodes := make([]Key, len(l.nodes))
 	copy(nodes, l.nodes)
 
-	set := make(map[Node]bool, len(nodes))
+	set := make(map[Key]bool, len(nodes))
 	for _, node := range nodes {
 		set[node] = true
 	}
@@ -30,7 +30,7 @@ func (l *nodeList) Copy() *nodeList {
 	}
 }
 
-func (l *nodeList) Nodes() []Node {
+func (l *nodeList) Nodes() []Key {
 	return l.nodes
 }
 
@@ -38,12 +38,12 @@ func (l *nodeList) Count() int {
 	return len(l.nodes)
 }
 
-func (l *nodeList) Exists(node Node) bool {
+func (l *nodeList) Exists(node Key) bool {
 	_, ok := l.set[node]
 	return ok
 }
 
-func (l *nodeList) Add(nodes ...Node) {
+func (l *nodeList) Add(nodes ...Key) {
 	for _, node := range nodes {
 		if l.Exists(node) {
 			continue
@@ -54,7 +54,7 @@ func (l *nodeList) Add(nodes ...Node) {
 	}
 }
 
-func (l *nodeList) Remove(nodes ...Node) {
+func (l *nodeList) Remove(nodes ...Key) {
 	for i := len(l.nodes) - 1; i >= 0; i-- {
 		for j, node := range nodes {
 			if l.nodes[i] == node {

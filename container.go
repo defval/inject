@@ -19,7 +19,7 @@ func New(options ...Option) *Container {
 
 // Container is a dependency injection container.
 type Container struct {
-	providers []di.ProvideParams
+	providers []provide
 	container *di.Container
 }
 
@@ -33,22 +33,17 @@ type Container struct {
 // If the target type does not exist in a container or instance type building failed, Extract() returns an error.
 // Use ExtractOption for modifying the behavior of this function.
 func (c *Container) Extract(target interface{}, options ...ExtractOption) (err error) {
-	var params = di.ExtractParams{
-		Target: target,
-	}
+	var params = di.ExtractParams{}
 	// apply extract options
 	for _, opt := range options {
 		opt.apply(&params)
 	}
-	return c.container.Extract(params)
+	return c.container.Extract(target, params)
 }
 
 // Invoke invokes custom function. Dependencies of function will be resolved via container.
 func (c *Container) Invoke(fn interface{}) error {
-	var params = di.InvokeParams{
-		Fn: fn,
-	}
-	return c.container.Invoke(params)
+	return c.container.Invoke(fn)
 }
 
 // Cleanup cleanup container.
@@ -58,8 +53,13 @@ func (c *Container) Cleanup() {
 
 func (c *Container) compile() {
 	for _, po := range c.providers {
-		c.container.Provide(po)
+		c.container.Provide(po.provider, po.params)
 	}
 	c.container.Compile()
 	return
+}
+
+type provide struct {
+	provider interface{}
+	params   di.ProvideParams
 }

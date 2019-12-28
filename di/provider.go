@@ -17,7 +17,7 @@ const (
 )
 
 // provider
-type provider interface {
+type internalProvider interface {
 	// The identity of result type.
 	Key() key
 	// ParameterList returns array of dependencies.

@@ -19,7 +19,7 @@ func TestContainerCompileErrors(t *testing.T) {
 		c := NewTestContainer(t)
 		c.MustProvide(ditest.NewCycleFooBar)
 		c.MustProvide(ditest.NewBar)
-		c.MustCompileError("Cycle detected")
+		c.MustCompileError("the graph cannot be cyclic")
 	})
 
 	t.Run("not existing dependency cause compile error", func(t *testing.T) {
@@ -285,15 +285,15 @@ func TestContainerExtract(t *testing.T) {
 		c.MustNotEqualPointer(extracted1, extracted2)
 	})
 
-	t.Run("container resolve extractor", func(t *testing.T) {
+	t.Run("container resolve interactor", func(t *testing.T) {
 		c := NewTestContainer(t)
 		foo := ditest.NewFoo()
 		c.MustProvide(ditest.CreateFooConstructor(foo))
 		c.MustCompile()
-		var extractor di.Extractor
-		c.MustExtract(&extractor)
+		var interactor di.Interactor
+		c.MustExtract(&interactor)
 		var extractedFoo *ditest.Foo
-		require.NoError(t, extractor.Extract(di.ExtractParams{Target: &extractedFoo}))
+		require.NoError(t, interactor.Extract(&extractedFoo))
 		c.MustEqualPointer(foo, extractedFoo)
 	})
 }
@@ -456,8 +456,7 @@ func TestContainerResolveParameterBag(t *testing.T) {
 	t.Run("container extract correct parameter bag for type", func(t *testing.T) {
 		c := NewTestContainer(t)
 
-		c.Provide(di.ProvideParams{
-			Provider: ditest.NewFooWithParameters,
+		c.Provide(ditest.NewFooWithParameters, di.ProvideParams{
 			Parameters: di.ParameterBag{
 				"name": "test",
 			},
@@ -466,9 +465,7 @@ func TestContainerResolveParameterBag(t *testing.T) {
 		c.MustCompile()
 
 		var foo *ditest.Foo
-		err := c.Extract(di.ExtractParams{
-			Target: &foo,
-		})
+		err := c.Extract(&foo)
 
 		require.NoError(t, err)
 		require.Equal(t, "test", foo.Name)
@@ -477,9 +474,8 @@ func TestContainerResolveParameterBag(t *testing.T) {
 	t.Run("container extract correct parameter bag for named type", func(t *testing.T) {
 		c := NewTestContainer(t)
 
-		c.Provide(di.ProvideParams{
-			Name:     "named",
-			Provider: ditest.NewFooWithParameters,
+		c.Provide(ditest.NewFooWithParameters, di.ProvideParams{
+			Name: "named",
 			Parameters: di.ParameterBag{
 				"name": "test",
 			},
@@ -488,9 +484,8 @@ func TestContainerResolveParameterBag(t *testing.T) {
 		c.MustCompile()
 
 		var foo *ditest.Foo
-		err := c.Extract(di.ExtractParams{
-			Name:   "named",
-			Target: &foo,
+		err := c.Extract(&foo, di.ExtractParams{
+			Name: "named",
 		})
 
 		require.NoError(t, err)
@@ -532,12 +527,11 @@ func TestContainerCleanup(t *testing.T) {
 	t.Run("cleanup for every prototyped instance", func(t *testing.T) {
 		c := NewTestContainer(t)
 		var cleanupCalls []string
-		c.Provide(di.ProvideParams{
-			Provider: func() (*ditest.Foo, func()) {
-				return &ditest.Foo{}, func() {
-					cleanupCalls = append(cleanupCalls, fmt.Sprintf("foo_%d", len(cleanupCalls)))
-				}
-			},
+		c.Provide(func() (*ditest.Foo, func()) {
+			return &ditest.Foo{}, func() {
+				cleanupCalls = append(cleanupCalls, fmt.Sprintf("foo_%d", len(cleanupCalls)))
+			}
+		}, di.ProvideParams{
 			IsPrototype: true,
 		})
 		c.MustCompile()
@@ -561,9 +555,7 @@ func TestContainer_GraphVisualizing(t *testing.T) {
 		c.MustCompile()
 
 		var graph *di.Graph
-		require.NoError(t, c.Extract(di.ExtractParams{
-			Target: &graph,
-		}))
+		require.NoError(t, c.Extract(&graph))
 
 		fmt.Println(graph.String())
 
@@ -571,8 +563,8 @@ func TestContainer_GraphVisualizing(t *testing.T) {
 	subgraph cluster_s3 {
 		ID = "cluster_s3";
 		bgcolor="#E8E8E8";color="lightgrey";fontcolor="#46494C";fontname="COURIER";label="";style="rounded";
-		n10[color="#46494C",fontcolor="white",fontname="COURIER",label="*di.Graph",shape="box",style="filled"];
-		n9[color="#46494C",fontcolor="white",fontname="COURIER",label="di.Extractor",shape="box",style="filled"];
+		n9[color="#46494C",fontcolor="white",fontname="COURIER",label="*di.Graph",shape="box",style="filled"];
+		n10[color="#46494C",fontcolor="white",fontname="COURIER",label="di.Interactor",shape="box",style="filled"];
 		
 	}subgraph cluster_s2 {
 		ID = "cluster_s2";
@@ -623,8 +615,7 @@ type TestContainer struct {
 
 func (c *TestContainer) MustProvide(provider interface{}, as ...interface{}) {
 	require.NotPanics(c.t, func() {
-		c.Provide(di.ProvideParams{
-			Provider:   provider,
+		c.Provide(provider, di.ProvideParams{
 			Interfaces: as,
 		})
 	}, "provide should not panic")
@@ -632,8 +623,7 @@ func (c *TestContainer) MustProvide(provider interface{}, as ...interface{}) {
 
 func (c *TestContainer) MustProvidePrototype(provider interface{}, as ...interface{}) {
 	require.NotPanics(c.t, func() {
-		c.Provide(di.ProvideParams{
-			Provider:    provider,
+		c.Provide(provider, di.ProvideParams{
 			Interfaces:  as,
 			IsPrototype: true,
 		})
@@ -642,9 +632,8 @@ func (c *TestContainer) MustProvidePrototype(provider interface{}, as ...interfa
 
 func (c *TestContainer) MustProvideWithName(name string, provider interface{}, as ...interface{}) {
 	require.NotPanics(c.t, func() {
-		c.Provide(di.ProvideParams{
+		c.Provide(provider, di.ProvideParams{
 			Name:       name,
-			Provider:   provider,
 			Interfaces: as,
 		})
 	})
@@ -652,8 +641,7 @@ func (c *TestContainer) MustProvideWithName(name string, provider interface{}, a
 
 func (c *TestContainer) MustProvideError(provider interface{}, msg string, as ...interface{}) {
 	require.PanicsWithValue(c.t, msg, func() {
-		c.Provide(di.ProvideParams{
-			Provider:   provider,
+		c.Provide(provider, di.ProvideParams{
 			Interfaces: as,
 		})
 	})
@@ -672,28 +660,22 @@ func (c *TestContainer) MustCompileError(msg string) {
 }
 
 func (c *TestContainer) MustExtract(target interface{}) {
-	require.NoError(c.t, c.Extract(di.ExtractParams{
-		Target: target,
-	}))
+	require.NoError(c.t, c.Extract(target))
 }
 
 func (c *TestContainer) MustExtractWithName(name string, target interface{}) {
-	require.NoError(c.t, c.Extract(di.ExtractParams{
-		Name:   name,
-		Target: target,
+	require.NoError(c.t, c.Extract(target, di.ExtractParams{
+		Name: name,
 	}))
 }
 
 func (c *TestContainer) MustExtractError(target interface{}, msg string) {
-	require.EqualError(c.t, c.Extract(di.ExtractParams{
-		Target: target,
-	}), msg)
+	require.EqualError(c.t, c.Extract(target, di.ExtractParams{}), msg)
 }
 
 func (c *TestContainer) MustExtractWithNameError(name string, target interface{}, msg string) {
-	require.EqualError(c.t, c.Extract(di.ExtractParams{
-		Name:   name,
-		Target: target,
+	require.EqualError(c.t, c.Extract(target, di.ExtractParams{
+		Name: name,
 	}), msg)
 }
 
@@ -714,11 +696,11 @@ func (c *TestContainer) MustExtractPtrWithName(expected interface{}, name string
 }
 
 func (c *TestContainer) MustInvoke(fn interface{}) {
-	require.NoError(c.t, c.Invoke(di.InvokeParams{Fn: fn}))
+	require.NoError(c.t, c.Invoke(fn))
 }
 
 func (c *TestContainer) MustInvokeError(fn interface{}, msg string) {
-	require.EqualError(c.t, c.Invoke(di.InvokeParams{Fn: fn}), msg)
+	require.EqualError(c.t, c.Invoke(fn), msg)
 }
 
 func (c *TestContainer) MustEqualPointer(expected interface{}, actual interface{}) {

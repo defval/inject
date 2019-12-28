@@ -6,7 +6,7 @@ import (
 )
 
 // createParameterBugProvider
-func createParameterBugProvider(key key, parameters ParameterBag) provider {
+func createParameterBugProvider(key key, parameters ParameterBag) internalProvider {
 	return newProviderConstructor(key.String(), func() ParameterBag { return parameters })
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 // newProviderInterface
-func newProviderInterface(provider provider, as interface{}) *providerInterface {
+func newProviderInterface(provider internalProvider, as interface{}) *providerInterface {
 	iface := reflection.InspectInterfacePtr(as)
 	if !provider.Key().res.Implements(iface.Type) {
 		panicf("%s not implement %s", provider.Key(), iface.Type)
@@ -25,7 +25,7 @@ func newProviderInterface(provider provider, as interface{}) *providerInterface 
 // providerInterface
 type providerInterface struct {
 	res      key
-	provider provider
+	provider internalProvider
 }
 
 func (i *providerInterface) Key() key {

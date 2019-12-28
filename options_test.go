@@ -28,7 +28,6 @@ func TestProvideOptions(t *testing.T) {
 
 	require.Equal(t, &di.ProvideParams{
 		Name:        "test",
-		Provider:    nil,
 		Interfaces:  []interface{}{new(http.Handler)},
 		IsPrototype: true,
 		Parameters: map[string]interface{}{
@@ -47,7 +46,6 @@ func TestExtractOptions(t *testing.T) {
 	}
 
 	require.Equal(t, &di.ExtractParams{
-		Name:   "test",
-		Target: nil,
+		Name: "test",
 	}, opts)
 }

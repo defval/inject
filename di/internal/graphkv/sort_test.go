@@ -1,4 +1,4 @@
-package dag
+package graphkv
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestDFSSorter(t *testing.T) {
-	graph := NewDirectedGraph()
+	graph := newDirectedGraph()
 	graph.AddNodes(0, 1, 2, 3, 4, 5, 6, 7)
 	graph.AddEdge(0, 2)
 	graph.AddEdge(1, 2)
@@ -21,11 +21,11 @@ func TestDFSSorter(t *testing.T) {
 	sorted, err := graph.DFSSort()
 
 	assert.NoError(t, err, "graph.DFSSort() error should be nil")
-	assert.Equal(t, []Node{4, 3, 1, 0, 2, 5, 7, 6}, sorted, "graph.DFSSort() nodes should equal [4, 3, 1, 0, 2, 5, 7, 6]")
+	assert.Equal(t, []Key{4, 3, 1, 0, 2, 5, 7, 6}, sorted, "graph.DFSSort() nodes should equal [4, 3, 1, 0, 2, 5, 7, 6]")
 }
 
 func TestDFSSorterCyclic(t *testing.T) {
-	graph := NewDirectedGraph()
+	graph := newDirectedGraph()
 	graph.AddNodes(0, 1)
 	graph.AddEdge(0, 1)
 	graph.AddEdge(1, 0)
@@ -37,7 +37,7 @@ func TestDFSSorterCyclic(t *testing.T) {
 }
 
 func TestCoffmanGrahamSorter(t *testing.T) {
-	graph := NewDirectedGraph()
+	graph := newDirectedGraph()
 
 	graph.AddNodes(0, 1, 2, 3, 4, 5, 6, 7, 8)
 	graph.AddEdge(0, 2)
@@ -54,17 +54,17 @@ func TestCoffmanGrahamSorter(t *testing.T) {
 	sorted, err := graph.CoffmanGrahamSort(2)
 
 	assert.NoError(t, err, "graph.CoffmanGrahamSort(2)0 error should be nil")
-	assert.Equal(t, [][]Node{
-		[]Node{1, 0},
-		[]Node{5, 2},
-		[]Node{4, 3},
-		[]Node{6},
-		[]Node{8, 7},
+	assert.Equal(t, [][]Key{
+		[]Key{1, 0},
+		[]Key{5, 2},
+		[]Key{4, 3},
+		[]Key{6},
+		[]Key{8, 7},
 	}, sorted, "graph.CoffmanGrahamSort(2) nodes should equal [[1, 0], [5, 2], [4, 3], [6], [8, 7]]")
 }
 
 func TestCoffmanGrahamSorterCyclic(t *testing.T) {
-	graph := NewDirectedGraph()
+	graph := newDirectedGraph()
 
 	graph.AddNodes(0, 1, 2, 3, 4, 5, 6, 7, 8)
 	graph.AddEdge(0, 2)
