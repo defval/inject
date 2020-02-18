@@ -6,6 +6,14 @@ src="https://github.com/defval/inject/raw/master/logo.png">[![Tweet](https://img
 [![Build Status](https://img.shields.io/travis/defval/inject.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/defval/inject)
 [![Code Coverage](https://img.shields.io/codecov/c/github/defval/inject.svg?style=for-the-badge&logo=codecov)](https://codecov.io/gh/defval/inject)
 
+## This repository will be archived
+
+After using this library in production for a year, I made some
+conclusions about library API and really useful features. I don't want
+to make breaking changes and have a `v3` version. It's not that popular.
+
+I put old and new ideas in [goava/di](https://github.com/goava/di).
+
 ## How will dependency injection help me?
 
 Dependency injection is one form of the broader technique of inversion
